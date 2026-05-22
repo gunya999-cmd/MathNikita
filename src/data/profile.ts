@@ -1,9 +1,14 @@
+import type { TaskDifficulty } from './taskBank';
+
 export type StudentProfile = {
   name: string;
   grade: string;
   goal: string;
   streakDays: number;
   solvedTasks: number;
+  correctAnswers: number;
+  wrongAnswers: number;
+  currentDifficulty: TaskDifficulty;
   lastActiveDate?: string;
 };
 
@@ -13,6 +18,9 @@ export const defaultProfile: StudentProfile = {
   goal: 'Уверенно решать задачи и подтянуть школьную математику',
   streakDays: 0,
   solvedTasks: 0,
+  correctAnswers: 0,
+  wrongAnswers: 0,
+  currentDifficulty: 'easy',
 };
 
 export const profileStorageKey = 'mathnikita.studentProfile';
@@ -40,7 +48,7 @@ function yesterdayKey() {
   return date.toISOString().slice(0, 10);
 }
 
-export function markPracticeDone(profile: StudentProfile, tasksSolved = 1): StudentProfile {
+function withActivity(profile: StudentProfile): StudentProfile {
   const today = todayKey();
   const previousDate = profile.lastActiveDate;
   const streakDays = previousDate === today
@@ -49,11 +57,31 @@ export function markPracticeDone(profile: StudentProfile, tasksSolved = 1): Stud
       ? profile.streakDays + 1
       : 1;
 
-  const nextProfile = {
+  return {
     ...profile,
     streakDays,
-    solvedTasks: profile.solvedTasks + tasksSolved,
     lastActiveDate: today,
+  };
+}
+
+export function markPracticeDone(profile: StudentProfile, tasksSolved = 1): StudentProfile {
+  const nextProfile = {
+    ...withActivity(profile),
+    solvedTasks: profile.solvedTasks + tasksSolved,
+  };
+
+  saveStudentProfile(nextProfile);
+  return nextProfile;
+}
+
+export function markTaskAnswer(profile: StudentProfile, wasCorrect: boolean, currentDifficulty: TaskDifficulty): StudentProfile {
+  const activeProfile = withActivity(profile);
+  const nextProfile = {
+    ...activeProfile,
+    solvedTasks: activeProfile.solvedTasks + 1,
+    correctAnswers: activeProfile.correctAnswers + (wasCorrect ? 1 : 0),
+    wrongAnswers: activeProfile.wrongAnswers + (wasCorrect ? 0 : 1),
+    currentDifficulty,
   };
 
   saveStudentProfile(nextProfile);
