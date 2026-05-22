@@ -2,15 +2,25 @@ import { FormEvent, useState } from 'react';
 import { Button } from '../components/Button';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
+type AuthMode = 'login' | 'signup';
+
 export function Login({ onDone }: { onDone: (email: string) => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<AuthMode>('login');
   const [message, setMessage] = useState('');
+  const [canResend, setCanResend] = useState(false);
+
+  function switchMode(nextMode: AuthMode) {
+    setMode(nextMode);
+    setMessage('');
+    setCanResend(false);
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setMessage('');
+    setCanResend(false);
 
     if (!isSupabaseConfigured || !supabase) {
       onDone(email || 'demo@student.local');
@@ -28,12 +38,16 @@ export function Login({ onDone }: { onDone: (email: string) => void }) {
         });
 
     if (result.error) {
-      setMessage(result.error.message);
+      const text = result.error.message;
+      setMessage(text);
+      setCanResend(text.toLowerCase().includes('confirm') || text.toLowerCase().includes('email'));
       return;
     }
 
     if (mode === 'signup' && !result.data.session) {
-      setMessage('Аккаунт создан. Проверь email и подтверди регистрацию по ссылке.');
+      setMessage('Аккаунт создан. Проверь email и подтверди регистрацию по ссылке. После подтверждения нажми “Вход”.');
+      setCanResend(true);
+      setMode('login');
       return;
     }
 
@@ -65,6 +79,7 @@ export function Login({ onDone }: { onDone: (email: string) => void }) {
     }
 
     setMessage('Письмо подтверждения отправлено повторно. Проверь входящие и спам.');
+    setCanResend(true);
   }
 
   const isPositiveMessage = message.includes('создан') || message.includes('отправлено');
@@ -77,20 +92,28 @@ export function Login({ onDone }: { onDone: (email: string) => void }) {
           ? 'Supabase подключён. Можно входить или создавать аккаунт.'
           : 'Supabase env не настроены, приложение откроется в demo-режиме.'}
       </p>
+
+      <div className="tab-row">
+        <button className={mode === 'login' ? 'tab active' : 'tab'} type="button" onClick={() => switchMode('login')}>
+          Вход
+        </button>
+        <button className={mode === 'signup' ? 'tab active' : 'tab'} type="button" onClick={() => switchMode('signup')}>
+          Регистрация
+        </button>
+      </div>
+
       <form className="form" onSubmit={submit}>
         <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" type="email" />
         <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Пароль" type="password" />
         {message && <div className={isPositiveMessage ? 'success-box' : 'error'}>{message}</div>}
         <Button type="submit">{mode === 'login' ? 'Войти' : 'Создать аккаунт'}</Button>
       </form>
-      {mode === 'signup' && (
+
+      {canResend && (
         <button className="link" onClick={resendConfirmation}>
           Отправить письмо подтверждения ещё раз
         </button>
       )}
-      <button className="link" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage(''); }}>
-        {mode === 'login' ? 'Создать аккаунт' : 'У меня уже есть аккаунт'}
-      </button>
     </section>
   );
 }
