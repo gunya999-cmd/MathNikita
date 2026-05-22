@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { loadDiagnosticSummary, saveDiagnosticSummary } from './data/diagnostic';
-import { defaultProfile, loadStudentProfile, markPracticeDone, saveStudentProfile, type StudentProfile } from './data/profile';
+import { defaultProfile, loadStudentProfile, markPracticeDone, markTaskAnswer, saveStudentProfile, type StudentProfile } from './data/profile';
+import type { TaskDifficulty } from './data/taskBank';
 import { Chat } from './pages/Chat';
 import { Dashboard } from './pages/Dashboard';
 import { Diagnostic } from './pages/Diagnostic';
@@ -8,6 +9,7 @@ import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Practice } from './pages/Practice';
 import { Profile } from './pages/Profile';
+import { Training } from './pages/Training';
 import type { DiagnosticSummary, Page, UserState } from './types';
 
 export function App() {
@@ -35,6 +37,10 @@ export function App() {
     setProfile((current) => markPracticeDone(current, tasksSolved));
   }
 
+  function recordTrainingAnswer(wasCorrect: boolean, nextDifficulty: TaskDifficulty) {
+    setProfile((current) => markTaskAnswer(current, wasCorrect, nextDifficulty));
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -43,6 +49,7 @@ export function App() {
           <button onClick={() => setPage('dashboard')}>Урок дня</button>
           <button onClick={() => setPage('diagnostic')}>Диагностика</button>
           <button onClick={() => setPage('practice')}>Практика</button>
+          <button onClick={() => setPage('training')}>Тренировка</button>
           <button onClick={() => setPage('chat')}>Чат</button>
           <button onClick={() => setPage('profile')}>Профиль</button>
           <button onClick={() => setPage('login')}>{user ? user.email : 'Вход'}</button>
@@ -59,10 +66,12 @@ export function App() {
             onDiagnostic={() => setPage('diagnostic')}
             onChat={() => setPage('chat')}
             onPractice={() => setPage('practice')}
+            onTraining={() => setPage('training')}
           />
         )}
         {page === 'diagnostic' && <Diagnostic onComplete={completeDiagnostic} />}
         {page === 'practice' && <Practice onSolvedTask={addSolvedTask} />}
+        {page === 'training' && <Training profile={profile} onAnswer={recordTrainingAnswer} />}
         {page === 'chat' && <Chat summary={diagnosticSummary} />}
         {page === 'profile' && <Profile profile={profile} onSave={updateProfile} />}
       </main>
