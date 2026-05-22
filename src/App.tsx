@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { diagnosticQuestions, normalizeAnswer } from './data/questions';
 import { getLessonForWeakTopic } from './data/lessons';
+import { formatTutorResponse, getTutorResponse } from './data/tutor';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat';
@@ -269,12 +270,8 @@ function Chat({ summary }: { summary: DiagnosticSummary | null }) {
 
   function send() {
     if (!input.trim()) return;
-    const focus = summary?.weak[0] ? ` Давай разберём это через тему “${summary.weak[0]}”.` : '';
-    setMessages((previous) => [
-      ...previous,
-      `Ты: ${input}`,
-      `Репетитор: В MVP я пока отвечаю шаблоном.${focus} Следующий шаг — подключить AI API через безопасный backend.`,
-    ]);
+    const response = formatTutorResponse(getTutorResponse(input, summary?.weak[0]));
+    setMessages((previous) => [...previous, `Ты: ${input}`, `Репетитор: ${response}`]);
     setInput('');
   }
 
