@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { diagnosticQuestions, normalizeAnswer } from './data/questions';
 import { getLessonForWeakTopic } from './data/lessons';
+import { checkStepAnswer, stepPractices } from './data/stepPractice';
 import { formatTutorResponse, getTutorResponse } from './data/tutor';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
-type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat';
+type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat' | 'practice';
 type UserState = { email: string } | null;
 type DiagnosticSummary = {
   score: number;
@@ -78,6 +79,7 @@ export function App() {
         <nav>
           <button onClick={() => setPage('dashboard')}>Урок дня</button>
           <button onClick={() => setPage('diagnostic')}>Диагностика</button>
+          <button onClick={() => setPage('practice')}>Практика</button>
           <button onClick={() => setPage('chat')}>Чат</button>
           <button onClick={() => setPage('login')}>{user ? user.email : 'Вход'}</button>
         </nav>
@@ -86,8 +88,9 @@ export function App() {
       <main>
         {page === 'home' && <Landing onStart={() => setPage(user ? 'dashboard' : 'login')} />}
         {page === 'login' && <Login onDone={(email) => { setUser({ email }); setPage('dashboard'); }} />}
-        {page === 'dashboard' && <Dashboard summary={diagnosticSummary} onDiagnostic={() => setPage('diagnostic')} onChat={() => setPage('chat')} />}
+        {page === 'dashboard' && <Dashboard summary={diagnosticSummary} onDiagnostic={() => setPage('diagnostic')} onChat={() => setPage('chat')} onPractice={() => setPage('practice')} />}
         {page === 'diagnostic' && <Diagnostic onComplete={completeDiagnostic} />}
+        {page === 'practice' && <StepPractice />}
         {page === 'chat' && <Chat summary={diagnosticSummary} />}
       </main>
     </div>
@@ -152,7 +155,7 @@ function Login({ onDone }: { onDone: (email: string) => void }) {
   );
 }
 
-function Dashboard({ summary, onDiagnostic, onChat }: { summary: DiagnosticSummary | null; onDiagnostic: () => void; onChat: () => void }) {
+function Dashboard({ summary, onDiagnostic, onChat, onPractice }: { summary: DiagnosticSummary | null; onDiagnostic: () => void; onChat: () => void; onPractice: () => void }) {
   const nextLesson = getNextLesson(summary);
   const lesson = getLessonForWeakTopic(summary?.weak[0]);
   const [practiceAnswer, setPracticeAnswer] = useState('');
@@ -178,6 +181,7 @@ function Dashboard({ summary, onDiagnostic, onChat }: { summary: DiagnosticSumma
           <div className="hero-actions">
             <Button onClick={() => setPracticeChecked(true)}>Проверить мини-задание</Button>
             <Button variant="secondary" onClick={onChat}>Спросить в чате</Button>
+            <Button variant="secondary" onClick={onPractice}>Пошаговая практика</Button>
           </div>
           {practiceChecked && (
             <div className={practiceCorrect ? 'success-box' : 'error'}>
@@ -256,6 +260,65 @@ function Diagnostic({ onComplete }: { onComplete: (summary: DiagnosticSummary) =
           <p><strong>Темы для повторения:</strong> {result.weak.join(', ') || 'нет'}</p>
         </div>
       )}
+    </section>
+  );
+}
+
+function StepPractice() {
+  const [practiceId, setPracticeId] = useState(stepPractices[0].id);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [answer, setAnswer] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const practice = stepPractices.find((item) => item.id === practiceId) ?? stepPractices[0];
+  const step = practice.steps[stepIndex];
+  const progress = Math.round(((stepIndex + 1) / practice.steps.length) * 100);
+
+  function choosePractice(id: string) {
+    setPracticeId(id);
+    setStepIndex(0);
+    setAnswer('');
+    setFeedback('');
+  }
+
+  function check() {
+    if (checkStepAnswer(answer, step.expected)) {
+      setFeedback(step.success);
+      if (stepIndex < practice.steps.length - 1) {
+        window.setTimeout(() => {
+          setStepIndex((current) => current + 1);
+          setAnswer('');
+          setFeedback('');
+        }, 650);
+      }
+      return;
+    }
+    setFeedback(step.hint);
+  }
+
+  return (
+    <section className="panel wide">
+      <div className="eyebrow">Пошаговая практика</div>
+      <h2>{practice.title}</h2>
+      <p className="muted">Выбери задачу и решай её маленькими шагами. Система подскажет, где ошибка.</p>
+      <div className="tab-row">
+        {stepPractices.map((item) => (
+          <button className={item.id === practice.id ? 'tab active' : 'tab'} key={item.id} onClick={() => choosePractice(item.id)}>
+            {item.title}
+          </button>
+        ))}
+      </div>
+      <div className="lesson-block">
+        <p><strong>Задача:</strong> {practice.problem}</p>
+        <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>
+        <label className="question compact">
+          <span>{step.prompt}</span>
+          <input value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Введи шаг решения" />
+        </label>
+        <div className="hero-actions">
+          <Button onClick={check}>{stepIndex === practice.steps.length - 1 ? 'Проверить финальный ответ' : 'Проверить шаг'}</Button>
+        </div>
+        {feedback && <div className={checkStepAnswer(answer, step.expected) ? 'success-box' : 'hint-box'}>{feedback}</div>}
+      </div>
     </section>
   );
 }
