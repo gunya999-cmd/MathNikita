@@ -40,6 +40,35 @@ export function Login({ onDone }: { onDone: (email: string) => void }) {
     onDone(result.data.user?.email ?? email);
   }
 
+  async function resendConfirmation() {
+    if (!isSupabaseConfigured || !supabase) {
+      setMessage('Supabase env не настроены. Повторная отправка письма недоступна.');
+      return;
+    }
+
+    if (!email.trim()) {
+      setMessage('Введи email, на который нужно повторно отправить подтверждение.');
+      return;
+    }
+
+    const result = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+
+    if (result.error) {
+      setMessage(result.error.message);
+      return;
+    }
+
+    setMessage('Письмо подтверждения отправлено повторно. Проверь входящие и спам.');
+  }
+
+  const isPositiveMessage = message.includes('создан') || message.includes('отправлено');
+
   return (
     <section className="panel narrow">
       <h2>{mode === 'login' ? 'Вход' : 'Регистрация'}</h2>
@@ -51,9 +80,14 @@ export function Login({ onDone }: { onDone: (email: string) => void }) {
       <form className="form" onSubmit={submit}>
         <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" type="email" />
         <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Пароль" type="password" />
-        {message && <div className={message.includes('создан') ? 'success-box' : 'error'}>{message}</div>}
+        {message && <div className={isPositiveMessage ? 'success-box' : 'error'}>{message}</div>}
         <Button type="submit">{mode === 'login' ? 'Войти' : 'Создать аккаунт'}</Button>
       </form>
+      {mode === 'signup' && (
+        <button className="link" onClick={resendConfirmation}>
+          Отправить письмо подтверждения ещё раз
+        </button>
+      )}
       <button className="link" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage(''); }}>
         {mode === 'login' ? 'Создать аккаунт' : 'У меня уже есть аккаунт'}
       </button>
