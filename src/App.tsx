@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { loadDiagnosticSummary, saveDiagnosticSummary } from './data/diagnostic';
 import { defaultProfile, loadStudentProfile, markPracticeDone, markTaskAnswer, saveStudentProfile, type StudentProfile } from './data/profile';
 import type { TaskDifficulty } from './data/taskBank';
+import { loadCloudProfile, saveCloudDiagnostic, saveCloudProfile, saveCloudTrainingAttempt } from './lib/progressSync';
 import { Chat } from './pages/Chat';
 import { Dashboard } from './pages/Dashboard';
 import { Diagnostic } from './pages/Diagnostic';
@@ -23,22 +24,40 @@ export function App() {
     setProfile(loadStudentProfile());
   }, []);
 
+  async function hydrateCloudProfile() {
+    const cloudProfile = await loadCloudProfile();
+    if (!cloudProfile) return;
+    saveStudentProfile(cloudProfile);
+    setProfile(cloudProfile);
+  }
+
   function completeDiagnostic(summary: DiagnosticSummary) {
     saveDiagnosticSummary(summary);
     setDiagnosticSummary(summary);
+    void saveCloudDiagnostic(summary);
   }
 
   function updateProfile(nextProfile: StudentProfile) {
     saveStudentProfile(nextProfile);
     setProfile(nextProfile);
+    void saveCloudProfile(nextProfile);
   }
 
   function addSolvedTask(tasksSolved = 1) {
-    setProfile((current) => markPracticeDone(current, tasksSolved));
+    setProfile((current) => {
+      const nextProfile = markPracticeDone(current, tasksSolved);
+      void saveCloudProfile(nextProfile);
+      return nextProfile;
+    });
   }
 
   function recordTrainingAnswer(wasCorrect: boolean, nextDifficulty: TaskDifficulty) {
-    setProfile((current) => markTaskAnswer(current, wasCorrect, nextDifficulty));
+    setProfile((current) => {
+      const nextProfile = markTaskAnswer(current, wasCorrect, nextDifficulty);
+      void saveCloudProfile(nextProfile);
+      void saveCloudTrainingAttempt(wasCorrect, nextDifficulty);
+      return nextProfile;
+    });
   }
 
   return (
@@ -58,7 +77,7 @@ export function App() {
 
       <main>
         {page === 'home' && <Landing onStart={() => setPage(user ? 'dashboard' : 'login')} />}
-        {page === 'login' && <Login onDone={(email) => { setUser({ email }); setPage('dashboard'); }} />}
+        {page === 'login' && <Login onDone={(email) => { setUser({ email }); void hydrateCloudProfile(); setPage('dashboard'); }} />}
         {page === 'dashboard' && (
           <Dashboard
             profile={profile}
