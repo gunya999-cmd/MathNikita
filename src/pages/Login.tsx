@@ -19,10 +19,21 @@ export function Login({ onDone }: { onDone: (email: string) => void }) {
 
     const result = mode === 'login'
       ? await supabase.auth.signInWithPassword({ email, password })
-      : await supabase.auth.signUp({ email, password });
+      : await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+          },
+        });
 
     if (result.error) {
       setMessage(result.error.message);
+      return;
+    }
+
+    if (mode === 'signup' && !result.data.session) {
+      setMessage('Аккаунт создан. Проверь email и подтверди регистрацию по ссылке.');
       return;
     }
 
@@ -32,14 +43,18 @@ export function Login({ onDone }: { onDone: (email: string) => void }) {
   return (
     <section className="panel narrow">
       <h2>{mode === 'login' ? 'Вход' : 'Регистрация'}</h2>
-      <p className="muted">Если Supabase env не настроены, приложение откроется в demo-режиме.</p>
+      <p className="muted">
+        {isSupabaseConfigured
+          ? 'Supabase подключён. Можно входить или создавать аккаунт.'
+          : 'Supabase env не настроены, приложение откроется в demo-режиме.'}
+      </p>
       <form className="form" onSubmit={submit}>
         <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" type="email" />
         <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Пароль" type="password" />
-        {message && <div className="error">{message}</div>}
+        {message && <div className={message.includes('создан') ? 'success-box' : 'error'}>{message}</div>}
         <Button type="submit">{mode === 'login' ? 'Войти' : 'Создать аккаунт'}</Button>
       </form>
-      <button className="link" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+      <button className="link" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setMessage(''); }}>
         {mode === 'login' ? 'Создать аккаунт' : 'У меня уже есть аккаунт'}
       </button>
     </section>
