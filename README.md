@@ -8,7 +8,7 @@ Clean MVP for an AI math tutor.
 - React
 - TypeScript
 - Supabase JS client
-- Static deployment to Cloudflare Pages
+- Static deployment to Cloudflare Pages / Workers static assets
 
 No TanStack Start SSR, no Cloudflare Workers SSR, no Lovable runtime, no Codex-generated legacy code, no heavy markdown or diagram dependencies.
 
@@ -23,6 +23,12 @@ npm run dev
 
 ```bash
 npm run build
+```
+
+## Deploy
+
+```bash
+npx wrangler deploy
 ```
 
 ## Environment variables
