@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { diagnosticQuestions, normalizeAnswer } from './data/questions';
+import { getLessonForWeakTopic } from './data/lessons';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat';
@@ -43,6 +44,7 @@ function getLevel(score: number) {
 function getNextLesson(summary: DiagnosticSummary | null) {
   const firstWeak = summary?.weak[0];
   if (firstWeak) return `Повторить тему: ${firstWeak}`;
+  if (summary?.score === 100) return 'Следующий уровень';
   return 'Дроби и проценты';
 }
 
@@ -151,6 +153,10 @@ function Login({ onDone }: { onDone: (email: string) => void }) {
 
 function Dashboard({ summary, onDiagnostic, onChat }: { summary: DiagnosticSummary | null; onDiagnostic: () => void; onChat: () => void }) {
   const nextLesson = getNextLesson(summary);
+  const lesson = getLessonForWeakTopic(summary?.weak[0]);
+  const [practiceAnswer, setPracticeAnswer] = useState('');
+  const [practiceChecked, setPracticeChecked] = useState(false);
+  const practiceCorrect = normalizeAnswer(practiceAnswer) === normalizeAnswer(lesson.answer);
 
   return (
     <section className="grid-page">
@@ -158,9 +164,29 @@ function Dashboard({ summary, onDiagnostic, onChat }: { summary: DiagnosticSumma
         <div className="eyebrow">Урок дня</div>
         <h2>{nextLesson}</h2>
         <p>{summary ? `Последняя диагностика: ${summary.score}% — ${summary.level}.` : 'Сначала пройди короткую диагностику, и я подберу урок под твой уровень.'}</p>
+
+        <div className="lesson-block">
+          <h3>{lesson.title}</h3>
+          <p className="muted">{lesson.subtitle}</p>
+          <p>{lesson.explanation}</p>
+          <div className="example-box"><strong>Пример:</strong> {lesson.example}</div>
+          <label className="question compact">
+            <span>{lesson.practice}</span>
+            <input value={practiceAnswer} onChange={(event) => { setPracticeAnswer(event.target.value); setPracticeChecked(false); }} placeholder="Ответ" />
+          </label>
+          <div className="hero-actions">
+            <Button onClick={() => setPracticeChecked(true)}>Проверить мини-задание</Button>
+            <Button variant="secondary" onClick={onChat}>Спросить в чате</Button>
+          </div>
+          {practiceChecked && (
+            <div className={practiceCorrect ? 'success-box' : 'error'}>
+              {practiceCorrect ? 'Верно. Можно двигаться дальше.' : `Почти. Правильный ответ: ${lesson.answer}`}
+            </div>
+          )}
+        </div>
+
         <div className="hero-actions">
-          <Button onClick={onDiagnostic}>{summary ? 'Обновить диагностику' : 'Пройти диагностику'}</Button>
-          <Button variant="secondary" onClick={onChat}>Открыть чат</Button>
+          <Button variant="secondary" onClick={onDiagnostic}>{summary ? 'Обновить диагностику' : 'Пройти диагностику'}</Button>
         </div>
       </div>
       <div className="panel stats">
