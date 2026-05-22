@@ -12,12 +12,14 @@ export function Dashboard({
   onDiagnostic,
   onChat,
   onPractice,
+  onTraining,
 }: {
   profile: StudentProfile;
   summary: DiagnosticSummary | null;
   onDiagnostic: () => void;
   onChat: () => void;
   onPractice: () => void;
+  onTraining: () => void;
 }) {
   const nextLesson = getNextLesson(summary);
   const lesson = getLessonForWeakTopic(summary?.weak[0]);
@@ -45,6 +47,7 @@ export function Dashboard({
             <Button onClick={() => setPracticeChecked(true)}>Проверить мини-задание</Button>
             <Button variant="secondary" onClick={onChat}>Спросить в чате</Button>
             <Button variant="secondary" onClick={onPractice}>Пошаговая практика</Button>
+            <Button variant="secondary" onClick={onTraining}>Адаптивная тренировка</Button>
           </div>
           {practiceChecked && (
             <div className={practiceCorrect ? 'success-box' : 'error'}>
@@ -62,6 +65,7 @@ export function Dashboard({
         <div><strong>{summary ? `${summary.score}%` : '—'}</strong><span>результат диагностики</span></div>
         <div><strong>{profile.solvedTasks}</strong><span>решённых шагов и задач</span></div>
         <div><strong>{profile.streakDays}</strong><span>дней подряд</span></div>
+        <div><strong>{profile.correctAnswers}/{profile.wrongAnswers}</strong><span>правильно / ошибок</span></div>
         <div><strong>{profile.grade}</strong><span>{profile.goal}</span></div>
       </div>
     </section>
