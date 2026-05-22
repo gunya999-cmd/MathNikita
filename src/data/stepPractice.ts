@@ -91,6 +91,7 @@ export const stepPractices: StepPractice[] = [
 ];
 
 function compact(value: string) {
+  // ES2020-compatible normalization for Cloudflare Builds.
   return normalizeAnswer(value).replace(/\s+/g, '');
 }
 
