@@ -1,4 +1,4 @@
-export type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat' | 'practice' | 'profile';
+export type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat' | 'practice' | 'training' | 'profile';
 
 export type UserState = { email: string } | null;
 
