@@ -1,23 +1,33 @@
 # Deployment
 
-Deploy this project as a static site on Cloudflare Pages.
+MathNikita is deployed through Cloudflare from the GitHub `main` branch.
 
-## Cloudflare Pages settings
+## Current deployment flow
 
-- Framework preset: Vite
+1. Changes are committed to GitHub `main`.
+2. Cloudflare builds the project.
+3. Cloudflare deploys the Worker with static assets and API routes.
+
+## Cloudflare build settings
+
 - Build command: `npm run build`
-- Build output directory: `dist`
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/`
 - Production branch: `main`
 
-## Environment variables
+## Runtime / build configuration
 
-Set these in Cloudflare Pages project settings if you want Supabase auth enabled:
+Frontend build variables:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-Do not use service-role keys in this frontend project.
+Worker secret for real AI tutor responses:
+
+- `OPENAI_API_KEY`
+
+Do not use Supabase service-role keys in the frontend.
 
 ## Notes
 
-The app works in demo mode even without Supabase variables.
+The app works without `OPENAI_API_KEY` by using the local tutor fallback. Supabase sync requires the two `VITE_SUPABASE_*` variables and the schema from `supabase/schema.sql`.
