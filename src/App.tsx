@@ -1,11 +1,12 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { diagnosticQuestions, normalizeAnswer } from './data/questions';
 import { getLessonForWeakTopic } from './data/lessons';
+import { defaultProfile, loadStudentProfile, markPracticeDone, saveStudentProfile, type StudentProfile } from './data/profile';
 import { checkStepAnswer, stepPractices } from './data/stepPractice';
 import { formatTutorResponse, getTutorResponse } from './data/tutor';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
-type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat' | 'practice';
+type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat' | 'practice' | 'profile';
 type UserState = { email: string } | null;
 type DiagnosticSummary = {
   score: number;
@@ -62,14 +63,25 @@ export function App() {
   const [page, setPage] = useState<Page>('home');
   const [user, setUser] = useState<UserState>(null);
   const [diagnosticSummary, setDiagnosticSummary] = useState<DiagnosticSummary | null>(null);
+  const [profile, setProfile] = useState<StudentProfile>(defaultProfile);
 
   useEffect(() => {
     setDiagnosticSummary(loadDiagnosticSummary());
+    setProfile(loadStudentProfile());
   }, []);
 
   function completeDiagnostic(summary: DiagnosticSummary) {
     saveDiagnosticSummary(summary);
     setDiagnosticSummary(summary);
+  }
+
+  function updateProfile(nextProfile: StudentProfile) {
+    saveStudentProfile(nextProfile);
+    setProfile(nextProfile);
+  }
+
+  function addSolvedTask(tasksSolved = 1) {
+    setProfile((current) => markPracticeDone(current, tasksSolved));
   }
 
   return (
@@ -81,6 +93,7 @@ export function App() {
           <button onClick={() => setPage('diagnostic')}>Диагностика</button>
           <button onClick={() => setPage('practice')}>Практика</button>
           <button onClick={() => setPage('chat')}>Чат</button>
+          <button onClick={() => setPage('profile')}>Профиль</button>
           <button onClick={() => setPage('login')}>{user ? user.email : 'Вход'}</button>
         </nav>
       </header>
@@ -88,10 +101,11 @@ export function App() {
       <main>
         {page === 'home' && <Landing onStart={() => setPage(user ? 'dashboard' : 'login')} />}
         {page === 'login' && <Login onDone={(email) => { setUser({ email }); setPage('dashboard'); }} />}
-        {page === 'dashboard' && <Dashboard summary={diagnosticSummary} onDiagnostic={() => setPage('diagnostic')} onChat={() => setPage('chat')} onPractice={() => setPage('practice')} />}
+        {page === 'dashboard' && <Dashboard profile={profile} summary={diagnosticSummary} onDiagnostic={() => setPage('diagnostic')} onChat={() => setPage('chat')} onPractice={() => setPage('practice')} />}
         {page === 'diagnostic' && <Diagnostic onComplete={completeDiagnostic} />}
-        {page === 'practice' && <StepPractice />}
+        {page === 'practice' && <StepPractice onSolvedTask={addSolvedTask} />}
         {page === 'chat' && <Chat summary={diagnosticSummary} />}
+        {page === 'profile' && <Profile profile={profile} onSave={updateProfile} />}
       </main>
     </div>
   );
@@ -155,7 +169,7 @@ function Login({ onDone }: { onDone: (email: string) => void }) {
   );
 }
 
-function Dashboard({ summary, onDiagnostic, onChat, onPractice }: { summary: DiagnosticSummary | null; onDiagnostic: () => void; onChat: () => void; onPractice: () => void }) {
+function Dashboard({ profile, summary, onDiagnostic, onChat, onPractice }: { profile: StudentProfile; summary: DiagnosticSummary | null; onDiagnostic: () => void; onChat: () => void; onPractice: () => void }) {
   const nextLesson = getNextLesson(summary);
   const lesson = getLessonForWeakTopic(summary?.weak[0]);
   const [practiceAnswer, setPracticeAnswer] = useState('');
@@ -165,7 +179,7 @@ function Dashboard({ summary, onDiagnostic, onChat, onPractice }: { summary: Dia
   return (
     <section className="grid-page">
       <div className="panel lesson-card">
-        <div className="eyebrow">Урок дня</div>
+        <div className="eyebrow">Урок дня для {profile.name}</div>
         <h2>{nextLesson}</h2>
         <p>{summary ? `Последняя диагностика: ${summary.score}% — ${summary.level}.` : 'Сначала пройди короткую диагностику, и я подберу урок под твой уровень.'}</p>
 
@@ -197,8 +211,9 @@ function Dashboard({ summary, onDiagnostic, onChat, onPractice }: { summary: Dia
       <div className="panel stats">
         <h3>Прогресс</h3>
         <div><strong>{summary ? `${summary.score}%` : '—'}</strong><span>результат диагностики</span></div>
-        <div><strong>{summary ? summary.weak.length : 5}</strong><span>тем для повторения</span></div>
-        <div><strong>{summary ? summary.level : 'demo'}</strong><span>текущий статус</span></div>
+        <div><strong>{profile.solvedTasks}</strong><span>решённых шагов и задач</span></div>
+        <div><strong>{profile.streakDays}</strong><span>дней подряд</span></div>
+        <div><strong>{profile.grade}</strong><span>{profile.goal}</span></div>
       </div>
     </section>
   );
@@ -264,7 +279,7 @@ function Diagnostic({ onComplete }: { onComplete: (summary: DiagnosticSummary) =
   );
 }
 
-function StepPractice() {
+function StepPractice({ onSolvedTask }: { onSolvedTask: (tasksSolved?: number) => void }) {
   const [practiceId, setPracticeId] = useState(stepPractices[0].id);
   const [stepIndex, setStepIndex] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -283,6 +298,7 @@ function StepPractice() {
   function check() {
     if (checkStepAnswer(answer, step.expected)) {
       setFeedback(step.success);
+      onSolvedTask(1);
       if (stepIndex < practice.steps.length - 1) {
         window.setTimeout(() => {
           setStepIndex((current) => current + 1);
@@ -318,6 +334,35 @@ function StepPractice() {
           <Button onClick={check}>{stepIndex === practice.steps.length - 1 ? 'Проверить финальный ответ' : 'Проверить шаг'}</Button>
         </div>
         {feedback && <div className={checkStepAnswer(answer, step.expected) ? 'success-box' : 'hint-box'}>{feedback}</div>}
+      </div>
+    </section>
+  );
+}
+
+function Profile({ profile, onSave }: { profile: StudentProfile; onSave: (profile: StudentProfile) => void }) {
+  const [draft, setDraft] = useState(profile);
+  const [saved, setSaved] = useState(false);
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    onSave(draft);
+    setSaved(true);
+  }
+
+  return (
+    <section className="panel narrow">
+      <div className="eyebrow">Профиль ученика</div>
+      <h2>{draft.name}</h2>
+      <form className="form" onSubmit={submit}>
+        <input value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Имя" />
+        <input value={draft.grade} onChange={(event) => setDraft((current) => ({ ...current, grade: event.target.value }))} placeholder="Класс" />
+        <input value={draft.goal} onChange={(event) => setDraft((current) => ({ ...current, goal: event.target.value }))} placeholder="Цель обучения" />
+        <Button type="submit">Сохранить профиль</Button>
+      </form>
+      {saved && <div className="success-box">Профиль сохранён.</div>}
+      <div className="stats profile-stats">
+        <div><strong>{profile.solvedTasks}</strong><span>решённых задач</span></div>
+        <div><strong>{profile.streakDays}</strong><span>дней подряд</span></div>
       </div>
     </section>
   );
