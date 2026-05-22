@@ -1,9 +1,16 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { diagnosticQuestions, normalizeAnswer } from './data/questions';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 type Page = 'home' | 'login' | 'dashboard' | 'diagnostic' | 'chat';
 type UserState = { email: string } | null;
+type DiagnosticSummary = {
+  score: number;
+  level: string;
+  strong: string[];
+  weak: string[];
+  completedAt: string;
+};
 
 type ButtonProps = {
   children: React.ReactNode;
@@ -11,6 +18,33 @@ type ButtonProps = {
   type?: 'button' | 'submit';
   variant?: 'primary' | 'secondary';
 };
+
+const storageKey = 'mathnikita.diagnosticSummary';
+
+function loadDiagnosticSummary(): DiagnosticSummary | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    return raw ? (JSON.parse(raw) as DiagnosticSummary) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveDiagnosticSummary(summary: DiagnosticSummary) {
+  localStorage.setItem(storageKey, JSON.stringify(summary));
+}
+
+function getLevel(score: number) {
+  if (score >= 85) return 'сильный уровень';
+  if (score >= 60) return 'средний уровень';
+  return 'нужно укрепить базу';
+}
+
+function getNextLesson(summary: DiagnosticSummary | null) {
+  const firstWeak = summary?.weak[0];
+  if (firstWeak) return `Повторить тему: ${firstWeak}`;
+  return 'Дроби и проценты';
+}
 
 function Button({ children, onClick, type = 'button', variant = 'primary' }: ButtonProps) {
   return (
@@ -23,6 +57,16 @@ function Button({ children, onClick, type = 'button', variant = 'primary' }: But
 export function App() {
   const [page, setPage] = useState<Page>('home');
   const [user, setUser] = useState<UserState>(null);
+  const [diagnosticSummary, setDiagnosticSummary] = useState<DiagnosticSummary | null>(null);
+
+  useEffect(() => {
+    setDiagnosticSummary(loadDiagnosticSummary());
+  }, []);
+
+  function completeDiagnostic(summary: DiagnosticSummary) {
+    saveDiagnosticSummary(summary);
+    setDiagnosticSummary(summary);
+  }
 
   return (
     <div className="app-shell">
@@ -39,9 +83,9 @@ export function App() {
       <main>
         {page === 'home' && <Landing onStart={() => setPage(user ? 'dashboard' : 'login')} />}
         {page === 'login' && <Login onDone={(email) => { setUser({ email }); setPage('dashboard'); }} />}
-        {page === 'dashboard' && <Dashboard onDiagnostic={() => setPage('diagnostic')} onChat={() => setPage('chat')} />}
-        {page === 'diagnostic' && <Diagnostic />}
-        {page === 'chat' && <Chat />}
+        {page === 'dashboard' && <Dashboard summary={diagnosticSummary} onDiagnostic={() => setPage('diagnostic')} onChat={() => setPage('chat')} />}
+        {page === 'diagnostic' && <Diagnostic onComplete={completeDiagnostic} />}
+        {page === 'chat' && <Chat summary={diagnosticSummary} />}
       </main>
     </div>
   );
@@ -105,29 +149,31 @@ function Login({ onDone }: { onDone: (email: string) => void }) {
   );
 }
 
-function Dashboard({ onDiagnostic, onChat }: { onDiagnostic: () => void; onChat: () => void }) {
+function Dashboard({ summary, onDiagnostic, onChat }: { summary: DiagnosticSummary | null; onDiagnostic: () => void; onChat: () => void }) {
+  const nextLesson = getNextLesson(summary);
+
   return (
     <section className="grid-page">
       <div className="panel lesson-card">
         <div className="eyebrow">Урок дня</div>
-        <h2>Дроби и проценты</h2>
-        <p>Сегодня разберём, как переводить проценты в дроби и решать короткие задачи без калькулятора.</p>
+        <h2>{nextLesson}</h2>
+        <p>{summary ? `Последняя диагностика: ${summary.score}% — ${summary.level}.` : 'Сначала пройди короткую диагностику, и я подберу урок под твой уровень.'}</p>
         <div className="hero-actions">
-          <Button onClick={onDiagnostic}>Пройти диагностику</Button>
+          <Button onClick={onDiagnostic}>{summary ? 'Обновить диагностику' : 'Пройти диагностику'}</Button>
           <Button variant="secondary" onClick={onChat}>Открыть чат</Button>
         </div>
       </div>
       <div className="panel stats">
         <h3>Прогресс</h3>
-        <div><strong>62%</strong><span>примерная уверенность</span></div>
-        <div><strong>5</strong><span>навыков в диагностике</span></div>
-        <div><strong>demo</strong><span>режим MVP</span></div>
+        <div><strong>{summary ? `${summary.score}%` : '—'}</strong><span>результат диагностики</span></div>
+        <div><strong>{summary ? summary.weak.length : 5}</strong><span>тем для повторения</span></div>
+        <div><strong>{summary ? summary.level : 'demo'}</strong><span>текущий статус</span></div>
       </div>
     </section>
   );
 }
 
-function Diagnostic() {
+function Diagnostic({ onComplete }: { onComplete: (summary: DiagnosticSummary) => void }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -137,17 +183,32 @@ function Diagnostic() {
       correct: normalizeAnswer(answers[question.id] ?? '') === normalizeAnswer(question.answer),
     }));
     const correctCount = checked.filter((question) => question.correct).length;
+    const score = Math.round((correctCount / checked.length) * 100);
     return {
-      score: Math.round((correctCount / checked.length) * 100),
+      score,
+      level: getLevel(score),
       strong: checked.filter((question) => question.correct).map((question) => question.skillTitle),
       weak: checked.filter((question) => !question.correct).map((question) => question.skillTitle),
+      checked,
     };
   }, [answers]);
+
+  function submit() {
+    const summary: DiagnosticSummary = {
+      score: result.score,
+      level: result.level,
+      strong: result.strong,
+      weak: result.weak,
+      completedAt: new Date().toISOString(),
+    };
+    onComplete(summary);
+    setSubmitted(true);
+  }
 
   return (
     <section className="panel wide">
       <h2>Диагностика уровня</h2>
-      <p className="muted">Ответь на несколько вопросов. MVP считает результат локально и не ломается без backend.</p>
+      <p className="muted">Ответь на несколько вопросов. Результат сохранится в браузере и обновит “урок дня”.</p>
       <div className="question-list">
         {diagnosticQuestions.map((question) => (
           <label className="question" key={question.id}>
@@ -160,10 +221,10 @@ function Diagnostic() {
           </label>
         ))}
       </div>
-      <Button onClick={() => setSubmitted(true)}>Показать результат</Button>
+      <Button onClick={submit}>Показать результат</Button>
       {submitted && (
         <div className="result-box">
-          <h3>Результат: {result.score}%</h3>
+          <h3>Результат: {result.score}% — {result.level}</h3>
           <p><strong>Сильные темы:</strong> {result.strong.join(', ') || 'пока нет'}</p>
           <p><strong>Темы для повторения:</strong> {result.weak.join(', ') || 'нет'}</p>
         </div>
@@ -172,18 +233,21 @@ function Diagnostic() {
   );
 }
 
-function Chat() {
+function Chat({ summary }: { summary: DiagnosticSummary | null }) {
   const [messages, setMessages] = useState([
-    'Привет! Я помогу тебе с математикой. Напиши задачу, которую хочешь разобрать.',
+    summary?.weak[0]
+      ? `Привет! Судя по диагностике, начнём с темы “${summary.weak[0]}”. Напиши, что именно непонятно.`
+      : 'Привет! Я помогу тебе с математикой. Напиши задачу, которую хочешь разобрать.',
   ]);
   const [input, setInput] = useState('');
 
   function send() {
     if (!input.trim()) return;
+    const focus = summary?.weak[0] ? ` Давай разберём это через тему “${summary.weak[0]}”.` : '';
     setMessages((previous) => [
       ...previous,
       `Ты: ${input}`,
-      'Репетитор: В MVP я пока отвечаю шаблоном. Следующий шаг — подключить AI API через безопасный backend.',
+      `Репетитор: В MVP я пока отвечаю шаблоном.${focus} Следующий шаг — подключить AI API через безопасный backend.`,
     ]);
     setInput('');
   }
