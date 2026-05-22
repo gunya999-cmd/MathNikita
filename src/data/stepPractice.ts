@@ -90,7 +90,11 @@ export const stepPractices: StepPractice[] = [
   },
 ];
 
+function compact(value: string) {
+  return normalizeAnswer(value).replace(/\s+/g, '');
+}
+
 export function checkStepAnswer(answer: string, expected: string[]) {
-  const normalized = normalizeAnswer(answer).replaceAll(' ', '');
-  return expected.some((item) => normalizeAnswer(item).replaceAll(' ', '') === normalized);
+  const normalized = compact(answer);
+  return expected.some((item) => compact(item) === normalized);
 }
