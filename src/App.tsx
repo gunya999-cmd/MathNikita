@@ -3,6 +3,7 @@ import { loadDiagnosticSummary, saveDiagnosticSummary } from './data/diagnostic'
 import { defaultProfile, loadStudentProfile, markPracticeDone, markTaskAnswer, saveStudentProfile, type StudentProfile } from './data/profile';
 import type { TaskDifficulty } from './data/taskBank';
 import { loadCloudProfile, saveCloudDiagnostic, saveCloudProfile, saveCloudTrainingAttempt } from './lib/progressSync';
+import { isSupabaseConfigured, supabase } from './lib/supabase';
 import { Chat } from './pages/Chat';
 import { Dashboard } from './pages/Dashboard';
 import { Diagnostic } from './pages/Diagnostic';
@@ -24,11 +25,54 @@ export function App() {
     setProfile(loadStudentProfile());
   }, []);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    supabase.auth.getSession().then(({ data }) => {
+      const email = data.session?.user.email;
+      if (!email) return;
+      setUser({ email });
+      void hydrateCloudProfile();
+      if (page === 'home' || page === 'login') {
+        setPage('dashboard');
+      }
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      const email = session?.user.email;
+      if (email) {
+        setUser({ email });
+        void hydrateCloudProfile();
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          setPage('dashboard');
+        }
+        return;
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setPage('login');
+      }
+    });
+
+    return () => listener.subscription.unsubscribe();
+    // Run only once on app start. Page changes should not recreate the auth listener.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function hydrateCloudProfile() {
     const cloudProfile = await loadCloudProfile();
     if (!cloudProfile) return;
     saveStudentProfile(cloudProfile);
     setProfile(cloudProfile);
+  }
+
+  async function signOut() {
+    if (isSupabaseConfigured && supabase) {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
+    setPage('login');
   }
 
   function completeDiagnostic(summary: DiagnosticSummary) {
@@ -71,7 +115,14 @@ export function App() {
           <button onClick={() => setPage('training')}>Тренировка</button>
           <button onClick={() => setPage('chat')}>Чат</button>
           <button onClick={() => setPage('profile')}>Профиль</button>
-          <button onClick={() => setPage('login')}>{user ? user.email : 'Вход'}</button>
+          {user ? (
+            <>
+              <button onClick={() => setPage('profile')}>{user.email}</button>
+              <button onClick={signOut}>Выйти</button>
+            </>
+          ) : (
+            <button onClick={() => setPage('login')}>Вход</button>
+          )}
         </nav>
       </header>
 
