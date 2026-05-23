@@ -1,18 +1,43 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../components/Button';
 import { getGradeCurriculum } from '../data/curriculum';
+import { getLearningProgram } from '../data/learningProgram';
 import { checkStepAnswer, getStepPracticesForGrade } from '../data/stepPractice';
 
 export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask: (tasksSolved?: number) => void }) {
   const practices = useMemo(() => getStepPracticesForGrade(grade), [grade]);
   const curriculum = getGradeCurriculum(grade);
-  const [practiceId, setPracticeId] = useState(practices[0].id);
+  const program = getLearningProgram(grade);
+  const [moduleId, setModuleId] = useState(program.modules[0]?.id ?? '');
+  const visiblePractices = practices.filter((item) => item.id.includes(`m${program.modules.find((module) => module.id === moduleId)?.order ?? 1}-`));
+  const modulePractices = visiblePractices.length ? visiblePractices : practices;
+  const [practiceId, setPracticeId] = useState(modulePractices[0].id);
   const [stepIndex, setStepIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
-  const practice = practices.find((item) => item.id === practiceId) ?? practices[0];
+  const practice = modulePractices.find((item) => item.id === practiceId) ?? modulePractices[0];
   const step = practice.steps[stepIndex];
   const progress = Math.round(((stepIndex + 1) / practice.steps.length) * 100);
+
+  useEffect(() => {
+    const firstModule = program.modules[0]?.id ?? '';
+    const firstPractice = getStepPracticesForGrade(grade)[0]?.id ?? '';
+    setModuleId(firstModule);
+    setPracticeId(firstPractice);
+    setStepIndex(0);
+    setAnswer('');
+    setFeedback('');
+  }, [grade, program.modules]);
+
+  function chooseModule(id: string) {
+    const module = program.modules.find((item) => item.id === id);
+    const firstPractice = practices.find((item) => item.id.includes(`m${module?.order ?? 1}-`)) ?? practices[0];
+    setModuleId(id);
+    setPracticeId(firstPractice.id);
+    setStepIndex(0);
+    setAnswer('');
+    setFeedback('');
+  }
 
   function choosePractice(id: string) {
     setPracticeId(id);
@@ -41,11 +66,20 @@ export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask:
     <section className="panel wide">
       <div className="eyebrow">Пошаговая практика · {curriculum.label}</div>
       <h2>{practice.title}</h2>
-      <p className="muted">Выбери задачу из программы класса и решай её маленькими шагами. Система подскажет, где ошибка.</p>
+      <p className="muted">Выбери модуль программы класса и решай упражнения маленькими шагами. Система подскажет, где ошибка.</p>
+      <div className="module-grid practice-modules">
+        {program.modules.map((module) => (
+          <button className={module.id === moduleId ? 'module-card active button-card' : 'module-card button-card'} key={module.id} onClick={() => chooseModule(module.id)}>
+            <span>{module.order}</span>
+            <h4>{module.title}</h4>
+            <p>{module.skills.slice(0, 2).join(' · ')}</p>
+          </button>
+        ))}
+      </div>
       <div className="tab-row">
-        {practices.map((item) => (
+        {modulePractices.map((item) => (
           <button className={item.id === practice.id ? 'tab active' : 'tab'} key={item.id} onClick={() => choosePractice(item.id)}>
-            {item.title}
+            {item.title.replace(/^\d+\.\s*/, '')}
           </button>
         ))}
       </div>
