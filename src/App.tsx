@@ -137,12 +137,13 @@ export function App() {
             onChat={() => setPage('chat')}
             onPractice={() => setPage('practice')}
             onTraining={() => setPage('training')}
+            onProfileChange={updateProfile}
           />
         )}
-        {page === 'diagnostic' && <Diagnostic onComplete={completeDiagnostic} />}
-        {page === 'practice' && <Practice onSolvedTask={addSolvedTask} />}
+        {page === 'diagnostic' && <Diagnostic grade={profile.grade} onComplete={completeDiagnostic} />}
+        {page === 'practice' && <Practice grade={profile.grade} onSolvedTask={addSolvedTask} />}
         {page === 'training' && <Training profile={profile} onAnswer={recordTrainingAnswer} />}
-        {page === 'chat' && <Chat summary={diagnosticSummary} />}
+        {page === 'chat' && <Chat summary={diagnosticSummary} grade={profile.grade} />}
         {page === 'profile' && <Profile profile={profile} onSave={updateProfile} />}
       </main>
     </div>

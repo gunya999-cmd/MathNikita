@@ -1,14 +1,10 @@
-export type Lesson = {
-  title: string;
-  subtitle: string;
-  explanation: string;
-  example: string;
-  practice: string;
-  answer: string;
-};
+import { getLessonForGradeTopic, type CurriculumLesson } from './curriculum';
+
+export type Lesson = CurriculumLesson;
 
 export const lessonCatalog: Record<string, Lesson> = {
   Сложение: {
+    topic: 'Сложение',
     title: 'Сложение с переходом через десяток',
     subtitle: 'Учимся быстро раскладывать числа на удобные части.',
     explanation: 'Когда сумма переходит через десяток, удобно дополнить первое число до 10, а остаток прибавить потом.',
@@ -17,6 +13,7 @@ export const lessonCatalog: Record<string, Lesson> = {
     answer: '17',
   },
   Умножение: {
+    topic: 'Умножение',
     title: 'Таблица умножения без зубрёжки',
     subtitle: 'Используем близкие простые факты.',
     explanation: 'Если забыл 6 × 7, можно вспомнить 5 × 7 = 35 и добавить ещё одну семёрку.',
@@ -25,6 +22,7 @@ export const lessonCatalog: Record<string, Lesson> = {
     answer: '56',
   },
   Дроби: {
+    topic: 'Дроби',
     title: 'Сокращение дробей',
     subtitle: 'Ищем общий делитель числителя и знаменателя.',
     explanation: 'Дробь можно сократить, если числитель и знаменатель делятся на одно и то же число.',
@@ -33,6 +31,7 @@ export const lessonCatalog: Record<string, Lesson> = {
     answer: '2/3',
   },
   'Линейные уравнения': {
+    topic: 'Линейные уравнения',
     title: 'Линейные уравнения за один шаг',
     subtitle: 'Переносим число на другую сторону обратным действием.',
     explanation: 'Чтобы найти x, нужно убрать действие рядом с x. Если прибавили 5, значит вычитаем 5.',
@@ -41,6 +40,7 @@ export const lessonCatalog: Record<string, Lesson> = {
     answer: '11',
   },
   Проценты: {
+    topic: 'Проценты',
     title: 'Проценты как часть числа',
     subtitle: 'Переводим процент в дробь или десятичное число.',
     explanation: '20% — это 20 из 100, то есть 1/5. Поэтому 20% от числа — это число, делённое на 5.',
@@ -49,6 +49,7 @@ export const lessonCatalog: Record<string, Lesson> = {
     answer: '24',
   },
   challenge: {
+    topic: 'Смешанные задачи',
     title: 'Следующий уровень: смешанная задача',
     subtitle: 'Если базовая диагностика на 100%, пора объединять темы.',
     explanation: 'Сильный ученик должен не только считать, но и выбирать правильный метод решения.',
@@ -58,7 +59,8 @@ export const lessonCatalog: Record<string, Lesson> = {
   },
 };
 
-export function getLessonForWeakTopic(topic?: string) {
+export function getLessonForWeakTopic(topic?: string, grade?: string) {
+  if (grade) return getLessonForGradeTopic(grade, topic);
   if (!topic) return lessonCatalog.challenge;
   return lessonCatalog[topic] ?? lessonCatalog.challenge;
 }

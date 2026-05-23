@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '../components/Button';
-import { checkStepAnswer, stepPractices } from '../data/stepPractice';
+import { getGradeCurriculum } from '../data/curriculum';
+import { checkStepAnswer, getStepPracticesForGrade } from '../data/stepPractice';
 
-export function Practice({ onSolvedTask }: { onSolvedTask: (tasksSolved?: number) => void }) {
-  const [practiceId, setPracticeId] = useState(stepPractices[0].id);
+export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask: (tasksSolved?: number) => void }) {
+  const practices = useMemo(() => getStepPracticesForGrade(grade), [grade]);
+  const curriculum = getGradeCurriculum(grade);
+  const [practiceId, setPracticeId] = useState(practices[0].id);
   const [stepIndex, setStepIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
-  const practice = stepPractices.find((item) => item.id === practiceId) ?? stepPractices[0];
+  const practice = practices.find((item) => item.id === practiceId) ?? practices[0];
   const step = practice.steps[stepIndex];
   const progress = Math.round(((stepIndex + 1) / practice.steps.length) * 100);
 
@@ -36,11 +39,11 @@ export function Practice({ onSolvedTask }: { onSolvedTask: (tasksSolved?: number
 
   return (
     <section className="panel wide">
-      <div className="eyebrow">Пошаговая практика</div>
+      <div className="eyebrow">Пошаговая практика · {curriculum.label}</div>
       <h2>{practice.title}</h2>
-      <p className="muted">Выбери задачу и решай её маленькими шагами. Система подскажет, где ошибка.</p>
+      <p className="muted">Выбери задачу из программы класса и решай её маленькими шагами. Система подскажет, где ошибка.</p>
       <div className="tab-row">
-        {stepPractices.map((item) => (
+        {practices.map((item) => (
           <button className={item.id === practice.id ? 'tab active' : 'tab'} key={item.id} onClick={() => choosePractice(item.id)}>
             {item.title}
           </button>

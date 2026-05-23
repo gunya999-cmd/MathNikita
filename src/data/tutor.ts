@@ -1,3 +1,5 @@
+import { getGradeCurriculum } from './curriculum';
+
 export type TutorResponse = {
   title: string;
   explanation: string;
@@ -10,8 +12,19 @@ function includesAny(text: string, words: string[]) {
   return words.some((word) => normalized.includes(word));
 }
 
-export function getTutorResponse(message: string, weakTopic?: string): TutorResponse {
+export function getTutorResponse(message: string, weakTopic?: string, grade?: string): TutorResponse {
   const text = message.toLowerCase();
+  const curriculum = getGradeCurriculum(grade);
+  const lessonByWeakTopic = weakTopic ? curriculum.lessons.find((lesson) => lesson.topic === weakTopic) : undefined;
+
+  if (lessonByWeakTopic && !includesAny(text, ['дроб', 'fraction', 'процент', '%', 'уравн', 'x', 'икс', 'умнож', '×', '*', 'function', 'функц'])) {
+    return {
+      title: `Начнём с темы “${lessonByWeakTopic.topic}”`,
+      explanation: lessonByWeakTopic.explanation,
+      example: lessonByWeakTopic.example,
+      nextStep: lessonByWeakTopic.practice,
+    };
+  }
 
   if (includesAny(text, ['дроб', 'fraction', '6/12', '8/12'])) {
     return {
@@ -49,20 +62,11 @@ export function getTutorResponse(message: string, weakTopic?: string): TutorResp
     };
   }
 
-  if (weakTopic) {
-    return {
-      title: `Начнём с темы “${weakTopic}”`,
-      explanation: 'Я вижу эту тему как ближайшую точку роста. Лучше разобрать один понятный пример, чем сразу прыгать к сложным задачам.',
-      example: 'Напиши конкретный пример по этой теме, и я разложу решение на шаги.',
-      nextStep: `Задай вопрос по теме “${weakTopic}”.`,
-    };
-  }
-
   return {
-    title: 'Готов помочь с математикой',
-    explanation: 'Напиши задачу или тему: дроби, проценты, уравнения, умножение. Я объясню коротко и по шагам.',
-    example: 'Например: “объясни 25% от 120” или “реши x + 9 = 20”.',
-    nextStep: 'Выбери тему или пришли задачу.',
+    title: `Готов помочь по программе: ${curriculum.label}`,
+    explanation: curriculum.focus,
+    example: `Темы класса: ${curriculum.units.join(', ')}.`,
+    nextStep: `Выбери тему или пришли задачу. Можно начать с “${curriculum.lessons[0].topic}”.`,
   };
 }
 
