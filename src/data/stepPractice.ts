@@ -1,4 +1,4 @@
-import { getGradeCurriculum } from './curriculum';
+import { getLearningProgram } from './learningProgram';
 import { normalizeAnswer } from './questions';
 
 export type StepPractice = {
@@ -92,26 +92,13 @@ export const stepPractices: StepPractice[] = [
 ];
 
 export function getStepPracticesForGrade(grade?: string): StepPractice[] {
-  const curriculum = getGradeCurriculum(grade);
-  const generated = curriculum.lessons.map((lesson, index) => ({
-    id: `grade-${curriculum.id}-lesson-${index + 1}`,
-    title: lesson.title,
-    problem: lesson.practice,
-    steps: [
-      {
-        prompt: 'Шаг 1: выбери метод решения. Коротко напиши ключевое действие или сразу попробуй ответ.',
-        expected: [lesson.answer, lesson.topic.toLowerCase(), lesson.title.toLowerCase()],
-        hint: lesson.explanation,
-        success: 'Хорошо. Метод выбран, теперь проверь вычисление.',
-      },
-      {
-        prompt: 'Финальный ответ',
-        expected: [lesson.answer],
-        hint: `Подсказка: ${lesson.example}`,
-        success: `Отлично. Правильный ответ: ${lesson.answer}`,
-      },
-    ],
-  }));
+  const program = getLearningProgram(grade);
+  const generated = program.modules.flatMap((module) => module.exercises.map((exercise) => ({
+    id: exercise.id,
+    title: `${module.order}. ${exercise.title}`,
+    problem: exercise.problem,
+    steps: exercise.steps,
+  })));
 
   return generated.length ? generated : stepPractices;
 }
