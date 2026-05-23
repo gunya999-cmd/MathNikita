@@ -8,6 +8,7 @@ import { Chat } from './pages/Chat';
 import { Dashboard } from './pages/Dashboard';
 import { Diagnostic } from './pages/Diagnostic';
 import { Landing } from './pages/Landing';
+import { LessonFlow } from './pages/LessonFlow';
 import { Login } from './pages/Login';
 import { Practice } from './pages/Practice';
 import { Profile } from './pages/Profile';
@@ -110,6 +111,7 @@ export function App() {
         <button className="brand" onClick={() => setPage('home')}>MathNikita</button>
         <nav>
           <button onClick={() => setPage('dashboard')}>Урок дня</button>
+          <button onClick={() => setPage('lesson')}>Урок</button>
           <button onClick={() => setPage('diagnostic')}>Диагностика</button>
           <button onClick={() => setPage('practice')}>Практика</button>
           <button onClick={() => setPage('training')}>Тренировка</button>
@@ -140,6 +142,7 @@ export function App() {
             onProfileChange={updateProfile}
           />
         )}
+        {page === 'lesson' && <LessonFlow grade={profile.grade} onMastered={() => addSolvedTask(1)} />}
         {page === 'diagnostic' && <Diagnostic grade={profile.grade} onComplete={completeDiagnostic} />}
         {page === 'practice' && <Practice grade={profile.grade} onSolvedTask={addSolvedTask} />}
         {page === 'training' && <Training profile={profile} onAnswer={recordTrainingAnswer} />}
