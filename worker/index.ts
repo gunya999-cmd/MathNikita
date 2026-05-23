@@ -9,6 +9,13 @@ type Env = {
   OPENAI_API_KEY?: string;
 };
 
+type OpenAiResult = {
+  ok: boolean;
+  answer?: string;
+  status?: number;
+  error?: string;
+};
+
 function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data), {
     ...init,
@@ -37,6 +44,60 @@ function fallbackTutor(message: string) {
   return 'Я готов помочь. Напиши задачу по математике, и я объясню её коротко, по шагам, с примером и проверочным вопросом.';
 }
 
+async function askOpenAi(env: Env, message: string, profile: unknown, diagnosticSummary: unknown): Promise<OpenAiResult> {
+  if (!env.OPENAI_API_KEY) {
+    return { ok: false, error: 'missing_openai_key' };
+  }
+
+  try {
+    const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-mini',
+        temperature: 0.3,
+        messages: [
+          {
+            role: 'system',
+            content: 'Ты AI-репетитор по математике для школьника. Отвечай по-русски, спокойно, коротко и пошагово. Не давай просто ответ: объясни ход решения и задай один проверочный вопрос.',
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({ message, profile, diagnosticSummary }),
+          },
+        ],
+      }),
+    });
+
+    const rawText = await openAiResponse.text();
+
+    if (!openAiResponse.ok) {
+      return {
+        ok: false,
+        status: openAiResponse.status,
+        error: rawText.slice(0, 500),
+      };
+    }
+
+    const data = JSON.parse(rawText) as any;
+    const answer = data?.choices?.[0]?.message?.content;
+
+    if (!answer) {
+      return { ok: false, status: openAiResponse.status, error: 'empty_openai_answer' };
+    }
+
+    return { ok: true, answer };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'unknown_openai_error',
+    };
+  }
+}
+
 async function handleTutor(request: Request, env: Env) {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed' }, { status: 405 });
@@ -54,47 +115,17 @@ async function handleTutor(request: Request, env: Env) {
     return json({ error: 'Message is required' }, { status: 400 });
   }
 
-  if (!env.OPENAI_API_KEY) {
-    return json({ answer: fallbackTutor(message), mode: 'fallback', warning: 'missing_openai_key' });
-  }
+  const ai = await askOpenAi(env, message, body.profile ?? null, body.diagnosticSummary ?? null);
 
-  const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${env.OPENAI_API_KEY}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4.1-mini',
-      temperature: 0.3,
-      messages: [
-        {
-          role: 'system',
-          content: 'Ты AI-репетитор по математике для школьника. Отвечай по-русски, спокойно, коротко и пошагово. Не давай просто ответ: объясни ход решения и задай один проверочный вопрос.',
-        },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            message,
-            profile: body.profile ?? null,
-            diagnosticSummary: body.diagnosticSummary ?? null,
-          }),
-        },
-      ],
-    }),
-  });
-
-  if (!openAiResponse.ok) {
+  if (!ai.ok) {
     return json({
       answer: fallbackTutor(message),
       mode: 'fallback',
-      warning: `openai_http_${openAiResponse.status}`,
+      warning: ai.status ? `openai_http_${ai.status}` : ai.error,
     });
   }
 
-  const data = (await openAiResponse.json()) as any;
-  const answer = data?.choices?.[0]?.message?.content ?? fallbackTutor(message);
-  return json({ answer, mode: 'ai' });
+  return json({ answer: ai.answer, mode: 'ai' });
 }
 
 export default {
@@ -105,6 +136,18 @@ export default {
       return json({
         ok: true,
         openaiConfigured: Boolean(env.OPENAI_API_KEY),
+      });
+    }
+
+    if (url.pathname === '/api/tutor-test') {
+      const ai = await askOpenAi(env, 'Объясни коротко: 25% от 120.', null, null);
+      return json({
+        ok: true,
+        openaiConfigured: Boolean(env.OPENAI_API_KEY),
+        openaiOk: ai.ok,
+        status: ai.status ?? null,
+        error: ai.error ?? null,
+        answer: ai.answer ?? null,
       });
     }
 
