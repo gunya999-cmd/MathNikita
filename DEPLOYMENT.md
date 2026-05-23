@@ -28,6 +28,10 @@ Worker secret for real AI tutor responses:
 
 Do not use Supabase service-role keys in the frontend.
 
+## Tutor API diagnostics
+
+After deployment, open `/api/tutor-status` on the production domain. It should return `openaiConfigured: true` when the Worker can see `OPENAI_API_KEY`.
+
 ## Notes
 
 The app works without `OPENAI_API_KEY` by using the local tutor fallback. Supabase sync requires the two `VITE_SUPABASE_*` variables and the schema from `supabase/schema.sql`.
