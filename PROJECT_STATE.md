@@ -8,8 +8,9 @@ Use this file as the compact handoff context for continuing development without 
 - Repository: `gunya999-cmd/MathNikita`
 - Production URL: `https://mathnikita.gunya999.workers.dev`
 - Deployment: GitHub `main` -> Cloudflare Workers & Pages.
+- Hosting rule: Cloudflare-first only. Do not move production hosting to Vercel, Netlify, Lovable hosting, or another platform unless explicitly requested.
 - Build command: `npm run build`
-- Deploy command: `npx wrangler deploy`
+- Deploy command: `npm run cf:deploy` or `npx wrangler deploy`
 - Root directory: `/`
 
 ## Stack
@@ -19,6 +20,15 @@ Use this file as the compact handoff context for continuing development without 
 - Auth/DB: Supabase.
 - AI provider: Gemini API as primary free provider.
 - OpenAI: configured as backup, but current OpenAI API quota is exhausted.
+
+## Cloudflare workflow
+
+- Production is deployed through Cloudflare Workers & Pages.
+- GitHub `main` is the production source branch for Cloudflare deploys.
+- `wrangler.jsonc` is the source of truth for Worker/static asset routing.
+- `/api/*` must continue to run through the Worker via `run_worker_first`.
+- Frontend environment variables must be Cloudflare build variables.
+- Server-only AI keys must be Cloudflare Worker secrets.
 
 ## Working Cloudflare routes
 
@@ -55,6 +65,7 @@ Do not expose API keys in chat or frontend.
 - Added Gemini provider before OpenAI fallback.
 - Improved tutor prompt so the student question has priority over diagnostic weak topics.
 - Began extending the app toward a 12-grade international math curriculum.
+- Added grade switching and grade-aware dashboard/diagnostic/practice/chat in PR #1.
 
 ## Current feature goal
 
@@ -66,6 +77,7 @@ Build an extended version with:
 4. Dashboard / Lesson of the Day adapts to selected grade.
 5. Profile stores selected grade.
 6. Chat remains fast and should use concise context only.
+7. All production deployment and API routing stays on Cloudflare.
 
 ## Development rule for future ChatGPT work
 
@@ -76,3 +88,4 @@ To avoid slow or heavy chats:
 - Make small GitHub commits.
 - After each step, report only: what changed, commit SHA, what to test.
 - Use this `PROJECT_STATE.md` as the project memory.
+- Treat Cloudflare as the default production platform.
