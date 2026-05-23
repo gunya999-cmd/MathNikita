@@ -22,16 +22,19 @@ Frontend build variables:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-Worker secret for real AI tutor responses:
+Worker secrets for real AI tutor responses:
 
+- `GEMINI_API_KEY`
 - `OPENAI_API_KEY`
 
 Do not use Supabase service-role keys in the frontend.
 
 ## Tutor API diagnostics
 
-After deployment, open `/api/tutor-status` on the production domain. It should return `openaiConfigured: true` when the Worker can see `OPENAI_API_KEY`.
+After deployment, open `/api/tutor-status` on the production domain. It should return `geminiConfigured: true` when the Worker can see `GEMINI_API_KEY`.
+
+Open `/api/tutor-test` to check whether the active AI provider answers successfully.
 
 ## Notes
 
-The app works without `OPENAI_API_KEY` by using the local tutor fallback. Supabase sync requires the two `VITE_SUPABASE_*` variables and the schema from `supabase/schema.sql`.
+The app works without AI provider keys by using the local tutor fallback. Supabase sync requires the two `VITE_SUPABASE_*` variables and the schema from `supabase/schema.sql`.
