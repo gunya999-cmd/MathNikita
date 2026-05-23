@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button } from '../components/Button';
+import { getEliteLessonContent, sourceLabel } from '../data/eliteLessonContent';
 import { getLearningProgram } from '../data/learningProgram';
 import {
   loadLessonMastery,
@@ -16,13 +17,14 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
   const firstUnfinished = lessons[Math.min(program.totalExercises, lessons.length) - lessons.length] ?? lessons[0];
   const [lessonOrder, setLessonOrder] = useState(firstUnfinished?.order ?? 1);
   const lesson = lessons.find((item) => item.order === lessonOrder) ?? lessons[0];
+  const elite = useMemo(() => getEliteLessonContent(lesson), [lesson]);
   const lessonId = makeLessonId(program.grade, lesson.order);
   const [mastery, setMastery] = useState<LessonMasteryState>(() => loadLessonMastery(lessonId));
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const stage = mastery.stage;
   const primarySkill = lesson.skills[0] ?? lesson.title;
-  const expected = [lesson.title, primarySkill, ...lesson.skills];
+  const expected = [lesson.title, primarySkill, ...lesson.skills, ...elite.keywords];
 
   function chooseLesson(order: number) {
     const nextLesson = lessons.find((item) => item.order === order) ?? lesson;
@@ -60,9 +62,13 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
 
   return (
     <section className="panel wide lesson-flow">
-      <div className="eyebrow">Урок с AI-контролем усвоения · {program.label}</div>
+      <div className="eyebrow">Элитный урок · SG/CN/RU/US/HU · {program.label}</div>
       <h2>Урок {lesson.order}: {lesson.title}</h2>
       <p className="muted">Сначала обучение, затем закрепление, затем контрольная. Если есть ошибка, система возвращает к разбору и объясняет слабое место.</p>
+
+      <div className="source-chips">
+        {elite.sourceBlend.map((source) => <span key={source}>{sourceLabel(source)}</span>)}
+      </div>
 
       <div className="tab-row">
         {lessons.map((item) => (
@@ -80,12 +86,19 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
       </div>
 
       {stage === 'learn' && (
-        <div className="lesson-block">
+        <div className="lesson-block elite-lesson-block">
           <h3>1. Обучение</h3>
           <p><strong>Тема:</strong> {lesson.title}</p>
           <p><strong>Цель:</strong> {lesson.objective}</p>
           <p><strong>Модуль:</strong> {lesson.moduleTitle} — {lesson.moduleFocus}</p>
-          <div className="example-box">Главная идея: {primarySkill}. Ученик должен уметь объяснить тему своими словами, а не просто угадать ответ.</div>
+          <div className="example-box">{elite.bigIdea}</div>
+          <div className="elite-grid">
+            <article><strong>SG структура</strong><span>{elite.learn.concreteModel}</span></article>
+            <article><strong>US Exeter/AoPS</strong><span>{elite.learn.discoveryPrompt}</span></article>
+            <article><strong>RU доказательность</strong><span>{elite.learn.proofHabit}</span></article>
+            <article><strong>CN/HU глубина</strong><span>{elite.learn.olympiadBridge}</span></article>
+          </div>
+          <p><strong>Формальное правило:</strong> {elite.learn.formalRule}</p>
           <Button onClick={startPractice}>Перейти к закреплению</Button>
         </div>
       )}
@@ -93,10 +106,11 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
       {stage === 'practice' && (
         <div className="lesson-block">
           <h3>2. Закрепление</h3>
-          <p>Сформулируй главную идею урока или ключевой навык. Можно своими словами.</p>
+          <p>{elite.practice.base}</p>
+          <p>{elite.practice.nonStandard}</p>
           <label className="question compact">
-            <span>Что тренирует урок «{lesson.title}»?</span>
-            <input value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Напиши тему или навык" />
+            <span>{elite.practice.proofOrExplain}</span>
+            <input value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Напиши тему, навык или объяснение" />
           </label>
           <Button onClick={() => submit('practice')}>Проверить закрепление</Button>
         </div>
@@ -105,11 +119,15 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
       {stage === 'test' && (
         <div className="lesson-block">
           <h3>3. Контрольная</h3>
-          <p>Контрольная засчитывается, когда ученик дважды уверенно распознаёт тему/навык без подсказки.</p>
+          <p>{elite.control.quickCheck}</p>
+          <p>{elite.control.transferProblem}</p>
           <label className="question compact">
-            <span>Контрольный вопрос: назови тему урока и главный навык.</span>
+            <span>Ответь без подсказки: тема + главный навык + короткое объяснение.</span>
             <input value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Ответ без подсказки" />
           </label>
+          <div className="criteria-list">
+            {elite.control.masteryCriteria.map((criterion) => <span key={criterion}>{criterion}</span>)}
+          </div>
           <Button onClick={() => submit('test')}>Проверить контрольную</Button>
         </div>
       )}
@@ -123,6 +141,12 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
               <strong>{mistake.type}</strong>: {mistake.explanation}
             </div>
           ))}
+          <div className="elite-grid">
+            {elite.commonMistakes.map((mistake) => <article key={mistake}><strong>Типичная ошибка</strong><span>{mistake}</span></article>)}
+          </div>
+          <div className="criteria-list">
+            {elite.aiRemediation.map((step) => <span key={step}>{step}</span>)}
+          </div>
           <Button onClick={retryAfterReview}>Повторить объяснение</Button>
         </div>
       )}
