@@ -29,6 +29,7 @@ Use this file as the compact handoff context for continuing development without 
 - `/api/*` must continue to run through the Worker via `run_worker_first`.
 - Frontend environment variables must be Cloudflare build variables.
 - Server-only AI keys must be Cloudflare Worker secrets.
+- If a failed deployment is retried, Cloudflare may rebuild that old commit; create or select a fresh deployment from latest `main` instead.
 
 ## Working Cloudflare routes
 
@@ -66,6 +67,7 @@ Do not expose API keys in chat or frontend.
 - Improved tutor prompt so the student question has priority over diagnostic weak topics.
 - Began extending the app toward a 12-grade international math curriculum.
 - Added grade switching and grade-aware dashboard/diagnostic/practice/chat in PR #1.
+- Fixed circular TypeScript lesson type dependency after Cloudflare build failure.
 
 ## Current feature goal
 
