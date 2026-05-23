@@ -141,7 +141,7 @@ export function App() {
           />
         )}
         {page === 'diagnostic' && <Diagnostic grade={profile.grade} onComplete={completeDiagnostic} />}
-        {page === 'practice' && <Practice onSolvedTask={addSolvedTask} />}
+        {page === 'practice' && <Practice grade={profile.grade} onSolvedTask={addSolvedTask} />}
         {page === 'training' && <Training profile={profile} onAnswer={recordTrainingAnswer} />}
         {page === 'chat' && <Chat summary={diagnosticSummary} grade={profile.grade} />}
         {page === 'profile' && <Profile profile={profile} onSave={updateProfile} />}
