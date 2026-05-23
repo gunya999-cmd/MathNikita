@@ -44,7 +44,7 @@ async function handleTutor(request: Request, env: Env) {
 
   let body: TutorRequest;
   try {
-    body = await request.json<TutorRequest>();
+    body = (await request.json()) as TutorRequest;
   } catch {
     return json({ error: 'Invalid JSON' }, { status: 400 });
   }
@@ -55,7 +55,7 @@ async function handleTutor(request: Request, env: Env) {
   }
 
   if (!env.OPENAI_API_KEY) {
-    return json({ answer: fallbackTutor(message), mode: 'fallback' });
+    return json({ answer: fallbackTutor(message), mode: 'fallback', warning: 'missing_openai_key' });
   }
 
   const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -85,10 +85,14 @@ async function handleTutor(request: Request, env: Env) {
   });
 
   if (!openAiResponse.ok) {
-    return json({ answer: fallbackTutor(message), mode: 'fallback', warning: 'AI provider unavailable' });
+    return json({
+      answer: fallbackTutor(message),
+      mode: 'fallback',
+      warning: `openai_http_${openAiResponse.status}`,
+    });
   }
 
-  const data = await openAiResponse.json<any>();
+  const data = (await openAiResponse.json()) as any;
   const answer = data?.choices?.[0]?.message?.content ?? fallbackTutor(message);
   return json({ answer, mode: 'ai' });
 }
@@ -96,6 +100,13 @@ async function handleTutor(request: Request, env: Env) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === '/api/tutor-status') {
+      return json({
+        ok: true,
+        openaiConfigured: Boolean(env.OPENAI_API_KEY),
+      });
+    }
 
     if (url.pathname === '/api/tutor') {
       return handleTutor(request, env);
