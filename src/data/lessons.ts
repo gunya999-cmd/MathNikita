@@ -1,6 +1,14 @@
-import { getLessonForGradeTopic, type CurriculumLesson } from './curriculum';
+import { getLessonForGradeTopic } from './curriculum';
 
-export type Lesson = CurriculumLesson;
+export type Lesson = {
+  topic?: string;
+  title: string;
+  subtitle: string;
+  explanation: string;
+  example: string;
+  practice: string;
+  answer: string;
+};
 
 export const lessonCatalog: Record<string, Lesson> = {
   Сложение: {
