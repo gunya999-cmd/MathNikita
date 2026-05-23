@@ -69,11 +69,16 @@ input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: .9rem; pa
 .lesson-roadmap-list strong { color: #2563eb; white-space: nowrap; }
 .lesson-roadmap-list span { font-weight: 800; color: #0f172a; }
 .lesson-roadmap-list p { grid-column: 1 / -1; margin: 0; font-size: .9rem; line-height: 1.45; color: #64748b; }
+.lesson-flow .tab-row { max-height: 8rem; overflow: auto; padding-bottom: .25rem; }
+.mastery-status { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 1.25rem 0; }
+.mastery-status div { display: grid; gap: .15rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: #f8fafc; }
+.mastery-status strong { font-size: 1.15rem; color: #0f172a; }
+.mastery-status span { color: #64748b; font-size: .9rem; }
 .button-card { width: 100%; cursor: pointer; }
 .button-card:hover { border-color: #2563eb; }
 .practice-modules { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .tab-row { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1rem 0; }
 .tab { border: 1px solid #cbd5e1; border-radius: 999px; background: white; color: #475569; cursor: pointer; padding: .65rem .9rem; font-weight: 700; }
 .tab.active { background: #0f172a; color: white; border-color: #0f172a; }
-@media (max-width: 960px) { .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 760px) { .topbar, nav, .grid-page, .chat-input, .program-header, .lesson-roadmap-list article { display: grid; grid-template-columns: 1fr; } h1 { font-size: 2.8rem; } .module-grid { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .module-grid, .mastery-status { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .topbar, nav, .grid-page, .chat-input, .program-header, .lesson-roadmap-list article, .mastery-status { display: grid; grid-template-columns: 1fr; } h1 { font-size: 2.8rem; } .module-grid { grid-template-columns: 1fr; } }
