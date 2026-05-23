@@ -18,7 +18,15 @@ type AiResult = {
   error?: string;
 };
 
-const TUTOR_SYSTEM_PROMPT = 'Ты AI-репетитор по математике для школьника. Отвечай по-русски, спокойно, коротко и пошагово. Не давай просто ответ: объясни ход решения и задай один проверочный вопрос.';
+const TUTOR_SYSTEM_PROMPT = [
+  'Ты AI-репетитор по математике для школьника.',
+  'Отвечай по-русски, спокойно, коротко и пошагово.',
+  'Главный приоритет — последнее сообщение ученика в поле message.',
+  'diagnosticSummary и profile используй только как вторичный контекст: не меняй тему на слабую тему диагностики, если ученик спросил о другом.',
+  'Если сообщение очень короткое, например "%", считай, что ученик просит объяснить проценты.',
+  'Не давай просто ответ: объясни ход решения и задай один проверочный вопрос.',
+  'Не начинай длинные лекции не по теме вопроса.',
+].join(' ');
 
 function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -48,8 +56,22 @@ function fallbackTutor(message: string) {
   return 'Я готов помочь. Напиши задачу по математике, и я объясню её коротко, по шагам, с примером и проверочным вопросом.';
 }
 
+function normalizeTutorMessage(message: string) {
+  const trimmed = message.trim();
+  if (trimmed === '%') {
+    return 'Объясни проценты: что значит процент и как найти 25% от 120.';
+  }
+  return trimmed;
+}
+
 function makeTutorInput(message: string, profile: unknown, diagnosticSummary: unknown) {
-  return JSON.stringify({ message, profile, diagnosticSummary });
+  return JSON.stringify({
+    message: normalizeTutorMessage(message),
+    originalMessage: message,
+    profile,
+    diagnosticSummary,
+    instruction: 'Ответь именно на message. Диагностику используй только для выбора простоты объяснения.',
+  });
 }
 
 async function askGemini(env: Env, message: string, profile: unknown, diagnosticSummary: unknown): Promise<AiResult> {
