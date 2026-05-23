@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../components/Button';
+import { getGradeCurriculum, getAllGradeOptions } from '../data/curriculum';
 import { getNextLesson } from '../data/diagnostic';
 import { getLessonForWeakTopic } from '../data/lessons';
 import { normalizeAnswer } from '../data/questions';
@@ -13,6 +14,7 @@ export function Dashboard({
   onChat,
   onPractice,
   onTraining,
+  onProfileChange,
 }: {
   profile: StudentProfile;
   summary: DiagnosticSummary | null;
@@ -20,19 +22,27 @@ export function Dashboard({
   onChat: () => void;
   onPractice: () => void;
   onTraining: () => void;
+  onProfileChange: (profile: StudentProfile) => void;
 }) {
-  const nextLesson = getNextLesson(summary);
-  const lesson = getLessonForWeakTopic(summary?.weak[0]);
+  const curriculum = getGradeCurriculum(profile.grade);
+  const nextLesson = getNextLesson(summary, profile.grade);
+  const lesson = getLessonForWeakTopic(summary?.weak[0], profile.grade);
   const [practiceAnswer, setPracticeAnswer] = useState('');
   const [practiceChecked, setPracticeChecked] = useState(false);
   const practiceCorrect = normalizeAnswer(practiceAnswer) === normalizeAnswer(lesson.answer);
 
+  function changeGrade(grade: string) {
+    onProfileChange({ ...profile, grade });
+    setPracticeAnswer('');
+    setPracticeChecked(false);
+  }
+
   return (
     <section className="grid-page">
       <div className="panel lesson-card">
-        <div className="eyebrow">Урок дня для {profile.name}</div>
+        <div className="eyebrow">Урок дня для {profile.name} · {curriculum.label}</div>
         <h2>{nextLesson}</h2>
-        <p>{summary ? `Последняя диагностика: ${summary.score}% — ${summary.level}.` : 'Сначала пройди короткую диагностику, и я подберу урок под твой уровень.'}</p>
+        <p>{summary ? `Последняя диагностика: ${summary.score}% — ${summary.level}.` : 'Сначала пройди короткую диагностику, и я подберу урок под твой уровень и класс.'}</p>
 
         <div className="lesson-block">
           <h3>{lesson.title}</h3>
@@ -61,12 +71,19 @@ export function Dashboard({
         </div>
       </div>
       <div className="panel stats">
-        <h3>Прогресс</h3>
+        <h3>Программа обучения</h3>
+        <label className="question compact">
+          <span>Класс</span>
+          <select value={curriculum.id} onChange={(event) => changeGrade(`${event.target.value} класс`)}>
+            {getAllGradeOptions().map((grade) => <option key={grade.id} value={grade.id}>{grade.label}</option>)}
+          </select>
+        </label>
+        <div><strong>{curriculum.stage}</strong><span>{curriculum.focus}</span></div>
+        <div><strong>{curriculum.units.length}</strong><span>{curriculum.units.join(' · ')}</span></div>
         <div><strong>{summary ? `${summary.score}%` : '—'}</strong><span>результат диагностики</span></div>
         <div><strong>{profile.solvedTasks}</strong><span>решённых шагов и задач</span></div>
         <div><strong>{profile.streakDays}</strong><span>дней подряд</span></div>
         <div><strong>{profile.correctAnswers}/{profile.wrongAnswers}</strong><span>правильно / ошибок</span></div>
-        <div><strong>{profile.grade}</strong><span>{profile.goal}</span></div>
       </div>
     </section>
   );

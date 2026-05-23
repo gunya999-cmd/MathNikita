@@ -1,15 +1,18 @@
 import { useMemo, useState } from 'react';
 import { Button } from '../components/Button';
+import { getGradeCurriculum } from '../data/curriculum';
 import { getLevel } from '../data/diagnostic';
-import { diagnosticQuestions, normalizeAnswer } from '../data/questions';
+import { getDiagnosticQuestionsForGrade, normalizeAnswer } from '../data/questions';
 import type { DiagnosticSummary } from '../types';
 
-export function Diagnostic({ onComplete }: { onComplete: (summary: DiagnosticSummary) => void }) {
+export function Diagnostic({ grade, onComplete }: { grade: string; onComplete: (summary: DiagnosticSummary) => void }) {
+  const curriculum = getGradeCurriculum(grade);
+  const questions = useMemo(() => getDiagnosticQuestionsForGrade(grade), [grade]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
   const result = useMemo(() => {
-    const checked = diagnosticQuestions.map((question) => ({
+    const checked = questions.map((question) => ({
       ...question,
       correct: normalizeAnswer(answers[question.id] ?? '') === normalizeAnswer(question.answer),
     }));
@@ -21,7 +24,7 @@ export function Diagnostic({ onComplete }: { onComplete: (summary: DiagnosticSum
       strong: checked.filter((question) => question.correct).map((question) => question.skillTitle),
       weak: checked.filter((question) => !question.correct).map((question) => question.skillTitle),
     };
-  }, [answers]);
+  }, [answers, questions]);
 
   function submit() {
     const summary: DiagnosticSummary = {
@@ -37,10 +40,10 @@ export function Diagnostic({ onComplete }: { onComplete: (summary: DiagnosticSum
 
   return (
     <section className="panel wide">
-      <h2>Диагностика уровня</h2>
-      <p className="muted">Ответь на несколько вопросов. Результат сохранится в браузере и обновит “урок дня”.</p>
+      <h2>Диагностика уровня · {curriculum.label}</h2>
+      <p className="muted">Ответь на вопросы из программы выбранного класса. Результат обновит “урок дня”.</p>
       <div className="question-list">
-        {diagnosticQuestions.map((question) => (
+        {questions.map((question) => (
           <label className="question" key={question.id}>
             <span>{question.prompt}</span>
             <input

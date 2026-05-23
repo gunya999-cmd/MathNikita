@@ -1,3 +1,4 @@
+import { getGradeCurriculum, normalizeGradeId } from './curriculum';
 import type { TaskDifficulty } from './taskBank';
 
 export type StudentProfile = {
@@ -25,17 +26,22 @@ export const defaultProfile: StudentProfile = {
 
 export const profileStorageKey = 'mathnikita.studentProfile';
 
+export function normalizeProfile(profile: StudentProfile): StudentProfile {
+  const grade = getGradeCurriculum(normalizeGradeId(profile.grade)).label;
+  return { ...profile, grade };
+}
+
 export function loadStudentProfile(): StudentProfile {
   try {
     const raw = localStorage.getItem(profileStorageKey);
-    return raw ? { ...defaultProfile, ...(JSON.parse(raw) as Partial<StudentProfile>) } : defaultProfile;
+    return normalizeProfile(raw ? { ...defaultProfile, ...(JSON.parse(raw) as Partial<StudentProfile>) } : defaultProfile);
   } catch {
     return defaultProfile;
   }
 }
 
 export function saveStudentProfile(profile: StudentProfile) {
-  localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+  localStorage.setItem(profileStorageKey, JSON.stringify(normalizeProfile(profile)));
 }
 
 function todayKey() {

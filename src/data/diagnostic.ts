@@ -1,3 +1,4 @@
+import { getGradeCurriculum } from './curriculum';
 import type { DiagnosticSummary } from '../types';
 
 const storageKey = 'mathnikita.diagnosticSummary';
@@ -21,9 +22,9 @@ export function getLevel(score: number) {
   return 'нужно укрепить базу';
 }
 
-export function getNextLesson(summary: DiagnosticSummary | null) {
+export function getNextLesson(summary: DiagnosticSummary | null, grade?: string) {
   const firstWeak = summary?.weak[0];
   if (firstWeak) return `Повторить тему: ${firstWeak}`;
   if (summary?.score === 100) return 'Следующий уровень';
-  return 'Дроби и проценты';
+  return `Старт программы: ${getGradeCurriculum(grade).lessons[0].topic}`;
 }
