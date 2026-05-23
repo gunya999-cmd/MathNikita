@@ -1,202 +1,58 @@
-export type GradeId = '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12';
+export * from './curriculumBase';
 
-export type CurriculumLesson = {
-  topic: string;
-  title: string;
-  subtitle: string;
-  explanation: string;
-  example: string;
-  practice: string;
-  answer: string;
-};
+import {
+  GRADE_OPTIONS,
+  getCurriculumPlanByGrade,
+  getLessonForGrade,
+  parseGradeLevel,
+  type GradeLevel,
+} from './curriculumBase';
+import type { Lesson } from './lessons';
 
-export type CurriculumGrade = {
-  id: GradeId;
-  label: string;
-  stage: string;
-  focus: string;
-  outcomes: string[];
-  units: string[];
-  lessons: CurriculumLesson[];
-};
+export type GradeId = GradeLevel;
+export type CurriculumLesson = Lesson & { topic: string };
 
-export const gradeIds: GradeId[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-
-export const curriculumByGrade: Record<GradeId, CurriculumGrade> = {
-  '1': {
-    id: '1',
-    label: '1 класс',
-    stage: 'Number sense',
-    focus: 'Числа до 20, сравнение, сложение и вычитание через предметные модели.',
-    outcomes: ['Считать вперёд и назад', 'Складывать и вычитать до 20', 'Понимать формы и измерения'],
-    units: ['Числа до 20', 'Сложение и вычитание', 'Формы', 'Длина и время'],
-    lessons: [
-      { topic: 'Сложение', title: 'Сложение до 20', subtitle: 'Собираем десяток и добавляем остаток.', explanation: 'Удобно сначала получить 10, а потом прибавить то, что осталось.', example: '8 + 5 = 8 + 2 + 3 = 13', practice: 'Реши: 9 + 4', answer: '13' },
-      { topic: 'Вычитание', title: 'Вычитание до 20', subtitle: 'Разбиваем число на удобные части.', explanation: 'Если нужно вычесть 6 из 14, можно сначала дойти до 10.', example: '14 − 6 = 14 − 4 − 2 = 8', practice: 'Реши: 15 − 7', answer: '8' },
-      { topic: 'Фигуры', title: 'Плоские фигуры', subtitle: 'Узнаём круг, квадрат, прямоугольник и треугольник.', explanation: 'Фигуры можно сравнивать по сторонам и углам.', example: 'У квадрата 4 равные стороны.', practice: 'Сколько сторон у треугольника?', answer: '3' },
-    ],
-  },
-  '2': {
-    id: '2',
-    label: '2 класс',
-    stage: 'Place value',
-    focus: 'Разрядность до 100, быстрые вычисления, первые текстовые задачи.',
-    outcomes: ['Понимать десятки и единицы', 'Считать до 100', 'Решать простые текстовые задачи'],
-    units: ['Числа до 100', 'Сложение с переходом', 'Вычитание', 'Деньги и время'],
-    lessons: [
-      { topic: 'Разряды', title: 'Десятки и единицы', subtitle: 'Число состоит из десятков и единиц.', explanation: 'В числе 47 есть 4 десятка и 7 единиц.', example: '47 = 40 + 7', practice: 'Разложи 63 на десятки и единицы', answer: '60+3' },
-      { topic: 'Сложение', title: 'Сложение двузначных чисел', subtitle: 'Складываем десятки с десятками, единицы с единицами.', explanation: 'Сначала удобно сложить десятки, потом единицы.', example: '34 + 25 = 30 + 20 + 4 + 5 = 59', practice: 'Реши: 42 + 16', answer: '58' },
-      { topic: 'Время', title: 'Часы и минуты', subtitle: 'Учимся читать время на часах.', explanation: 'Один час — это 60 минут.', example: '30 минут — это половина часа.', practice: 'Сколько минут в 2 часах?', answer: '120' },
-    ],
-  },
-  '3': {
-    id: '3',
-    label: '3 класс',
-    stage: 'Multiplication foundation',
-    focus: 'Умножение, деление, периметр, простые дроби.',
-    outcomes: ['Знать смысл умножения', 'Делить на равные группы', 'Находить периметр'],
-    units: ['Таблица умножения', 'Деление', 'Периметр', 'Дроби как части'],
-    lessons: [
-      { topic: 'Умножение', title: 'Умножение как группы', subtitle: 'Одинаковые группы можно быстро сложить.', explanation: '3 × 4 значит 3 группы по 4.', example: '3 × 4 = 4 + 4 + 4 = 12', practice: 'Реши: 6 × 7', answer: '42' },
-      { topic: 'Деление', title: 'Деление на равные части', subtitle: 'Деление показывает размер группы или число групп.', explanation: '12 ÷ 3 значит разделить 12 на 3 равные части.', example: '12 ÷ 3 = 4', practice: 'Реши: 24 ÷ 6', answer: '4' },
-      { topic: 'Периметр', title: 'Периметр прямоугольника', subtitle: 'Складываем длины всех сторон.', explanation: 'У прямоугольника противоположные стороны равны.', example: 'P = 5 + 3 + 5 + 3 = 16', practice: 'Периметр прямоугольника 4 и 6?', answer: '20' },
-    ],
-  },
-  '4': {
-    id: '4',
-    label: '4 класс',
-    stage: 'Multi-digit fluency',
-    focus: 'Многозначные числа, письменные алгоритмы, дроби и измерения.',
-    outcomes: ['Умножать многозначные числа', 'Делить с остатком', 'Сравнивать простые дроби'],
-    units: ['Многозначные числа', 'Письменное умножение', 'Деление', 'Дроби', 'Площадь'],
-    lessons: [
-      { topic: 'Умножение', title: 'Умножение двузначного числа', subtitle: 'Разбиваем множитель на десятки и единицы.', explanation: 'Умножение становится проще через распределительное свойство.', example: '23 × 4 = 20 × 4 + 3 × 4 = 92', practice: 'Реши: 34 × 3', answer: '102' },
-      { topic: 'Дроби', title: 'Сравнение дробей', subtitle: 'При одинаковом знаменателе больше дробь с большим числителем.', explanation: 'Если части одинакового размера, больше там, где частей взяли больше.', example: '3/8 > 2/8', practice: 'Что больше: 5/9 или 4/9?', answer: '5/9' },
-      { topic: 'Площадь', title: 'Площадь прямоугольника', subtitle: 'Умножаем длину на ширину.', explanation: 'Площадь показывает, сколько квадратных единиц помещается внутри фигуры.', example: 'S = 7 × 4 = 28', practice: 'Площадь прямоугольника 8 и 5?', answer: '40' },
-    ],
-  },
-  '5': {
-    id: '5',
-    label: '5 класс',
-    stage: 'Fractions and decimals',
-    focus: 'Дроби, десятичные числа, объём и координатная прямая.',
-    outcomes: ['Складывать дроби с одинаковыми знаменателями', 'Понимать десятичные дроби', 'Находить объём прямоугольного параллелепипеда'],
-    units: ['Дроби', 'Десятичные числа', 'Координаты', 'Объём'],
-    lessons: [
-      { topic: 'Дроби', title: 'Сложение дробей', subtitle: 'При одинаковом знаменателе складываем числители.', explanation: 'Знаменатель показывает размер частей и остаётся тем же.', example: '2/7 + 3/7 = 5/7', practice: 'Реши: 1/6 + 4/6', answer: '5/6' },
-      { topic: 'Десятичные дроби', title: 'Десятичная запись', subtitle: 'Десятые и сотые — это части единицы.', explanation: '0.3 значит 3 десятых.', example: '0.25 = 25/100 = 1/4', practice: 'Запиши 7/10 десятичной дробью', answer: '0.7' },
-      { topic: 'Объём', title: 'Объём коробки', subtitle: 'Длина × ширина × высота.', explanation: 'Объём показывает, сколько кубических единиц помещается внутри.', example: 'V = 3 × 4 × 5 = 60', practice: 'Объём 2 × 5 × 6?', answer: '60' },
-    ],
-  },
-  '6': {
-    id: '6',
-    label: '6 класс',
-    stage: 'Ratios and integers',
-    focus: 'Отношения, проценты, отрицательные числа и первые алгебраические выражения.',
-    outcomes: ['Работать с процентами', 'Понимать отрицательные числа', 'Упрощать выражения'],
-    units: ['Отношения', 'Проценты', 'Целые числа', 'Выражения'],
-    lessons: [
-      { topic: 'Проценты', title: 'Процент от числа', subtitle: 'Переводим процент в дробь или десятичное число.', explanation: '20% — это 20/100 = 1/5.', example: '20% от 150 = 30', practice: 'Найди 15% от 200', answer: '30' },
-      { topic: 'Отрицательные числа', title: 'Сложение целых чисел', subtitle: 'Движение по числовой прямой.', explanation: 'Прибавить отрицательное число — значит сдвинуться влево.', example: '5 + (−8) = −3', practice: 'Реши: −4 + 9', answer: '5' },
-      { topic: 'Выражения', title: 'Подстановка в выражение', subtitle: 'Заменяем букву известным числом.', explanation: 'Если a = 3, то 2a + 5 = 2 × 3 + 5.', example: '2a + 5 при a=3 равно 11', practice: 'Найди 3x − 2 при x=4', answer: '10' },
-    ],
-  },
-  '7': {
-    id: '7',
-    label: '7 класс',
-    stage: 'Pre-algebra',
-    focus: 'Рациональные числа, линейные уравнения, пропорции, проценты и базовая геометрия.',
-    outcomes: ['Решать линейные уравнения', 'Работать с пропорциями', 'Объяснять проценты и дроби'],
-    units: ['Рациональные числа', 'Линейные уравнения', 'Пропорции', 'Проценты', 'Углы и треугольники'],
-    lessons: [
-      { topic: 'Линейные уравнения', title: 'Уравнения за два шага', subtitle: 'Сначала убираем свободное число, потом коэффициент.', explanation: 'Чтобы решить 3x + 6 = 21, сначала вычитаем 6, потом делим на 3.', example: '3x + 6 = 21 → 3x = 15 → x = 5', practice: 'Реши: 2x + 8 = 20', answer: '6' },
-      { topic: 'Проценты', title: 'Скидки и рост цены', subtitle: 'Сравниваем часть с исходным числом.', explanation: 'Процент изменения = изменение / исходное значение × 100%.', example: '120 → 150: рост 30, 30/120 = 25%', practice: 'Цена выросла со 80 до 100. Рост в процентах?', answer: '25' },
-      { topic: 'Пропорции', title: 'Пропорция как равенство отношений', subtitle: 'Ищем неизвестное через одинаковый масштаб.', explanation: 'Если 2 тетради стоят 10 ₪, то 6 тетрадей стоят в 3 раза больше.', example: '2 → 10, 6 → 30', practice: '3 ручки стоят 12 ₪. Сколько стоят 5 ручек?', answer: '20' },
-    ],
-  },
-  '8': {
-    id: '8',
-    label: '8 класс',
-    stage: 'Algebra and geometry bridge',
-    focus: 'Функции, системы, степени, теорема Пифагора и статистика.',
-    outcomes: ['Понимать график линейной функции', 'Решать простые системы', 'Применять теорему Пифагора'],
-    units: ['Линейные функции', 'Системы уравнений', 'Степени', 'Пифагор', 'Статистика'],
-    lessons: [
-      { topic: 'Функции', title: 'Линейная функция', subtitle: 'y = kx + b показывает прямую.', explanation: 'k отвечает за наклон, b — за точку пересечения с осью y.', example: 'y = 2x + 1 при x=3 даёт y=7', practice: 'Найди y для y = 3x − 2 при x=4', answer: '10' },
-      { topic: 'Системы уравнений', title: 'Система методом подстановки', subtitle: 'Подставляем одно выражение в другое.', explanation: 'Если y = x + 1, можно заменить y во втором уравнении.', example: 'y=x+1, y=5 → x=4', practice: 'Если y=x+2 и y=9, чему равен x?', answer: '7' },
-      { topic: 'Пифагор', title: 'Теорема Пифагора', subtitle: 'В прямоугольном треугольнике a² + b² = c².', explanation: 'Катеты дают квадрат гипотенузы.', example: '3² + 4² = 25, значит c = 5', practice: 'Катеты 6 и 8. Гипотенуза?', answer: '10' },
-    ],
-  },
-  '9': {
-    id: '9',
-    label: '9 класс',
-    stage: 'Algebra I / Geometry',
-    focus: 'Квадратные выражения, графики, подобие, вероятность и доказательства.',
-    outcomes: ['Раскрывать скобки и факторизовать', 'Работать с квадратичной функцией', 'Использовать подобие треугольников'],
-    units: ['Квадратные уравнения', 'Графики', 'Подобие', 'Вероятность'],
-    lessons: [
-      { topic: 'Квадратные уравнения', title: 'Факторизация квадратичного выражения', subtitle: 'Ищем два числа с нужной суммой и произведением.', explanation: 'Для x² + 5x + 6 нужны числа 2 и 3.', example: 'x² + 5x + 6 = (x + 2)(x + 3)', practice: 'Разложи: x² + 7x + 12', answer: '(x+3)(x+4)' },
-      { topic: 'Функции', title: 'Вершина параболы', subtitle: 'Парабола имеет минимум или максимум.', explanation: 'Для y = x² вершина находится в точке (0, 0).', example: 'y = (x − 2)² + 3 имеет вершину (2, 3)', practice: 'Вершина y=(x−5)²+1?', answer: '(5,1)' },
-      { topic: 'Вероятность', title: 'Базовая вероятность', subtitle: 'Вероятность = подходящие исходы / все исходы.', explanation: 'Если у кубика 6 граней, шанс выбросить 3 равен 1/6.', example: 'P(орёл) = 1/2', practice: 'В мешке 3 красных и 2 синих. Шанс синего?', answer: '2/5' },
-    ],
-  },
-  '10': {
-    id: '10',
-    label: '10 класс',
-    stage: 'Algebra II foundation',
-    focus: 'Полиномы, тригонометрия, аналитическая геометрия и функции.',
-    outcomes: ['Уверенно преобразовывать выражения', 'Использовать sin, cos, tan', 'Понимать разные типы функций'],
-    units: ['Полиномы', 'Тригонометрия', 'Аналитическая геометрия', 'Функции'],
-    lessons: [
-      { topic: 'Полиномы', title: 'Умножение скобок', subtitle: 'Каждый член первой скобки умножаем на каждый член второй.', explanation: 'Это распределительное свойство для выражений.', example: '(x + 2)(x + 3) = x² + 5x + 6', practice: 'Раскрой: (x+1)(x+4)', answer: 'x^2+5x+4' },
-      { topic: 'Тригонометрия', title: 'Синус, косинус и тангенс', subtitle: 'Отношения сторон в прямоугольном треугольнике.', explanation: 'sin угла = противолежащий катет / гипотенуза.', example: 'Если катет 3, гипотенуза 5, sin = 3/5', practice: 'sin угла: катет 6, гипотенуза 10', answer: '3/5' },
-      { topic: 'Координаты', title: 'Расстояние между точками', subtitle: 'Используем Пифагора на координатной плоскости.', explanation: 'Разность x и разность y образуют катеты.', example: 'A(0,0), B(3,4): расстояние 5', practice: 'Расстояние от (0,0) до (6,8)?', answer: '10' },
-    ],
-  },
-  '11': {
-    id: '11',
-    label: '11 класс',
-    stage: 'Pre-calculus',
-    focus: 'Сложные функции, логарифмы, последовательности, производная как скорость изменения.',
-    outcomes: ['Работать с логарифмами', 'Анализировать функции', 'Понимать идею производной'],
-    units: ['Логарифмы', 'Экспоненты', 'Последовательности', 'Начала анализа'],
-    lessons: [
-      { topic: 'Логарифмы', title: 'Логарифм как вопрос о степени', subtitle: 'log₂8 спрашивает: в какую степень возвести 2, чтобы получить 8?', explanation: 'Так как 2³ = 8, log₂8 = 3.', example: 'log₁₀100 = 2', practice: 'Найди log₂32', answer: '5' },
-      { topic: 'Последовательности', title: 'Арифметическая прогрессия', subtitle: 'Каждый следующий член отличается на одно и то же число.', explanation: 'Это постоянный шаг между членами.', example: '3, 7, 11, 15: шаг 4', practice: 'Следующее число: 5, 9, 13, ?', answer: '17' },
-      { topic: 'Производная', title: 'Производная как наклон', subtitle: 'Производная показывает мгновенную скорость изменения.', explanation: 'Для y = x² наклон в точке x примерно равен 2x.', example: 'Если y=x², то при x=3 производная 6', practice: 'Для y=x² чему равна производная при x=4?', answer: '8' },
-    ],
-  },
-  '12': {
-    id: '12',
-    label: '12 класс',
-    stage: 'Exam readiness / calculus',
-    focus: 'Производные, интегралы, вероятность, статистика и подготовка к экзаменам.',
-    outcomes: ['Решать задачи на производную', 'Понимать площадь под графиком', 'Строить стратегию экзамена'],
-    units: ['Дифференцирование', 'Интегралы', 'Вероятность и статистика', 'Моделирование'],
-    lessons: [
-      { topic: 'Производная', title: 'Правило степени', subtitle: 'Для xⁿ производная равна n·xⁿ⁻¹.', explanation: 'Степень становится коэффициентом, а показатель уменьшается на 1.', example: 'd/dx x³ = 3x²', practice: 'Найди производную x⁴', answer: '4x^3' },
-      { topic: 'Интегралы', title: 'Интеграл как площадь', subtitle: 'Определённый интеграл измеряет накопление.', explanation: 'Если функция постоянна, площадь равна высота × ширина.', example: '∫ от 0 до 3 числа 2 dx = 6', practice: 'Площадь под y=5 от 0 до 4?', answer: '20' },
-      { topic: 'Статистика', title: 'Среднее значение', subtitle: 'Складываем значения и делим на количество.', explanation: 'Среднее помогает описать типичное значение набора данных.', example: 'Среднее 2, 4, 6 равно 4', practice: 'Среднее 3, 5, 10?', answer: '6' },
-    ],
-  },
-};
-
-export function normalizeGradeId(grade?: string): GradeId {
-  const match = String(grade ?? '').match(/\d+/);
-  const value = match?.[0] as GradeId | undefined;
-  return value && gradeIds.includes(value) ? value : '7';
+function topicFromLesson(lesson: Lesson, fallback: string) {
+  const [firstPart] = lesson.title.split(':');
+  const topic = firstPart.trim();
+  return topic || fallback;
 }
 
-export function getGradeCurriculum(grade?: string) {
-  return curriculumByGrade[normalizeGradeId(grade)];
+export function normalizeGradeId(grade?: string): GradeLevel {
+  return parseGradeLevel(grade);
 }
 
 export function getAllGradeOptions() {
-  return gradeIds.map((id) => ({ id, label: curriculumByGrade[id].label }));
+  return GRADE_OPTIONS.map((option) => ({ id: String(option.value), label: option.label }));
 }
 
-export function getLessonForGradeTopic(grade: string | undefined, topic?: string) {
+export function getGradeCurriculum(grade?: string | GradeLevel) {
+  const plan = getCurriculumPlanByGrade(grade);
+  const lesson = getLessonForGrade(plan.grade);
+  const primaryLesson: CurriculumLesson = {
+    ...lesson,
+    topic: topicFromLesson(lesson, plan.units[0]?.title ?? plan.label),
+  };
+
+  return {
+    id: String(plan.grade),
+    label: plan.label,
+    stage: plan.stage,
+    focus: plan.outcome,
+    outcomes: [plan.outcome],
+    units: plan.units.map((unit) => unit.title),
+    lessons: [primaryLesson],
+    sourceBlend: plan.sourceBlend,
+    capstone: plan.capstone,
+  };
+}
+
+export function getLessonForGradeTopic(grade: string | GradeLevel | undefined, topic?: string): CurriculumLesson {
   const curriculum = getGradeCurriculum(grade);
   if (!topic) return curriculum.lessons[0];
-  return curriculum.lessons.find((lesson) => lesson.topic === topic || lesson.title === topic) ?? curriculum.lessons[0];
+
+  const normalizedTopic = topic.toLowerCase();
+  return curriculum.lessons.find(
+    (lesson) => lesson.topic.toLowerCase() === normalizedTopic || lesson.title.toLowerCase() === normalizedTopic,
+  ) ?? curriculum.lessons[0];
 }
