@@ -7,14 +7,18 @@ type TutorRequest = {
 type Env = {
   ASSETS: Fetcher;
   OPENAI_API_KEY?: string;
+  GEMINI_API_KEY?: string;
 };
 
-type OpenAiResult = {
+type AiResult = {
   ok: boolean;
+  provider?: 'gemini' | 'openai';
   answer?: string;
   status?: number;
   error?: string;
 };
+
+const TUTOR_SYSTEM_PROMPT = 'Ты AI-репетитор по математике для школьника. Отвечай по-русски, спокойно, коротко и пошагово. Не давай просто ответ: объясни ход решения и задай один проверочный вопрос.';
 
 function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -44,9 +48,69 @@ function fallbackTutor(message: string) {
   return 'Я готов помочь. Напиши задачу по математике, и я объясню её коротко, по шагам, с примером и проверочным вопросом.';
 }
 
-async function askOpenAi(env: Env, message: string, profile: unknown, diagnosticSummary: unknown): Promise<OpenAiResult> {
+function makeTutorInput(message: string, profile: unknown, diagnosticSummary: unknown) {
+  return JSON.stringify({ message, profile, diagnosticSummary });
+}
+
+async function askGemini(env: Env, message: string, profile: unknown, diagnosticSummary: unknown): Promise<AiResult> {
+  if (!env.GEMINI_API_KEY) {
+    return { ok: false, provider: 'gemini', error: 'missing_gemini_key' };
+  }
+
+  try {
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent', {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': env.GEMINI_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: TUTOR_SYSTEM_PROMPT }],
+        },
+        contents: [
+          {
+            parts: [{ text: makeTutorInput(message, profile, diagnosticSummary) }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 700,
+        },
+      }),
+    });
+
+    const rawText = await response.text();
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        provider: 'gemini',
+        status: response.status,
+        error: rawText.slice(0, 500),
+      };
+    }
+
+    const data = JSON.parse(rawText) as any;
+    const answer = data?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text ?? '').join('').trim();
+
+    if (!answer) {
+      return { ok: false, provider: 'gemini', status: response.status, error: 'empty_gemini_answer' };
+    }
+
+    return { ok: true, provider: 'gemini', answer };
+  } catch (error) {
+    return {
+      ok: false,
+      provider: 'gemini',
+      error: error instanceof Error ? error.message : 'unknown_gemini_error',
+    };
+  }
+}
+
+async function askOpenAi(env: Env, message: string, profile: unknown, diagnosticSummary: unknown): Promise<AiResult> {
   if (!env.OPENAI_API_KEY) {
-    return { ok: false, error: 'missing_openai_key' };
+    return { ok: false, provider: 'openai', error: 'missing_openai_key' };
   }
 
   try {
@@ -62,11 +126,11 @@ async function askOpenAi(env: Env, message: string, profile: unknown, diagnostic
         messages: [
           {
             role: 'system',
-            content: 'Ты AI-репетитор по математике для школьника. Отвечай по-русски, спокойно, коротко и пошагово. Не давай просто ответ: объясни ход решения и задай один проверочный вопрос.',
+            content: TUTOR_SYSTEM_PROMPT,
           },
           {
             role: 'user',
-            content: JSON.stringify({ message, profile, diagnosticSummary }),
+            content: makeTutorInput(message, profile, diagnosticSummary),
           },
         ],
       }),
@@ -77,6 +141,7 @@ async function askOpenAi(env: Env, message: string, profile: unknown, diagnostic
     if (!openAiResponse.ok) {
       return {
         ok: false,
+        provider: 'openai',
         status: openAiResponse.status,
         error: rawText.slice(0, 500),
       };
@@ -86,16 +151,30 @@ async function askOpenAi(env: Env, message: string, profile: unknown, diagnostic
     const answer = data?.choices?.[0]?.message?.content;
 
     if (!answer) {
-      return { ok: false, status: openAiResponse.status, error: 'empty_openai_answer' };
+      return { ok: false, provider: 'openai', status: openAiResponse.status, error: 'empty_openai_answer' };
     }
 
-    return { ok: true, answer };
+    return { ok: true, provider: 'openai', answer };
   } catch (error) {
     return {
       ok: false,
+      provider: 'openai',
       error: error instanceof Error ? error.message : 'unknown_openai_error',
     };
   }
+}
+
+async function askBestProvider(env: Env, message: string, profile: unknown, diagnosticSummary: unknown): Promise<AiResult> {
+  const gemini = await askGemini(env, message, profile, diagnosticSummary);
+  if (gemini.ok) return gemini;
+
+  const openai = await askOpenAi(env, message, profile, diagnosticSummary);
+  if (openai.ok) return openai;
+
+  return {
+    ok: false,
+    error: `gemini:${gemini.status ?? gemini.error}; openai:${openai.status ?? openai.error}`,
+  };
 }
 
 async function handleTutor(request: Request, env: Env) {
@@ -115,17 +194,17 @@ async function handleTutor(request: Request, env: Env) {
     return json({ error: 'Message is required' }, { status: 400 });
   }
 
-  const ai = await askOpenAi(env, message, body.profile ?? null, body.diagnosticSummary ?? null);
+  const ai = await askBestProvider(env, message, body.profile ?? null, body.diagnosticSummary ?? null);
 
   if (!ai.ok) {
     return json({
       answer: fallbackTutor(message),
       mode: 'fallback',
-      warning: ai.status ? `openai_http_${ai.status}` : ai.error,
+      warning: ai.error,
     });
   }
 
-  return json({ answer: ai.answer, mode: 'ai' });
+  return json({ answer: ai.answer, mode: 'ai', provider: ai.provider });
 }
 
 export default {
@@ -135,19 +214,25 @@ export default {
     if (url.pathname === '/api/tutor-status') {
       return json({
         ok: true,
+        geminiConfigured: Boolean(env.GEMINI_API_KEY),
         openaiConfigured: Boolean(env.OPENAI_API_KEY),
       });
     }
 
     if (url.pathname === '/api/tutor-test') {
-      const ai = await askOpenAi(env, 'Объясни коротко: 25% от 120.', null, null);
+      const gemini = await askGemini(env, 'Объясни коротко: 25% от 120.', null, null);
+      const openai = gemini.ok ? null : await askOpenAi(env, 'Объясни коротко: 25% от 120.', null, null);
+      const best = gemini.ok ? gemini : openai;
+
       return json({
         ok: true,
+        geminiConfigured: Boolean(env.GEMINI_API_KEY),
         openaiConfigured: Boolean(env.OPENAI_API_KEY),
-        openaiOk: ai.ok,
-        status: ai.status ?? null,
-        error: ai.error ?? null,
-        answer: ai.answer ?? null,
+        aiOk: Boolean(best?.ok),
+        provider: best?.provider ?? null,
+        status: best?.status ?? null,
+        error: best?.error ?? null,
+        answer: best?.answer ?? null,
       });
     }
 
