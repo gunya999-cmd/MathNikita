@@ -6,10 +6,11 @@ import { checkStepAnswer, getStepPracticesForGrade } from '../data/stepPractice'
 
 export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask: (tasksSolved?: number) => void }) {
   const practices = useMemo(() => getStepPracticesForGrade(grade), [grade]);
-  const curriculum = getGradeCurriculum(grade);
-  const program = getLearningProgram(grade);
+  const curriculum = useMemo(() => getGradeCurriculum(grade), [grade]);
+  const program = useMemo(() => getLearningProgram(grade), [grade]);
   const [moduleId, setModuleId] = useState(program.modules[0]?.id ?? '');
-  const visiblePractices = practices.filter((item) => item.id.includes(`m${program.modules.find((module) => module.id === moduleId)?.order ?? 1}-`));
+  const currentModule = program.modules.find((module) => module.id === moduleId) ?? program.modules[0];
+  const visiblePractices = practices.filter((item) => item.id.includes(`m${currentModule?.order ?? 1}-`));
   const modulePractices = visiblePractices.length ? visiblePractices : practices;
   const [practiceId, setPracticeId] = useState(modulePractices[0].id);
   const [stepIndex, setStepIndex] = useState(0);
@@ -21,13 +22,13 @@ export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask:
 
   useEffect(() => {
     const firstModule = program.modules[0]?.id ?? '';
-    const firstPractice = getStepPracticesForGrade(grade)[0]?.id ?? '';
+    const firstPractice = practices[0]?.id ?? '';
     setModuleId(firstModule);
     setPracticeId(firstPractice);
     setStepIndex(0);
     setAnswer('');
     setFeedback('');
-  }, [grade, program.modules]);
+  }, [grade, practices, program]);
 
   function chooseModule(id: string) {
     const module = program.modules.find((item) => item.id === id);
