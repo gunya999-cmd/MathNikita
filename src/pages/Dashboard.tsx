@@ -73,7 +73,7 @@ export function Dashboard({
         <div className="program-panel">
           <div className="program-header">
             <div>
-              <div className="eyebrow">Программа класса</div>
+              <div className="eyebrow">Программа класса · 20 уроков</div>
               <h3>{activeModule.order}. {activeModule.title}</h3>
               <p className="muted">Текущий модуль: {activeModule.focus}</p>
             </div>
@@ -88,10 +88,19 @@ export function Dashboard({
                 <article className={isActive ? 'module-card active' : isDone ? 'module-card done' : 'module-card'} key={module.id}>
                   <span>{module.order}</span>
                   <h4>{module.title}</h4>
-                  <p>{module.skills.slice(0, 2).join(' · ')}</p>
+                  <p>{module.lessons.map((item) => `Урок ${item.order}`).join(' · ')}</p>
                 </article>
               );
             })}
+          </div>
+          <div className="lesson-roadmap-list">
+            {activeModule.lessons.map((item) => (
+              <article key={item.order}>
+                <strong>Урок {item.order}</strong>
+                <span>{item.title}</span>
+                <p>{item.objective}</p>
+              </article>
+            ))}
           </div>
         </div>
 
@@ -109,7 +118,8 @@ export function Dashboard({
         </label>
         <div><strong>{curriculum.stage}</strong><span>{curriculum.focus}</span></div>
         <div><strong>{progress.completedModules}/{progress.totalModules}</strong><span>модулей программы</span></div>
-        <div><strong>{progress.completedExercises}/{progress.totalExercises}</strong><span>упражнений в программе</span></div>
+        <div><strong>{program.totalLessons}</strong><span>уроков в классе</span></div>
+        <div><strong>{progress.completedExercises}/{progress.totalExercises}</strong><span>уроков/упражнений пройдено</span></div>
         <div><strong>{program.totalSkills}</strong><span>навыков в этом классе</span></div>
         <div><strong>{summary ? `${summary.score}%` : '—'}</strong><span>результат диагностики</span></div>
         <div><strong>{profile.solvedTasks}</strong><span>решённых шагов и задач</span></div>

@@ -18,6 +18,7 @@ export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask:
   const [feedback, setFeedback] = useState('');
   const practice = modulePractices.find((item) => item.id === practiceId) ?? modulePractices[0];
   const step = practice.steps[stepIndex];
+  const isFinalStep = stepIndex === practice.steps.length - 1;
   const progress = Math.round(((stepIndex + 1) / practice.steps.length) * 100);
 
   useEffect(() => {
@@ -50,14 +51,15 @@ export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask:
   function check() {
     if (checkStepAnswer(answer, step.expected)) {
       setFeedback(step.success);
-      onSolvedTask(1);
-      if (stepIndex < practice.steps.length - 1) {
-        window.setTimeout(() => {
-          setStepIndex((current) => current + 1);
-          setAnswer('');
-          setFeedback('');
-        }, 650);
+      if (isFinalStep) {
+        onSolvedTask(1);
+        return;
       }
+      window.setTimeout(() => {
+        setStepIndex((current) => current + 1);
+        setAnswer('');
+        setFeedback('');
+      }, 650);
       return;
     }
     setFeedback(step.hint);
@@ -92,7 +94,7 @@ export function Practice({ grade, onSolvedTask }: { grade: string; onSolvedTask:
           <input value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="Введи шаг решения" />
         </label>
         <div className="hero-actions">
-          <Button onClick={check}>{stepIndex === practice.steps.length - 1 ? 'Проверить финальный ответ' : 'Проверить шаг'}</Button>
+          <Button onClick={check}>{isFinalStep ? 'Завершить урок' : 'Проверить шаг'}</Button>
         </div>
         {feedback && <div className={checkStepAnswer(answer, step.expected) ? 'success-box' : 'hint-box'}>{feedback}</div>}
       </div>
