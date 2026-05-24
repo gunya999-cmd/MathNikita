@@ -5,6 +5,7 @@ export type StudentProfile = {
   name: string;
   grade: string;
   goal: string;
+  interests: string;
   streakDays: number;
   solvedTasks: number;
   correctAnswers: number;
@@ -17,6 +18,7 @@ export const defaultProfile: StudentProfile = {
   name: 'Никита',
   grade: '7 класс',
   goal: 'Уверенно решать задачи и подтянуть школьную математику',
+  interests: 'игры, спорт, технологии',
   streakDays: 0,
   solvedTasks: 0,
   correctAnswers: 0,
@@ -28,7 +30,7 @@ export const profileStorageKey = 'mathnikita.studentProfile';
 
 export function normalizeProfile(profile: StudentProfile): StudentProfile {
   const grade = getGradeCurriculum(normalizeGradeId(profile.grade)).label;
-  return { ...profile, grade };
+  return { ...profile, grade, interests: profile.interests || defaultProfile.interests };
 }
 
 export function loadStudentProfile(): StudentProfile {

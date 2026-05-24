@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button } from '../components/Button';
+import { getAdaptiveLessonView } from '../data/adaptiveLesson';
 import { getEliteLessonContent, sourceLabel } from '../data/eliteLessonContent';
 import { getLearningProgram } from '../data/learningProgram';
 import {
@@ -10,9 +11,10 @@ import {
   saveLessonMastery,
   type LessonMasteryState,
 } from '../data/lessonMastery';
+import type { StudentProfile } from '../data/profile';
 
-export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: () => void }) {
-  const program = useMemo(() => getLearningProgram(grade), [grade]);
+export function LessonFlow({ profile, onMastered }: { profile: StudentProfile; onMastered: () => void }) {
+  const program = useMemo(() => getLearningProgram(profile.grade), [profile.grade]);
   const lessons = program.modules.flatMap((module) => module.lessons.map((lesson) => ({ ...lesson, moduleTitle: module.title, moduleFocus: module.focus })));
   const firstUnfinished = lessons[Math.min(program.totalExercises, lessons.length) - lessons.length] ?? lessons[0];
   const [lessonOrder, setLessonOrder] = useState(firstUnfinished?.order ?? 1);
@@ -20,6 +22,7 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
   const elite = useMemo(() => getEliteLessonContent(lesson), [lesson]);
   const lessonId = makeLessonId(program.grade, lesson.order);
   const [mastery, setMastery] = useState<LessonMasteryState>(() => loadLessonMastery(lessonId));
+  const adaptive = useMemo(() => getAdaptiveLessonView(profile, lesson, elite, mastery), [profile, lesson, elite, mastery]);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const stage = mastery.stage;
@@ -61,10 +64,21 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
   }
 
   return (
-    <section className="panel wide lesson-flow">
-      <div className="eyebrow">Элитный урок · SG/CN/RU/US/HU · {program.label}</div>
+    <section className={`panel wide lesson-flow tone-${adaptive.tone}`}>
+      <div className="eyebrow">Элитный урок · адаптация по возрасту · {program.label}</div>
       <h2>Урок {lesson.order}: {lesson.title}</h2>
-      <p className="muted">Сначала обучение, затем закрепление, затем контрольная. Если есть ошибка, система возвращает к разбору и объясняет слабое место.</p>
+      <p className="muted">{adaptive.ageLabel}. Урок подстраивает объяснение под класс, интересы и текущий прогресс.</p>
+
+      <div className="motivation-card">
+        <div>
+          <strong>{adaptive.motivation.title}</strong>
+          <p>{adaptive.motivation.message}</p>
+        </div>
+        <div className="motivation-score"><strong>{adaptive.motivation.points}</strong><span>очков</span></div>
+        <div className="motivation-badge">{adaptive.motivation.badge}</div>
+      </div>
+      <div className="hint-box"><strong>Стиль объяснения:</strong> {adaptive.teacherVoice}</div>
+      <div className="success-box"><strong>Связь с интересами:</strong> {adaptive.interestBridge}</div>
 
       <div className="source-chips">
         {elite.sourceBlend.map((source) => <span key={source}>{sourceLabel(source)}</span>)}
@@ -91,17 +105,19 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
           <p><strong>Тема:</strong> {lesson.title}</p>
           <p><strong>Цель:</strong> {lesson.objective}</p>
           <p><strong>Модуль:</strong> {lesson.moduleTitle} — {lesson.moduleFocus}</p>
+          <div className="example-box">{adaptive.hook}</div>
 
           <div className="teaching-card">
             <div className="eyebrow">Объяснение учителя</div>
             <h4>Сначала понимаем смысл</h4>
-            <p>{elite.teaching.teacherOpening}</p>
-            <p>{elite.teaching.conceptExplanation}</p>
+            <p>{adaptive.adaptedTeaching.opening}</p>
+            <p>{adaptive.adaptedTeaching.explanation}</p>
             <div className="hint-box"><strong>Мысленная модель:</strong> {elite.teaching.mentalModel}</div>
           </div>
 
           <div className="worked-example">
             <div className="eyebrow">Пошаговый пример</div>
+            <p>{adaptive.adaptedTeaching.exampleIntro}</p>
             <h4>{elite.teaching.workedExample.problem}</h4>
             <ol>
               {elite.teaching.workedExample.steps.map((step) => <li key={step}>{step}</li>)}
@@ -111,11 +127,11 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
           </div>
 
           <div className="guided-questions">
-            <div className="eyebrow">Вопросы сильного учителя</div>
+            <div className="eyebrow">Вопросы учителя</div>
+            <span>{adaptive.adaptedTeaching.questionStyle}</span>
             {elite.teaching.guidedQuestions.map((question) => <span key={question}>{question}</span>)}
           </div>
 
-          <div className="example-box">{elite.bigIdea}</div>
           <div className="elite-grid">
             <article><strong>SG структура</strong><span>{elite.learn.concreteModel}</span></article>
             <article><strong>US Exeter/AoPS</strong><span>{elite.learn.discoveryPrompt}</span></article>
@@ -131,6 +147,7 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
       {stage === 'practice' && (
         <div className="lesson-block">
           <h3>2. Закрепление</h3>
+          <p>{adaptive.adaptedTeaching.practiceInstruction}</p>
           <p>{elite.practice.base}</p>
           <p>{elite.practice.nonStandard}</p>
           <label className="question compact">
@@ -144,6 +161,7 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
       {stage === 'test' && (
         <div className="lesson-block">
           <h3>3. Контрольная</h3>
+          <p>{adaptive.adaptedTeaching.testInstruction}</p>
           <p>{elite.control.quickCheck}</p>
           <p>{elite.control.transferProblem}</p>
           <label className="question compact">
@@ -160,6 +178,7 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
       {stage === 'review' && (
         <div className="lesson-block">
           <h3>Разбор ошибок</h3>
+          <p>{adaptive.motivation.nextReward}</p>
           <p>AI-логика нашла слабое место. Перед новой попыткой нужно вернуться к объяснению.</p>
           {mastery.mistakes.slice(-3).map((mistake) => (
             <div className="hint-box" key={`${mistake.createdAt}-${mistake.type}`}>
@@ -178,7 +197,7 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
 
       {stage === 'mastered' && (
         <div className="success-box">
-          <strong>Урок усвоен.</strong> Можно переходить к следующей теме.
+          <strong>Урок усвоен.</strong> Можно переходить к следующей теме. {adaptive.motivation.nextReward}
         </div>
       )}
 

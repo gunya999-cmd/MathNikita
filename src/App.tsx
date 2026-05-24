@@ -142,7 +142,7 @@ export function App() {
             onProfileChange={updateProfile}
           />
         )}
-        {page === 'lesson' && <LessonFlow grade={profile.grade} onMastered={() => addSolvedTask(1)} />}
+        {page === 'lesson' && <LessonFlow profile={profile} onMastered={() => addSolvedTask(1)} />}
         {page === 'diagnostic' && <Diagnostic grade={profile.grade} onComplete={completeDiagnostic} />}
         {page === 'practice' && <Practice grade={profile.grade} onSolvedTask={addSolvedTask} />}
         {page === 'training' && <Training profile={profile} onAnswer={recordTrainingAnswer} />}

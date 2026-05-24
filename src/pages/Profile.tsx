@@ -31,12 +31,14 @@ export function Profile({ profile, onSave }: { profile: StudentProfile; onSave: 
           </select>
         </label>
         <input value={draft.goal} onChange={(event) => setDraft((current) => ({ ...current, goal: event.target.value }))} placeholder="Цель обучения" />
+        <input value={draft.interests} onChange={(event) => setDraft((current) => ({ ...current, interests: event.target.value }))} placeholder="Интересы: игры, спорт, музыка, бизнес, технологии" />
         <Button type="submit">Сохранить профиль</Button>
       </form>
       {saved && <div className="success-box">Профиль сохранён.</div>}
       <div className="stats profile-stats">
         <div><strong>{selectedCurriculum.label}</strong><span>{selectedCurriculum.focus}</span></div>
         <div><strong>{selectedCurriculum.units.length}</strong><span>{selectedCurriculum.units.join(' · ')}</span></div>
+        <div><strong>{profile.interests}</strong><span>интересы для адаптации уроков</span></div>
         <div><strong>{profile.solvedTasks}</strong><span>решённых задач</span></div>
         <div><strong>{profile.streakDays}</strong><span>дней подряд</span></div>
       </div>
