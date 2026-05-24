@@ -1,5 +1,5 @@
 import type { DiagnosticSummary } from '../types';
-import type { StudentProfile } from '../data/profile';
+import { defaultProfile, type StudentProfile } from '../data/profile';
 import type { TaskDifficulty } from '../data/taskBank';
 import { supabase } from './supabase';
 
@@ -26,6 +26,7 @@ export function mapProfileRow(row: ProfileRow): StudentProfile {
     name: row.name,
     grade: row.grade,
     goal: row.goal,
+    interests: defaultProfile.interests,
     streakDays: row.streak_days,
     solvedTasks: row.solved_tasks,
     correctAnswers: row.correct_answers,
