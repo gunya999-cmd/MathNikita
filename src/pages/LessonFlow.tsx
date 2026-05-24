@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Button } from '../components/Button';
+import { InteractiveBoard } from '../components/InteractiveBoard';
+import { TeacherAvatar } from '../components/TeacherAvatar';
 import { getAdaptiveLessonView } from '../data/adaptiveLesson';
 import { getEliteLessonContent, sourceLabel } from '../data/eliteLessonContent';
 import { getLearningProgram } from '../data/learningProgram';
+import { getLessonBoardScene } from '../data/lessonBoard';
 import {
   loadLessonMastery,
   makeLessonId,
@@ -23,6 +26,7 @@ export function LessonFlow({ profile, onMastered }: { profile: StudentProfile; o
   const lessonId = makeLessonId(program.grade, lesson.order);
   const [mastery, setMastery] = useState<LessonMasteryState>(() => loadLessonMastery(lessonId));
   const adaptive = useMemo(() => getAdaptiveLessonView(profile, lesson, elite, mastery), [profile, lesson, elite, mastery]);
+  const boardScene = useMemo(() => getLessonBoardScene(mastery.stage, lesson, elite), [mastery.stage, lesson, elite]);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const stage = mastery.stage;
@@ -65,9 +69,14 @@ export function LessonFlow({ profile, onMastered }: { profile: StudentProfile; o
 
   return (
     <section className={`panel wide lesson-flow tone-${adaptive.tone}`}>
-      <div className="eyebrow">Элитный урок · адаптация по возрасту · {program.label}</div>
+      <div className="eyebrow">Элитный урок · аватар учителя · интерактивная доска · {program.label}</div>
       <h2>Урок {lesson.order}: {lesson.title}</h2>
       <p className="muted">{adaptive.ageLabel}. Урок подстраивает объяснение под класс, интересы и текущий прогресс.</p>
+
+      <div className="lesson-scene">
+        <TeacherAvatar mood={boardScene.mood} tone={adaptive.tone} line={boardScene.teacherLine} />
+        <InteractiveBoard scene={boardScene} />
+      </div>
 
       <div className="motivation-card">
         <div>
