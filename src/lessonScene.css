@@ -1,0 +1,196 @@
+.lesson-scene {
+  display: grid;
+  grid-template-columns: minmax(210px, .75fr) minmax(0, 1.6fr);
+  gap: 1rem;
+  align-items: stretch;
+  margin: 1.25rem 0;
+}
+
+.teacher-avatar {
+  display: grid;
+  align-content: start;
+  gap: .9rem;
+  padding: 1rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 1.4rem;
+  background: linear-gradient(180deg, #ffffff, #eef2ff);
+  box-shadow: 0 14px 40px rgba(37, 99, 235, .1);
+}
+
+.teacher-portrait {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 2rem;
+  background: radial-gradient(circle at top left, #ffffff, #dbeafe);
+  border: 1px solid #bfdbfe;
+  font-size: 2.6rem;
+}
+
+.teacher-meta {
+  display: grid;
+  gap: .2rem;
+}
+
+.teacher-meta strong {
+  font-size: 1.1rem;
+}
+
+.teacher-meta span {
+  color: #64748b;
+  font-size: .9rem;
+  line-height: 1.4;
+}
+
+.teacher-speech {
+  position: relative;
+  padding: .9rem;
+  border-radius: 1rem;
+  background: #0f172a;
+  color: white;
+  line-height: 1.55;
+}
+
+.teacher-speech::before {
+  content: '';
+  position: absolute;
+  top: -.45rem;
+  left: 1.25rem;
+  width: .9rem;
+  height: .9rem;
+  background: #0f172a;
+  transform: rotate(45deg);
+}
+
+.mood-success .teacher-portrait {
+  background: radial-gradient(circle at top left, #ffffff, #dcfce7);
+  border-color: #86efac;
+}
+
+.mood-review .teacher-portrait {
+  background: radial-gradient(circle at top left, #ffffff, #fef3c7);
+  border-color: #fde68a;
+}
+
+.interactive-board {
+  overflow: hidden;
+  border-radius: 1.4rem;
+  border: 1px solid #1e293b;
+  background: #0f172a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05), 0 18px 50px rgba(15, 23, 42, .16);
+}
+
+.board-topbar {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .8rem 1rem;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  background: rgba(15, 23, 42, .96);
+}
+
+.board-topbar strong {
+  color: white;
+  margin-right: auto;
+}
+
+.board-dot {
+  width: .7rem;
+  height: .7rem;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 .25rem rgba(34, 197, 94, .16);
+}
+
+.board-canvas {
+  min-height: 22rem;
+  display: grid;
+  gap: .8rem;
+  padding: 1rem;
+  background: radial-gradient(circle at top right, rgba(37, 99, 235, .28), transparent 16rem), #111827;
+}
+
+.board-title-block {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: -.03em;
+  color: white;
+}
+
+.board-idea,
+.board-model,
+.board-steps,
+.board-example,
+.board-question,
+.board-summary {
+  display: grid;
+  gap: .45rem;
+  padding: .9rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .08);
+  color: #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, .1);
+}
+
+.board-idea strong,
+.board-model strong,
+.board-steps strong,
+.board-example strong,
+.board-summary strong {
+  color: #93c5fd;
+}
+
+.board-question {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  background: rgba(250, 204, 21, .12);
+  border-color: rgba(250, 204, 21, .22);
+}
+
+.board-question strong {
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  background: #facc15;
+  color: #0f172a;
+}
+
+.board-steps ol,
+.board-example ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  line-height: 1.6;
+}
+
+.board-steps li + li,
+.board-example li + li {
+  margin-top: .25rem;
+}
+
+.board-example p {
+  margin: 0;
+  color: #e5e7eb;
+}
+
+.board-answer {
+  padding: .6rem .75rem;
+  border-radius: .8rem;
+  background: rgba(34, 197, 94, .14);
+  color: #bbf7d0;
+  font-weight: 800;
+}
+
+.board-summary {
+  background: rgba(34, 197, 94, .1);
+  border-color: rgba(34, 197, 94, .22);
+}
+
+@media (max-width: 960px) {
+  .lesson-scene {
+    grid-template-columns: 1fr;
+  }
+}
