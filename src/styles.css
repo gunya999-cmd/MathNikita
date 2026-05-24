@@ -74,6 +74,16 @@ input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: .9rem; pa
 .mastery-status div { display: grid; gap: .15rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: #f8fafc; }
 .mastery-status strong { font-size: 1.15rem; color: #0f172a; }
 .mastery-status span { color: #64748b; font-size: .9rem; }
+.motivation-card { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 1rem; margin: 1rem 0; padding: 1rem; border: 1px solid #c7d2fe; border-radius: 1.2rem; background: linear-gradient(135deg, #ffffff, #eef2ff); }
+.motivation-card p { margin: .25rem 0 0; font-size: .95rem; }
+.motivation-score { display: grid; place-items: center; min-width: 5.5rem; padding: .75rem; border-radius: 1rem; background: #0f172a; color: white; }
+.motivation-score strong { font-size: 1.5rem; }
+.motivation-score span { font-size: .8rem; opacity: .82; }
+.motivation-badge { padding: .7rem .9rem; border-radius: 999px; background: #fef3c7; color: #854d0e; font-weight: 900; white-space: nowrap; }
+.tone-playful .elite-lesson-block { background: linear-gradient(180deg, #fff7ed, #eff6ff); border-color: #fed7aa; }
+.tone-curious .elite-lesson-block { background: linear-gradient(180deg, #ffffff, #ecfeff); border-color: #a5f3fc; }
+.tone-independent .elite-lesson-block { background: linear-gradient(180deg, #ffffff, #eef2ff); border-color: #c7d2fe; }
+.tone-strategic .elite-lesson-block, .tone-advanced .elite-lesson-block { background: linear-gradient(180deg, #ffffff, #f8fafc); border-color: #94a3b8; }
 .source-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
 .source-chips span, .criteria-list span, .guided-questions span { display: inline-flex; align-items: center; border: 1px solid #bfdbfe; border-radius: 999px; padding: .45rem .7rem; background: #eff6ff; color: #1e3a8a; font-size: .85rem; font-weight: 800; }
 .elite-lesson-block { border-color: #c7d2fe; background: linear-gradient(180deg, #ffffff, #eef2ff); }
@@ -94,5 +104,5 @@ input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: .9rem; pa
 .tab-row { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1rem 0; }
 .tab { border: 1px solid #cbd5e1; border-radius: 999px; background: white; color: #475569; cursor: pointer; padding: .65rem .9rem; font-weight: 700; }
 .tab.active { background: #0f172a; color: white; border-color: #0f172a; }
-@media (max-width: 960px) { .module-grid, .mastery-status, .elite-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 760px) { .topbar, nav, .grid-page, .chat-input, .program-header, .lesson-roadmap-list article, .mastery-status, .elite-grid { display: grid; grid-template-columns: 1fr; } h1 { font-size: 2.8rem; } .module-grid { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .module-grid, .mastery-status, .elite-grid, .motivation-card { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .topbar, nav, .grid-page, .chat-input, .program-header, .lesson-roadmap-list article, .mastery-status, .elite-grid, .motivation-card { display: grid; grid-template-columns: 1fr; } h1 { font-size: 2.8rem; } .module-grid { grid-template-columns: 1fr; } }
