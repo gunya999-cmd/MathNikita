@@ -15,6 +15,7 @@ import {
   type LessonMasteryState,
 } from '../data/lessonMastery';
 import type { StudentProfile } from '../data/profile';
+import '../lessonScene.css';
 
 export function LessonFlow({ profile, onMastered }: { profile: StudentProfile; onMastered: () => void }) {
   const program = useMemo(() => getLearningProgram(profile.grade), [profile.grade]);
