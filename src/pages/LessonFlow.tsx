@@ -91,6 +91,30 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
           <p><strong>Тема:</strong> {lesson.title}</p>
           <p><strong>Цель:</strong> {lesson.objective}</p>
           <p><strong>Модуль:</strong> {lesson.moduleTitle} — {lesson.moduleFocus}</p>
+
+          <div className="teaching-card">
+            <div className="eyebrow">Объяснение учителя</div>
+            <h4>Сначала понимаем смысл</h4>
+            <p>{elite.teaching.teacherOpening}</p>
+            <p>{elite.teaching.conceptExplanation}</p>
+            <div className="hint-box"><strong>Мысленная модель:</strong> {elite.teaching.mentalModel}</div>
+          </div>
+
+          <div className="worked-example">
+            <div className="eyebrow">Пошаговый пример</div>
+            <h4>{elite.teaching.workedExample.problem}</h4>
+            <ol>
+              {elite.teaching.workedExample.steps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+            <div className="success-box"><strong>Ответ:</strong> {elite.teaching.workedExample.answer}</div>
+            <p><strong>Почему это работает:</strong> {elite.teaching.workedExample.whyItWorks}</p>
+          </div>
+
+          <div className="guided-questions">
+            <div className="eyebrow">Вопросы сильного учителя</div>
+            {elite.teaching.guidedQuestions.map((question) => <span key={question}>{question}</span>)}
+          </div>
+
           <div className="example-box">{elite.bigIdea}</div>
           <div className="elite-grid">
             <article><strong>SG структура</strong><span>{elite.learn.concreteModel}</span></article>
@@ -99,6 +123,7 @@ export function LessonFlow({ grade, onMastered }: { grade: string; onMastered: (
             <article><strong>CN/HU глубина</strong><span>{elite.learn.olympiadBridge}</span></article>
           </div>
           <p><strong>Формальное правило:</strong> {elite.learn.formalRule}</p>
+          <div className="success-box"><strong>Что ученик должен вынести:</strong> {elite.teaching.studentTakeaway}</div>
           <Button onClick={startPractice}>Перейти к закреплению</Button>
         </div>
       )}

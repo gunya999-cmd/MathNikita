@@ -75,8 +75,14 @@ input, select { width: 100%; border: 1px solid #cbd5e1; border-radius: .9rem; pa
 .mastery-status strong { font-size: 1.15rem; color: #0f172a; }
 .mastery-status span { color: #64748b; font-size: .9rem; }
 .source-chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
-.source-chips span, .criteria-list span { display: inline-flex; align-items: center; border: 1px solid #bfdbfe; border-radius: 999px; padding: .45rem .7rem; background: #eff6ff; color: #1e3a8a; font-size: .85rem; font-weight: 800; }
+.source-chips span, .criteria-list span, .guided-questions span { display: inline-flex; align-items: center; border: 1px solid #bfdbfe; border-radius: 999px; padding: .45rem .7rem; background: #eff6ff; color: #1e3a8a; font-size: .85rem; font-weight: 800; }
 .elite-lesson-block { border-color: #c7d2fe; background: linear-gradient(180deg, #ffffff, #eef2ff); }
+.teaching-card, .worked-example { display: grid; gap: .75rem; margin: 1rem 0; padding: 1.1rem; border: 1px solid #dbeafe; border-radius: 1.15rem; background: rgba(255,255,255,.92); }
+.teaching-card h4, .worked-example h4 { margin: 0; font-size: 1.15rem; }
+.worked-example ol { margin: 0; padding-left: 1.4rem; color: #334155; line-height: 1.7; }
+.worked-example li + li { margin-top: .35rem; }
+.guided-questions { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.guided-questions span { border-color: #ddd6fe; background: #f5f3ff; color: #4c1d95; }
 .elite-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
 .elite-grid article { display: grid; gap: .35rem; padding: 1rem; border: 1px solid #e0e7ff; border-radius: 1rem; background: rgba(255,255,255,.86); }
 .elite-grid strong { color: #312e81; }
