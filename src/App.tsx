@@ -10,6 +10,7 @@ import { Diagnostic } from './pages/Diagnostic';
 import { Landing } from './pages/Landing';
 import { LessonFlow } from './pages/LessonFlow';
 import { Login } from './pages/Login';
+import { Olympiad } from './pages/Olympiad';
 import { Practice } from './pages/Practice';
 import { Profile } from './pages/Profile';
 import { Training } from './pages/Training';
@@ -115,6 +116,7 @@ export function App() {
           <button onClick={() => setPage('diagnostic')}>Диагностика</button>
           <button onClick={() => setPage('practice')}>Практика</button>
           <button onClick={() => setPage('training')}>Тренировка</button>
+          <button onClick={() => setPage('olympiad')}>Олимпиада</button>
           <button onClick={() => setPage('chat')}>Чат</button>
           <button onClick={() => setPage('profile')}>Профиль</button>
           {user ? (
@@ -146,6 +148,7 @@ export function App() {
         {page === 'diagnostic' && <Diagnostic grade={profile.grade} onComplete={completeDiagnostic} />}
         {page === 'practice' && <Practice grade={profile.grade} onSolvedTask={addSolvedTask} />}
         {page === 'training' && <Training profile={profile} onAnswer={recordTrainingAnswer} />}
+        {page === 'olympiad' && <Olympiad />}
         {page === 'chat' && <Chat summary={diagnosticSummary} grade={profile.grade} />}
         {page === 'profile' && <Profile profile={profile} onSave={updateProfile} />}
       </main>
