@@ -1,161 +1,100 @@
 import { useMemo, useState } from 'react';
+import { skillLabels, syllabus, type CourseTask } from './data/course';
+import {
+  advanceAfterCorrect,
+  averageMastery,
+  currentLesson,
+  getCurrentTask,
+  loadLearnerState,
+  recordAttempt,
+  saveLearnerState,
+  weakSkills,
+  type LearnerState,
+} from './learningEngine';
 
-type SkillId = 'arithmetic' | 'expressions' | 'wordProblems' | 'fractions' | 'geometry' | 'logic' | 'combinatorics';
-type Phase = 'diagnostic' | 'lesson' | 'practice' | 'olympiad' | 'review' | 'complete';
 type Screen = 'learn' | 'progress' | 'parent';
 
-type SkillState = {
-  mastery: number;
-  attempts: number;
-  correct: number;
-  streak: number;
-  needsReview: boolean;
-};
-
-type LearnerState = {
-  diagnosticDone: boolean;
-  textbookLesson: number;
-  xp: number;
-  days: number;
-  completedSessions: number;
-  skills: Record<SkillId, SkillState>;
-};
-
-type Task = {
-  id: string;
-  phase: Phase;
-  skill: SkillId;
-  title: string;
-  prompt: string;
-  answer: string;
-  hint: string;
-  explanation: string;
-  difficulty: 1 | 2 | 3;
-  visual?: 'pairs' | 'segments' | 'fraction' | 'parity';
-};
-
-const skillLabels: Record<SkillId, string> = {
-  arithmetic: 'Вычисления',
-  expressions: 'Выражения',
-  wordProblems: 'Текстовые задачи',
-  fractions: 'Дроби',
-  geometry: 'Геометрия',
-  logic: 'Логика',
-  combinatorics: 'Комбинаторика',
-};
-
-const defaultSkill = (): SkillState => ({ mastery: 35, attempts: 0, correct: 0, streak: 0, needsReview: false });
-
-const defaultState: LearnerState = {
-  diagnosticDone: false,
-  textbookLesson: 1,
-  xp: 0,
-  days: 1,
-  completedSessions: 0,
-  skills: {
-    arithmetic: defaultSkill(), expressions: defaultSkill(), wordProblems: defaultSkill(), fractions: defaultSkill(),
-    geometry: defaultSkill(), logic: defaultSkill(), combinatorics: defaultSkill(),
-  },
-};
-
-const diagnosticTasks: Task[] = [
-  { id:'d1', phase:'diagnostic', skill:'arithmetic', title:'Быстрый счёт', prompt:'Вычисли: 48 + 27', answer:'75', hint:'Собери сначала полный десяток.', explanation:'48 + 27 = 48 + 2 + 25 = 75.', difficulty:1, visual:'pairs' },
-  { id:'d2', phase:'diagnostic', skill:'expressions', title:'Порядок действий', prompt:'Вычисли: 18 − 3 × 4', answer:'6', hint:'Сначала выполняется умножение.', explanation:'3 × 4 = 12, затем 18 − 12 = 6.', difficulty:1 },
-  { id:'d3', phase:'diagnostic', skill:'wordProblems', title:'Задача', prompt:'В 4 коробках по 6 карандашей. 5 карандашей отдали. Сколько осталось?', answer:'19', hint:'Сначала найди, сколько было всего.', explanation:'4 × 6 = 24, 24 − 5 = 19.', difficulty:1 },
-  { id:'d4', phase:'diagnostic', skill:'fractions', title:'Доли', prompt:'Какая часть закрашена, если из 8 равных частей закрашены 4? Запиши дробь.', answer:'1/2', hint:'4 из 8 можно сократить.', explanation:'4/8 = 1/2.', difficulty:1, visual:'fraction' },
-  { id:'d5', phase:'diagnostic', skill:'geometry', title:'Геометрия', prompt:'Периметр квадрата равен 28 см. Чему равна сторона?', answer:'7', hint:'У квадрата четыре равные стороны.', explanation:'28 ÷ 4 = 7 см.', difficulty:1 },
-  { id:'d6', phase:'diagnostic', skill:'logic', title:'Логика', prompt:'Все синие фишки круглые. Эта фишка синяя. Какая она по форме?', answer:'круглая', hint:'Используй условие «все».', explanation:'Из условия следует: синяя фишка обязательно круглая.', difficulty:1 },
-];
-
-const lessonTasks: Task[] = [
-  { id:'l1', phase:'lesson', skill:'arithmetic', title:'Урок по учебнику · Удобные вычисления', prompt:'Вычисли удобным способом: 37 + 63 + 28 + 72', answer:'200', hint:'Собери пары, которые дают 100.', explanation:'37 + 63 = 100 и 28 + 72 = 100. Всего 200.', difficulty:1, visual:'pairs' },
-  { id:'l2', phase:'practice', skill:'arithmetic', title:'Закрепление', prompt:'Вычисли: 46 + 54 + 19 + 81', answer:'200', hint:'Найди две пары по 100.', explanation:'46 + 54 = 100, 19 + 81 = 100.', difficulty:1, visual:'pairs' },
-  { id:'l3', phase:'practice', skill:'expressions', title:'Проверяем понимание', prompt:'Расставь порядок действий и вычисли: 90 − 6 × 8', answer:'42', hint:'Начни с умножения.', explanation:'6 × 8 = 48, 90 − 48 = 42.', difficulty:2 },
-  { id:'l4', phase:'olympiad', skill:'combinatorics', title:'Олимпиадная идея · Перебор без повторов', prompt:'На прямой отметили 5 точек. Сколько разных отрезков можно провести между ними?', answer:'10', hint:'Из первой точки — 4 новых, из второй — 3, затем 2 и 1.', explanation:'4 + 3 + 2 + 1 = 10. Каждый отрезок считаем один раз.', difficulty:2, visual:'segments' },
-  { id:'l5', phase:'review', skill:'arithmetic', title:'Контроль через паузу', prompt:'Вычисли без столбика: 125 + 375 + 64 + 36', answer:'600', hint:'Собери 500 и 100.', explanation:'125 + 375 = 500, 64 + 36 = 100. Всего 600.', difficulty:2, visual:'pairs' },
-];
-
-function loadState(): LearnerState {
-  try {
-    const raw = localStorage.getItem('math-course-state-v2');
-    return raw ? { ...defaultState, ...JSON.parse(raw) } : defaultState;
-  } catch { return defaultState; }
-}
+type Feedback = 'idle' | 'correct' | 'wrong';
 
 function normalize(value: string) {
   return value.trim().toLowerCase().replace(',', '.').replace(/\s+/g, '');
 }
 
+function persist(next: LearnerState, setter: (state: LearnerState) => void) {
+  saveLearnerState(next);
+  setter(next);
+}
+
 export function App() {
   const [screen, setScreen] = useState<Screen>('learn');
-  const [state, setState] = useState<LearnerState>(loadState);
-  const [taskIndex, setTaskIndex] = useState(0);
+  const [state, setState] = useState<LearnerState>(loadLearnerState);
   const [answer, setAnswer] = useState('');
-  const [feedback, setFeedback] = useState<'idle' | 'correct' | 'wrong'>('idle');
-  const [wrongOnCurrent, setWrongOnCurrent] = useState(0);
+  const [feedback, setFeedback] = useState<Feedback>('idle');
+  const [attemptsOnTask, setAttemptsOnTask] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
 
-  const tasks = state.diagnosticDone ? lessonTasks : diagnosticTasks;
-  const current = tasks[Math.min(taskIndex, tasks.length - 1)];
-  const averageMastery = useMemo(() => Math.round(Object.values(state.skills).reduce((s, x) => s + x.mastery, 0) / Object.keys(state.skills).length), [state]);
-  const weakSkills = useMemo(() => (Object.entries(state.skills) as [SkillId, SkillState][]).filter(([,v]) => v.mastery < 55 || v.needsReview).sort((a,b) => a[1].mastery - b[1].mastery), [state]);
+  const task = getCurrentTask(state);
+  const lesson = currentLesson(state);
+  const mastery = averageMastery(state);
+  const weak = useMemo(() => weakSkills(state), [state]);
+  const progressInSession = Math.round(((state.currentTaskIndex + (feedback === 'correct' ? 1 : 0)) / state.currentSessionTaskIds.length) * 100);
 
-  function persist(next: LearnerState) {
-    setState(next);
-    localStorage.setItem('math-course-state-v2', JSON.stringify(next));
+  function resetTaskUi() {
+    setAnswer('');
+    setFeedback('idle');
+    setAttemptsOnTask(0);
+    setShowHint(false);
   }
 
-  function check() {
-    if (!answer.trim()) return;
-    const correct = normalize(answer) === normalize(current.answer);
-    const skill = state.skills[current.skill];
-    const updatedSkill: SkillState = {
-      ...skill,
-      attempts: skill.attempts + 1,
-      correct: skill.correct + (correct ? 1 : 0),
-      streak: correct ? skill.streak + 1 : 0,
-      mastery: Math.max(5, Math.min(100, skill.mastery + (correct ? (wrongOnCurrent ? 3 : 7) : -6))),
-      needsReview: correct ? (skill.mastery < 45 && skill.attempts > 2) : true,
-    };
-    persist({ ...state, xp: state.xp + (correct ? 12 : 0), skills: { ...state.skills, [current.skill]: updatedSkill } });
+  function checkAnswer() {
+    if (!answer.trim() || feedback === 'correct') return;
+    const correct = normalize(answer) === normalize(task.answer);
+    const firstTry = attemptsOnTask === 0;
+    const next = recordAttempt(state, task, { correct, firstTry, usedHint: showHint });
+    persist(next, setState);
+    setAttemptsOnTask(value => value + 1);
+
     if (correct) {
       setFeedback('correct');
       setCelebrate(true);
-      setTimeout(() => setCelebrate(false), 900);
+      window.setTimeout(() => setCelebrate(false), 900);
     } else {
-      setWrongOnCurrent(v => v + 1);
       setFeedback('wrong');
       setShowHint(true);
     }
   }
 
-  function nextTask() {
-    if (taskIndex < tasks.length - 1) {
-      setTaskIndex(taskIndex + 1);
-      setAnswer(''); setFeedback('idle'); setWrongOnCurrent(0); setShowHint(false);
-      return;
-    }
-    if (!state.diagnosticDone) {
-      const next = { ...state, diagnosticDone: true, textbookLesson: 1 };
-      persist(next);
-      setTaskIndex(0); setAnswer(''); setFeedback('idle'); setWrongOnCurrent(0); setShowHint(false);
-    } else {
-      const next = { ...state, textbookLesson: state.textbookLesson + 1, completedSessions: state.completedSessions + 1, days: state.days + 1 };
-      persist(next);
-      setTaskIndex(0); setAnswer(''); setFeedback('idle'); setWrongOnCurrent(0); setShowHint(false);
-    }
+  function continueLearning() {
+    const next = advanceAfterCorrect(state);
+    persist(next, setState);
+    resetTaskUi();
   }
+
+  function resetCourse() {
+    localStorage.removeItem('math-course-state-v3');
+    window.location.reload();
+  }
+
+  const isDiagnostic = !state.diagnosticDone;
+  const sessionTitle = isDiagnostic ? 'Стартовая диагностика' : `Урок ${lesson.order} · ${lesson.title}`;
+  const sessionSubtitle = isDiagnostic
+    ? 'Несколько коротких задач определят темп, объём повторения и стартовый уровень.'
+    : `${lesson.unit}. Цель: ${lesson.goal}`;
 
   return (
     <div className="app-shell">
-      {celebrate && <div className="celebration"><i>✦</i><i>★</i><i>✦</i><i>◆</i><b>+12 XP</b></div>}
+      {celebrate && <Celebration firstTry={attemptsOnTask === 1} />}
+
       <header className="topbar">
-        <button className="brand" onClick={() => setScreen('learn')}><span>∑</span><div>Математика<small>личный маршрут</small></div></button>
+        <button className="brand" onClick={() => setScreen('learn')}>
+          <span>∑</span>
+          <div>Математика<small>личный маршрут</small></div>
+        </button>
         <nav>
-          <button className={screen==='learn'?'active':''} onClick={() => setScreen('learn')}>Занятие</button>
-          <button className={screen==='progress'?'active':''} onClick={() => setScreen('progress')}>Мой прогресс</button>
-          <button className={screen==='parent'?'active':''} onClick={() => setScreen('parent')}>Для родителя</button>
+          <button className={screen === 'learn' ? 'active' : ''} onClick={() => setScreen('learn')}>Занятие</button>
+          <button className={screen === 'progress' ? 'active' : ''} onClick={() => setScreen('progress')}>Мой прогресс</button>
+          <button className={screen === 'parent' ? 'active' : ''} onClick={() => setScreen('parent')}>Для родителя</button>
         </nav>
         <div className="xp-pill"><b>{state.xp}</b><span>XP</span></div>
       </header>
@@ -163,25 +102,93 @@ export function App() {
       {screen === 'learn' && (
         <main className="learn-page">
           <section className="today-card">
-            <div><span>{state.diagnosticDone ? `Урок ${state.textbookLesson} по программе` : 'Стартовая диагностика'}</span><h1>{state.diagnosticDone ? 'Сегодняшний маршрут уже готов' : 'Начинаем с нескольких коротких задач'}</h1><p>{state.diagnosticDone ? 'Приложение само выбрало объяснение, тренировку, повторение и олимпиадную задачу.' : 'Ничего выбирать не нужно. Ответы помогут определить темп и объём повторения.'}</p></div>
-            <div className="route-strip">{tasks.map((t,i)=><span key={t.id} className={i<taskIndex?'done':i===taskIndex?'current':''}>{i+1}<small>{t.phase==='diagnostic'?'тест':t.phase==='olympiad'?'идея':t.phase==='review'?'контроль':t.phase}</small></span>)}</div>
+            <div>
+              <span>{isDiagnostic ? 'Первый запуск' : 'Маршрут составлен автоматически'}</span>
+              <h1>{sessionTitle}</h1>
+              <p>{sessionSubtitle}</p>
+            </div>
+            <div className="route-strip" aria-label="Этапы занятия">
+              {state.currentSessionTaskIds.map((id, index) => {
+                const routeTask = id === task.id ? task : undefined;
+                return (
+                  <span key={`${id}-${index}`} className={index < state.currentTaskIndex ? 'done' : index === state.currentTaskIndex ? 'current' : ''}>
+                    {index + 1}
+                    <small>{routeTask ? kindLabel(routeTask) : 'этап'}</small>
+                  </span>
+                );
+              })}
+            </div>
           </section>
 
+          {state.lastSessionSummary && state.currentTaskIndex === 0 && (
+            <section className="session-summary">
+              <div><span>Предыдущее занятие</span><b>{state.lastSessionSummary.correct} верных ответов</b></div>
+              <div><span>Коррекция</span><b>{state.lastSessionSummary.reviewsAdded.length ? `Повторяем: ${state.lastSessionSummary.reviewsAdded.join(', ')}` : 'Дополнительное повторение не требуется'}</b></div>
+              <div><span>Темп</span><b>{state.lastSessionSummary.accelerated ? 'Ускоренный маршрут' : 'Обычный маршрут'}</b></div>
+            </section>
+          )}
+
           <section className="task-card">
-            <div className="task-meta"><span>{skillLabels[current.skill]}</span><b>{taskIndex+1} / {tasks.length}</b></div>
+            <div className="task-meta">
+              <span>{skillLabels[task.skill]}</span>
+              <b>{state.currentTaskIndex + 1} / {state.currentSessionTaskIds.length}</b>
+            </div>
             <div className="task-layout">
               <div className="task-main">
-                <div className="phase-tag">{current.title}</div>
-                <h2>{current.prompt}</h2>
-                {current.visual && <Visual type={current.visual} />}
-                <div className="answer-box"><input value={answer} onChange={e=>{setAnswer(e.target.value);setFeedback('idle')}} placeholder="Введи ответ" onKeyDown={e=>e.key==='Enter'&&check()} /><button onClick={check}>Проверить</button></div>
-                {showHint && feedback==='wrong' && <div className="hint-box"><b>Подсказка</b><span>{current.hint}</span></div>}
-                {feedback==='correct' && <div className="feedback good"><b>Верно!</b><span>{current.explanation}</span><button onClick={nextTask}>{taskIndex===tasks.length-1 ? (state.diagnosticDone?'Завершить занятие':'Составить мой маршрут') : 'Продолжить →'}</button></div>}
-                {feedback==='wrong' && <div className="feedback bad"><b>Это полезная ошибка</b><span>Приложение добавит короткое повторение по этой теме. Попробуй ещё раз.</span></div>}
+                <div className={`phase-tag kind-${task.kind}`}>{task.title}</div>
+                <h2>{task.prompt}</h2>
+                {task.visual && <Visual type={task.visual} />}
+
+                <div className="answer-box">
+                  <input
+                    value={answer}
+                    onChange={event => { setAnswer(event.target.value); if (feedback !== 'correct') setFeedback('idle'); }}
+                    placeholder="Введи ответ"
+                    onKeyDown={event => event.key === 'Enter' && checkAnswer()}
+                    autoFocus
+                  />
+                  <button onClick={checkAnswer}>Проверить</button>
+                </div>
+
+                {showHint && feedback !== 'correct' && (
+                  <div className="hint-box"><b>Подсказка</b><span>{task.hint}</span></div>
+                )}
+
+                {feedback === 'wrong' && (
+                  <div className="feedback bad">
+                    <b>Ошибка уже учтена</b>
+                    <span>Программа снизила уверенность по навыку «{skillLabels[task.skill]}» и при необходимости добавит повторение. Попробуй ещё раз.</span>
+                  </div>
+                )}
+
+                {feedback === 'correct' && (
+                  <div className="feedback good">
+                    <b>{attemptsOnTask === 1 ? 'Верно с первой попытки!' : 'Верно!'}</b>
+                    <span>{task.explanation}</span>
+                    <button onClick={continueLearning}>
+                      {state.currentTaskIndex === state.currentSessionTaskIds.length - 1
+                        ? isDiagnostic ? 'Построить мой курс' : 'Завершить занятие'
+                        : 'Продолжить →'}
+                    </button>
+                  </div>
+                )}
               </div>
+
               <aside>
-                <div className="companion"><div className="bot-face">⌁</div><b>Математический проводник</b><p>{feedback==='wrong'?'Не спеши. Ошибка показывает, что именно надо потренировать.':current.phase==='olympiad'?'Здесь важен не быстрый ответ, а красивая идея.':'Решай своим способом. После ответа сравним рассуждения.'}</p></div>
-                <div className="session-info"><span>Сегодня</span><b>{tasks.length} шагов</b><small>примерно 15–20 минут</small></div>
+                <div className="companion">
+                  <div className={`bot-face ${feedback}`}>⌁</div>
+                  <b>Математический проводник</b>
+                  <p>{guideText(task, feedback, attemptsOnTask)}</p>
+                </div>
+                <div className="session-info">
+                  <span>Занятие</span>
+                  <b>{progressInSession}%</b>
+                  <small>{isDiagnostic ? 'после теста откроется первый урок' : 'олимпиадный блок обязателен и встроен в маршрут'}</small>
+                </div>
+                <div className="lesson-plan-mini">
+                  <span>Структура</span>
+                  <b>Объяснение → практика → олимпиадная идея → контроль</b>
+                </div>
               </aside>
             </div>
           </section>
@@ -190,25 +197,64 @@ export function App() {
 
       {screen === 'progress' && (
         <main className="dashboard">
-          <header><span>Карта знаний</span><h1>Приложение следит за навыками, а не только за оценками</h1></header>
-          <div className="score-row"><article><span>Освоение курса</span><b>{averageMastery}%</b><small>обновляется после каждого ответа</small></article><article><span>Занятий завершено</span><b>{state.completedSessions}</b><small>учебный темп регулируется автоматически</small></article><article><span>Текущий урок</span><b>{state.textbookLesson}</b><small>движение по плану учебника</small></article></div>
-          <div className="skills-grid">{(Object.entries(state.skills) as [SkillId,SkillState][]).map(([id,s])=><article key={id}><div><b>{skillLabels[id]}</b><span>{s.mastery}%</span></div><div className="bar"><i style={{width:`${s.mastery}%`}}/></div><small>{s.needsReview?'Запланировано повторение':s.mastery>75?'Можно ускорить темп':'Идёт плановое изучение'}</small></article>)}</div>
+          <header><span>Личный кабинет ученика</span><h1>Прогресс по навыкам</h1><p>Здесь видно не только количество верных ответов, но и устойчивость навыков.</p></header>
+          <div className="score-row">
+            <article><span>Общее освоение</span><b>{mastery}%</b><small>Средний уровень по семи направлениям</small></article>
+            <article><span>Завершено занятий</span><b>{state.completedSessions}</b><small>Диагностика не считается обычным уроком</small></article>
+            <article><span>Текущий урок</span><b>{lesson.order}</b><small>{lesson.title}</small></article>
+          </div>
+          <div className="skills-grid">
+            {Object.entries(state.skills).map(([id, skill]) => (
+              <article key={id}>
+                <div><b>{skillLabels[id as keyof typeof skillLabels]}</b><strong>{skill.mastery}%</strong></div>
+                <div className="bar"><i style={{ width: `${skill.mastery}%` }} /></div>
+                <small>{skill.needsReview ? 'Назначено повторение' : skill.streak >= 3 ? 'Навык устойчив' : 'Продолжаем наблюдение'}</small>
+              </article>
+            ))}
+          </div>
         </main>
       )}
 
       {screen === 'parent' && (
-        <main className="dashboard parent-view">
-          <header><span>Родительский обзор</span><h1>Что происходит с учебной траекторией</h1></header>
-          <div className="parent-grid"><article><h3>Текущий режим</h3><p>Ученик проходит темы последовательно по школьному плану. При устойчивом результате приложение сокращает число однотипных упражнений и быстрее переходит дальше.</p></article><article><h3>Зоны внимания</h3>{weakSkills.length?<ul>{weakSkills.slice(0,4).map(([id,s])=><li key={id}><b>{skillLabels[id]}</b><span>{s.mastery}% · будет дополнительное повторение</span></li>)}</ul>:<p>Выраженных пробелов пока нет.</p>}</article><article><h3>Олимпиадная линия</h3><p>В каждом занятии есть одна задача на идею: перебор, чётность, обратный ход, графы, инварианты или доказательство.</p></article><article><h3>Как корректируется курс</h3><p>Одна ошибка вызывает подсказку. Повторяющиеся ошибки добавляют объяснение, упрощённую тренировку и контроль через несколько заданий.</p></article></div>
+        <main className="dashboard">
+          <header><span>Родительский обзор</span><h1>Что делает система</h1><p>Маршрут следует учебному плану, но автоматически регулирует объём практики и повторения.</p></header>
+          <div className="parent-grid">
+            <article><h3>Текущий этап</h3><p>{isDiagnostic ? 'Идёт стартовая диагностика.' : `${lesson.unit}: ${lesson.title}.`}</p><ul><li><span>Номер урока</span><b>{lesson.order}</b></li><li><span>Заданий в маршруте</span><b>{state.currentSessionTaskIds.length}</b></li><li><span>Прогресс занятия</span><b>{progressInSession}%</b></li></ul></article>
+            <article><h3>Пробелы и повторение</h3>{weak.length ? <ul>{weak.map(([id, skill]) => <li key={id}><span>{skillLabels[id]}</span><b>{skill.mastery}%</b></li>)}</ul> : <p>Выраженных пробелов пока не обнаружено.</p>}</article>
+            <article><h3>Как регулируется сложность</h3><p>Верный ответ с первой попытки повышает уверенность сильнее. Ошибка, подсказка или повторная попытка уменьшают прирост. При устойчивом результате часть однотипной практики пропускается.</p></article>
+            <article><h3>Олимпиадная линия</h3><p>В каждом уроке есть обязательная задача на идею: перебор, обратный ход, оценку, чётность, графы или инварианты. Она не вынесена в отдельный факультатив.</p></article>
+            <article><h3>Техническое управление</h3><p>Данные пока хранятся только на этом устройстве. Это безопасно для тестирования первой версии.</p><button className="danger-button" onClick={resetCourse}>Сбросить весь прогресс</button></article>
+          </div>
         </main>
       )}
     </div>
   );
 }
 
-function Visual({type}:{type:NonNullable<Task['visual']>}) {
-  if (type==='pairs') return <div className="visual pairs"><span>37</span><i>+</i><span>63</span><b>= 100</b><span>28</span><i>+</i><span>72</span><b>= 100</b></div>;
-  if (type==='segments') return <div className="visual segments"><i/><i/><i/><i/><i/></div>;
-  if (type==='fraction') return <div className="visual fraction">{Array.from({length:8}).map((_,i)=><i key={i} className={i<4?'filled':''}/>)}</div>;
-  return <div className="visual parity"><span>1</span><span>2</span><span>3</span><span>4</span></div>;
+function kindLabel(task: CourseTask) {
+  const labels: Record<CourseTask['kind'], string> = {
+    diagnostic: 'тест', explain: 'идея', practice: 'практика', challenge: 'олимпиада', review: 'повтор', checkpoint: 'контроль',
+  };
+  return labels[task.kind];
+}
+
+function guideText(task: CourseTask, feedback: Feedback, attempts: number) {
+  if (feedback === 'wrong') return 'Не спеши. Ошибка показывает, какой шаг надо укрепить. Подсказка уже открыта.';
+  if (feedback === 'correct' && attempts === 1) return 'Отлично. Решение с первой попытки повышает темп дальнейшего курса.';
+  if (task.kind === 'challenge') return 'Здесь важна идея. Попробуй объяснить себе, почему способ работает.';
+  if (task.kind === 'review') return 'Это короткое повторение появилось из-за предыдущих ошибок или низкой уверенности.';
+  if (task.kind === 'checkpoint') return 'Контроль показывает, сохранился ли навык после нескольких разных заданий.';
+  return 'Решай спокойно. Программа сама определит, когда ускориться, а когда добавить практику.';
+}
+
+function Celebration({ firstTry }: { firstTry: boolean }) {
+  return <div className="celebration"><i>✦</i><i>★</i><i>π</i><i>△</i><b>{firstTry ? '+12 XP · с первой попытки' : '+7 XP'}</b></div>;
+}
+
+function Visual({ type }: { type: NonNullable<CourseTask['visual']> }) {
+  if (type === 'pairs') return <div className="visual pairs"><span>37</span><i>+</i><span>63</span><b>100</b><span>28</span><i>+</i><span>72</span><b>100</b></div>;
+  if (type === 'segments') return <div className="visual segments">{[1,2,3,4,5].map(n => <i key={n} />)}</div>;
+  if (type === 'fraction') return <div className="visual fraction">{[1,2,3,4,5,6,7,8].map(n => <i key={n} className={n <= 4 ? 'filled' : ''} />)}</div>;
+  if (type === 'parity') return <div className="visual parity"><span>2</span><span>4</span><span>6</span><span>8</span></div>;
+  return <div className="visual numberline"><i>0</i><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></div>;
 }
