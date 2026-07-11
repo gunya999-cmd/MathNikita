@@ -151,7 +151,8 @@ export function buildLessonSession(state: LearnerState): { taskIds: string[]; ac
   const lessonMastery = lesson.prerequisiteSkills.reduce((sum, id) => sum + state.skills[id].mastery, 0) / lesson.prerequisiteSkills.length;
   const strong = lesson.prerequisiteSkills.every(id => state.skills[id].mastery >= 82 && state.skills[id].streak >= 2);
   const accelerated = strong || lessonMastery >= 88;
-  const core = accelerated ? [lesson.coreTaskIds[0], lesson.coreTaskIds.at(-1)!] : lesson.coreTaskIds;
+  const lastCoreTaskId = lesson.coreTaskIds[lesson.coreTaskIds.length - 1];
+  const core = accelerated ? [lesson.coreTaskIds[0], lastCoreTaskId] : lesson.coreTaskIds;
   return {
     taskIds: [...reviews, ...core, lesson.olympiadTaskId, lesson.checkpointTaskId],
     accelerated,
