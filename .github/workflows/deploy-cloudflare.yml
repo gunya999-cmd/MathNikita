@@ -11,15 +11,13 @@ permissions:
 
 concurrency:
   group: cloudflare-production
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
     name: Build and deploy production
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment:
-      name: production
 
     steps:
       - name: Checkout repository
@@ -36,9 +34,12 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Show deployment revision
+        run: echo "Deploying commit $GITHUB_SHA"
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          command: deploy --name mathnikita
