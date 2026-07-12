@@ -1,32 +1,8 @@
+import type { LessonBlock, RichLessonContent } from './lessonTypes';
 import { chapter2RichLessons } from './chapter2RichLessons';
 import { chapter3RichLessons } from './chapter3RichLessons';
 
-export type LessonBlockKind =
-  | 'motivation'
-  | 'explanation'
-  | 'guided'
-  | 'practice'
-  | 'mistakes'
-  | 'checkpoint'
-  | 'thinking'
-  | 'olympiad'
-  | 'summary';
-
-export type LessonBlock = {
-  kind: LessonBlockKind;
-  title: string;
-  text: string;
-  items?: string[];
-  answers?: string[];
-};
-
-export type RichLessonContent = {
-  lessonNumber: number;
-  title: string;
-  goal: string;
-  durationMinutes: number;
-  blocks: LessonBlock[];
-};
+export type { LessonBlock, LessonBlockKind, RichLessonContent } from './lessonTypes';
 
 const makeLesson = (
   lessonNumber: number,
