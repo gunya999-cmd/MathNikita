@@ -9,13 +9,7 @@ export type YearLesson = {
   available: boolean;
 };
 
-type Segment = {
-  unit: string;
-  paragraph: string;
-  topic: string;
-  from: number;
-  to: number;
-};
+type Segment = { unit:string; paragraph:string; topic:string; from:number; to:number };
 
 const segments: Segment[] = [
   { unit:'Глава 1 · Натуральные числа', paragraph:'§ 1', topic:'Ряд натуральных чисел', from:1, to:2 },
@@ -26,7 +20,6 @@ const segments: Segment[] = [
   { unit:'Глава 1 · Натуральные числа', paragraph:'§ 6', topic:'Сравнение натуральных чисел', from:16, to:18 },
   { unit:'Глава 1 · Натуральные числа', paragraph:'Повторение', topic:'Повторение и систематизация главы 1', from:19, to:19 },
   { unit:'Глава 1 · Натуральные числа', paragraph:'Контроль', topic:'Контрольная работа № 1', from:20, to:20 },
-
   { unit:'Глава 2 · Сложение и вычитание', paragraph:'§ 7', topic:'Сложение натуральных чисел. Свойства сложения', from:21, to:24 },
   { unit:'Глава 2 · Сложение и вычитание', paragraph:'§ 8', topic:'Вычитание натуральных чисел', from:25, to:29 },
   { unit:'Глава 2 · Сложение и вычитание', paragraph:'§ 9', topic:'Числовые и буквенные выражения. Формулы', from:30, to:32 },
@@ -39,7 +32,6 @@ const segments: Segment[] = [
   { unit:'Глава 2 · Сложение и вычитание', paragraph:'§ 15', topic:'Прямоугольник. Ось симметрии фигуры', from:49, to:51 },
   { unit:'Глава 2 · Сложение и вычитание', paragraph:'Повторение', topic:'Повторение и систематизация главы 2', from:52, to:52 },
   { unit:'Глава 2 · Сложение и вычитание', paragraph:'Контроль', topic:'Контрольная работа № 3', from:53, to:53 },
-
   { unit:'Глава 3 · Умножение и деление', paragraph:'§ 16', topic:'Умножение. Переместительное свойство', from:54, to:57 },
   { unit:'Глава 3 · Умножение и деление', paragraph:'§ 17', topic:'Сочетательное и распределительное свойства', from:58, to:60 },
   { unit:'Глава 3 · Умножение и деление', paragraph:'§ 18', topic:'Деление', from:61, to:67 },
@@ -52,7 +44,6 @@ const segments: Segment[] = [
   { unit:'Глава 3 · Умножение и деление', paragraph:'§ 24', topic:'Комбинаторные задачи', from:85, to:87 },
   { unit:'Глава 3 · Умножение и деление', paragraph:'Повторение', topic:'Повторение и систематизация главы 3', from:88, to:89 },
   { unit:'Глава 3 · Умножение и деление', paragraph:'Контроль', topic:'Контрольная работа № 5', from:90, to:90 },
-
   { unit:'Глава 4 · Обыкновенные дроби', paragraph:'§ 25', topic:'Понятие обыкновенной дроби', from:91, to:95 },
   { unit:'Глава 4 · Обыкновенные дроби', paragraph:'§ 26', topic:'Правильные и неправильные дроби. Сравнение', from:96, to:98 },
   { unit:'Глава 4 · Обыкновенные дроби', paragraph:'§ 27', topic:'Сложение и вычитание дробей', from:99, to:100 },
@@ -60,7 +51,6 @@ const segments: Segment[] = [
   { unit:'Глава 4 · Обыкновенные дроби', paragraph:'§ 29', topic:'Смешанные числа', from:102, to:106 },
   { unit:'Глава 4 · Обыкновенные дроби', paragraph:'Повторение', topic:'Повторение и систематизация главы 4', from:107, to:107 },
   { unit:'Глава 4 · Обыкновенные дроби', paragraph:'Контроль', topic:'Контрольная работа № 6', from:108, to:108 },
-
   { unit:'Глава 5 · Десятичные дроби и проценты', paragraph:'§ 30', topic:'Представление о десятичных дробях', from:109, to:112 },
   { unit:'Глава 5 · Десятичные дроби и проценты', paragraph:'§ 31', topic:'Сравнение десятичных дробей', from:113, to:115 },
   { unit:'Глава 5 · Десятичные дроби и проценты', paragraph:'§ 32', topic:'Округление чисел. Прикидки', from:116, to:118 },
@@ -74,7 +64,6 @@ const segments: Segment[] = [
   { unit:'Глава 5 · Десятичные дроби и проценты', paragraph:'§ 38', topic:'Нахождение числа по его процентам', from:150, to:153 },
   { unit:'Глава 5 · Десятичные дроби и проценты', paragraph:'Повторение', topic:'Повторение и систематизация главы 5', from:154, to:155 },
   { unit:'Глава 5 · Десятичные дроби и проценты', paragraph:'Контроль', topic:'Контрольная работа № 9', from:156, to:156 },
-
   { unit:'Итоговое повторение', paragraph:'Итог', topic:'Натуральные числа и вычисления', from:157, to:160 },
   { unit:'Итоговое повторение', paragraph:'Итог', topic:'Выражения, формулы и уравнения', from:161, to:164 },
   { unit:'Итоговое повторение', paragraph:'Итог', topic:'Геометрия, площади и объёмы', from:165, to:168 },
@@ -83,7 +72,7 @@ const segments: Segment[] = [
   { unit:'Итоговая аттестация', paragraph:'Контроль', topic:'Итоговая контрольная работа', from:175, to:175 },
 ];
 
-const phaseNames = ['Открытие темы', 'Базовые способы', 'Практика', 'Углубление', 'Задачи', 'Закрепление', 'Проверка понимания', 'Исследование'];
+const phaseNames = ['Открытие темы','Базовые способы','Практика','Углубление','Задачи','Закрепление','Проверка понимания','Исследование'];
 
 function lessonType(segment: Segment): LessonType {
   if (segment.from === 175) return 'final';
@@ -93,24 +82,15 @@ function lessonType(segment: Segment): LessonType {
 }
 
 export const yearPlan: YearLesson[] = segments.flatMap(segment =>
-  Array.from({ length: segment.to - segment.from + 1 }, (_, offset) => {
+  Array.from({ length:segment.to - segment.from + 1 }, (_, offset) => {
     const number = segment.from + offset;
     const type = lessonType(segment);
     const suffix = type === 'new' && segment.to > segment.from ? ` · ${phaseNames[offset % phaseNames.length]}` : '';
-    return {
-      number,
-      unit: segment.unit,
-      paragraph: segment.paragraph,
-      title: `${segment.topic}${suffix}`,
-      lessonType: type,
-      available: number <= 3,
-    };
+    return { number, unit:segment.unit, paragraph:segment.paragraph, title:`${segment.topic}${suffix}`, lessonType:type, available:number <= 20 };
   }),
 );
 
 export const totalLessons = yearPlan.length;
 export const yearUnits = Array.from(new Set(yearPlan.map(lesson => lesson.unit)));
 
-if (totalLessons !== 175) {
-  throw new Error(`Year plan must contain 175 lessons, received ${totalLessons}`);
-}
+if (totalLessons !== 175) throw new Error(`Year plan must contain 175 lessons, received ${totalLessons}`);
