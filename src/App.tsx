@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { skillLabels, type CourseTask } from './data/course';
 import { totalLessons, yearPlan } from './data/yearPlan';
-import { LessonPlayer } from './LessonPlayer';
+import { LessonCourseShell } from './LessonCourseShell';
 import './focusLearning.css';
 import {
   advanceAfterCorrect,
@@ -108,7 +108,7 @@ export function App() {
         <div className="xp-pill">⭐ <b>{state.xp}</b> XP</div>
       </header>
 
-      {screen === 'course' && <LessonPlayer />}
+      {screen === 'course' && <LessonCourseShell />}
 
       {screen === 'learn' && <main className="learn-page">
         <section className="year-status">
