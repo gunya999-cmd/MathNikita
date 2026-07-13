@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { allRichLessons, type LessonBlockKind } from './data/richLessonContent';
 import './lessonPlayer.css';
+import './theoryExperience.css';
 
 type Activity =
   | { id:string; type:'choice'; prompt:string; options:string[]; answer:string; explanation:string }
