@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { skillLabels, type CourseTask } from './data/course';
 import { totalLessons, yearPlan } from './data/yearPlan';
 import { LessonPlayer } from './LessonPlayer';
+import './focusLearning.css';
 import {
   advanceAfterCorrect,
   averageMastery,
