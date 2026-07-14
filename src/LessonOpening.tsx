@@ -55,6 +55,20 @@ export const lessonOneOpening: LessonOpeningData = {
   icon: '🔭',
 };
 
+export const lessonTwoOpening: LessonOpeningData = {
+  kicker: 'Урок 2 · ищем правило',
+  title: 'Натуральный ряд и закономерности',
+  intro: 'Между домами № 27 и № 35 легко выписать все номера. Но как быстро узнать, сколько чисел находится между миллионом и миллионом сто — не выписывая их?',
+  question: 'Как по двум границам сразу определить количество чисел между ними — и чем натуральный ряд отличается от любой другой последовательности?',
+  goals: [
+    'Выведем правило для количества натуральных чисел между двумя границами.',
+    'Научимся различать «между» и «включительно» и работать с большими числами.',
+    'Будем находить шаг последовательности, проверять правила и строить контрпримеры.',
+  ],
+  durationMinutes: 35,
+  icon: '🧩',
+};
+
 export function LessonOpening({ data, onStart }: { data: LessonOpeningData; onStart: () => void }) {
   return (
     <section className="lesson-opening" aria-labelledby="lesson-opening-title">
