@@ -103,6 +103,18 @@ export function LessonCourseShell() {
   }
 
   useEffect(() => {
+    if (mode !== 'lesson') return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const buttons = Array.from(shellRef.current?.querySelectorAll<HTMLButtonElement>('.lesson-list button') ?? []);
+      const selectedButton = buttons.find(button => Number(button.querySelector(':scope > span')?.textContent) === selectedLesson);
+      if (selectedButton && !selectedButton.classList.contains('active')) selectedButton.click();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [mode, selectedLesson]);
+
+  useEffect(() => {
     const root = shellRef.current;
     if (!root || mode !== 'lesson') return;
 
@@ -160,7 +172,7 @@ export function LessonCourseShell() {
       </div>
 
       <div className="lesson-runtime" hidden={mode !== 'lesson'}>
-        <LessonPlayer key={selectedLesson} lessonNumber={selectedLesson} />
+        <LessonPlayer key={selectedLesson} />
       </div>
 
       <ProgressiveHintCoach
