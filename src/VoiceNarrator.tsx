@@ -6,12 +6,23 @@ type VoiceNarratorProps = {
   mode: 'opening' | 'lesson';
 };
 
+type VoiceEngine = 'neural' | 'system';
+
 type StoredVoiceSettings = {
+  engine?: VoiceEngine;
   voiceURI?: string;
   rate?: number;
 };
 
+type NeuralNarrationManifest = {
+  engine: string;
+  voice: string;
+  license?: string;
+  clips: Record<string, string>;
+};
+
 const STORAGE_KEY = 'mathnikita-voice-settings';
+const MANIFEST_URL = '/audio/neural/manifest.json';
 
 function loadSettings(): StoredVoiceSettings {
   try {
@@ -25,9 +36,9 @@ function scoreVoice(voice: SpeechSynthesisVoice) {
   const name = voice.name.toLowerCase();
   let score = 0;
   if (voice.lang.toLowerCase().startsWith('ru')) score += 100;
-  if (voice.localService) score += 40;
-  if (/milena|katya|irina|алёна|alena|premium|enhanced|natural/.test(name)) score += 20;
-  if (/google|microsoft|apple/.test(name)) score += 8;
+  if (/milena|katya|irina|алёна|alena|premium|enhanced|natural/.test(name)) score += 40;
+  if (/google|microsoft|apple/.test(name)) score += 20;
+  if (voice.localService) score += 8;
   return score;
 }
 
@@ -52,6 +63,22 @@ function getNarrationText(root: HTMLElement | null, mode: 'opening' | 'lesson') 
   return Array.from(new Set(parts)).join('. ');
 }
 
+function getNarrationId(root: HTMLElement | null, mode: 'opening' | 'lesson') {
+  if (!root) return '';
+  const lessonLabel = root.querySelector<HTMLElement>('.lesson-mode-toolbar > div > span')?.textContent ?? '';
+  const lessonMatch = lessonLabel.match(/Урок\s+(\d+)/i);
+  if (!lessonMatch) return '';
+  const lessonNumber = String(Number(lessonMatch[1])).padStart(2, '0');
+
+  if (mode === 'opening') return `lesson-${lessonNumber}-opening`;
+
+  const stageLabel = root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .stage-counter')?.textContent ?? '';
+  const stageMatch = stageLabel.match(/Этап\s+(\d+)/i);
+  if (!stageMatch) return '';
+  const stageNumber = String(Number(stageMatch[1])).padStart(2, '0');
+  return `lesson-${lessonNumber}-stage-${stageNumber}`;
+}
+
 function splitForSpeech(text: string) {
   const sentences = text.match(/[^.!?…]+[.!?…]?/g) ?? [text];
   const chunks: string[] = [];
@@ -71,17 +98,22 @@ function splitForSpeech(text: string) {
 }
 
 export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
-  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const systemSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+  const audioSupported = typeof window !== 'undefined' && typeof Audio !== 'undefined';
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [manifest, setManifest] = useState<NeuralNarrationManifest | null>(null);
+  const [manifestChecked, setManifestChecked] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const initialSettings = useMemo(loadSettings, []);
+  const [engine, setEngine] = useState<VoiceEngine>(initialSettings.engine ?? 'neural');
   const [voiceURI, setVoiceURI] = useState(initialSettings.voiceURI ?? '');
-  const [rate, setRate] = useState(initialSettings.rate ?? 0.94);
+  const [rate, setRate] = useState(initialSettings.rate ?? 1);
   const sessionRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (!supported) return;
+    if (!systemSupported) return;
     const loadVoices = () => {
       const next = window.speechSynthesis.getVoices().sort((a, b) => scoreVoice(b) - scoreVoice(a));
       setVoices(next);
@@ -93,35 +125,72 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
     loadVoices();
     window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
     return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
-  }, [supported, voiceURI]);
+  }, [systemSupported, voiceURI]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ voiceURI, rate }));
-  }, [voiceURI, rate]);
+    let active = true;
+    fetch(MANIFEST_URL, { cache: 'no-cache' })
+      .then(response => {
+        if (!response.ok) throw new Error(`Narration manifest: ${response.status}`);
+        return response.json() as Promise<NeuralNarrationManifest>;
+      })
+      .then(nextManifest => {
+        if (active) setManifest(nextManifest);
+      })
+      .catch(() => {
+        if (active) setManifest(null);
+      })
+      .finally(() => {
+        if (active) setManifestChecked(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  useEffect(() => () => {
-    if (supported) window.speechSynthesis.cancel();
-  }, [supported]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ engine, voiceURI, rate }));
+  }, [engine, voiceURI, rate]);
 
   function stop() {
     sessionRef.current += 1;
-    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
+    if (systemSupported) window.speechSynthesis.cancel();
     setSpeaking(false);
   }
 
-  function speak() {
-    if (!supported) return;
-    if (speaking) {
+  useEffect(() => {
+    stop();
+    const root = rootRef.current;
+    if (!root) return;
+
+    let currentId = getNarrationId(root, mode);
+    const observer = new MutationObserver(() => {
+      const nextId = getNarrationId(root, mode);
+      if (nextId && nextId !== currentId) {
+        currentId = nextId;
+        stop();
+      }
+    });
+    observer.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => {
+      observer.disconnect();
       stop();
+    };
+  }, [mode, rootRef]);
+
+  function startSystemSpeech(text: string, session: number) {
+    if (!systemSupported || !text) {
+      setSpeaking(false);
       return;
     }
 
-    const text = getNarrationText(rootRef.current, mode);
-    if (!text) return;
-
     window.speechSynthesis.cancel();
-    const session = sessionRef.current + 1;
-    sessionRef.current = session;
     const chunks = splitForSpeech(text);
     const selectedVoice = voices.find(voice => voice.voiceURI === voiceURI)
       ?? voices.find(voice => voice.lang.toLowerCase().startsWith('ru'))
@@ -152,31 +221,89 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
     playNext();
   }
 
-  if (!supported) return null;
+  function speak() {
+    if (speaking) {
+      stop();
+      return;
+    }
+
+    const text = getNarrationText(rootRef.current, mode);
+    if (!text) return;
+
+    stop();
+    const session = sessionRef.current + 1;
+    sessionRef.current = session;
+    const narrationId = getNarrationId(rootRef.current, mode);
+    const neuralSource = narrationId ? manifest?.clips[narrationId] : undefined;
+
+    if (engine === 'neural' && audioSupported && neuralSource) {
+      const audio = new Audio(neuralSource);
+      audio.preload = 'auto';
+      audio.playbackRate = rate;
+      audioRef.current = audio;
+      setSpeaking(true);
+
+      const fallback = () => {
+        if (sessionRef.current !== session) return;
+        audioRef.current = null;
+        startSystemSpeech(text, session);
+      };
+
+      audio.onended = () => {
+        if (sessionRef.current === session) setSpeaking(false);
+        audioRef.current = null;
+      };
+      audio.onerror = fallback;
+      void audio.play().catch(fallback);
+      return;
+    }
+
+    startSystemSpeech(text, session);
+  }
+
+  if (!audioSupported && !systemSupported) return null;
 
   const russianVoices = voices.filter(voice => voice.lang.toLowerCase().startsWith('ru'));
   const voiceOptions = russianVoices.length ? russianVoices : voices;
+  const neuralReady = Boolean(manifest && Object.keys(manifest.clips).length);
 
   return (
     <div className="voice-narrator">
       <button type="button" className={speaking ? 'is-speaking' : ''} onClick={speak} aria-pressed={speaking}>
-        <span aria-hidden="true">{speaking ? '■' : '🔊'}</span>
-        {speaking ? 'Остановить' : 'Озвучить'}
+        <span aria-hidden="true">{speaking ? '■' : '▶'}</span>
+        {speaking ? 'Остановить' : 'Слушать'}
       </button>
       <button type="button" className="voice-settings-button" onClick={() => setSettingsOpen(open => !open)} aria-expanded={settingsOpen} aria-label="Настройки голоса">⚙</button>
       {settingsOpen ? (
         <div className="voice-settings-panel">
           <label>
-            <span>Голос</span>
-            <select value={voiceURI} onChange={event => setVoiceURI(event.target.value)}>
-              {voiceOptions.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.localService ? ' · на устройстве' : ''}</option>)}
+            <span>Режим озвучки</span>
+            <select value={engine} onChange={event => setEngine(event.target.value as VoiceEngine)}>
+              <option value="neural">Нейроголос Ирина · рекомендуется</option>
+              <option value="system">Системный голос · резервный</option>
             </select>
           </label>
+          {engine === 'system' ? (
+            <label>
+              <span>Системный голос</span>
+              <select value={voiceURI} onChange={event => setVoiceURI(event.target.value)}>
+                {voiceOptions.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.localService ? ' · на устройстве' : ''}</option>)}
+              </select>
+            </label>
+          ) : null}
           <label>
             <span>Скорость: {rate.toFixed(2)}×</span>
-            <input type="range" min="0.78" max="1.12" step="0.02" value={rate} onChange={event => setRate(Number(event.target.value))} />
+            <input type="range" min="0.86" max="1.12" step="0.02" value={rate} onChange={event => setRate(Number(event.target.value))} />
           </label>
-          <small>Используется системный голос устройства: без подписки, сервера и загрузки аудио.</small>
+          <small className={neuralReady ? 'voice-engine-ready' : 'voice-engine-pending'}>
+            {engine === 'neural'
+              ? neuralReady
+                ? `Готовая нейросетевая дорожка «${manifest?.voice}»: запускается сразу и одинаково звучит на всех устройствах.`
+                : manifestChecked
+                  ? 'Для этой сцены готовой дорожки пока нет. Временно используется лучший доступный системный голос.'
+                  : 'Загружаем подготовленную нейросетевую дорожку…'
+              : 'Системный голос зависит от устройства и используется как резервный вариант.'}
+          </small>
         </div>
       ) : null}
     </div>
