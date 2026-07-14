@@ -3,32 +3,21 @@ name: Generate neural narration
 on:
   push:
     branches:
-      - feature/piper-neural-narration
+      - 'feature/**'
     paths:
-      - '.github/workflows/generate-neural-narration.yml'
       - 'scripts/extract_narration.mjs'
       - 'scripts/generate_piper_audio.py'
       - 'src/LessonOpening.tsx'
       - 'src/LessonPlayer.tsx'
       - 'src/NaturalRowPracticePlayer.tsx'
-  pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
-    paths:
-      - '.github/workflows/generate-neural-narration.yml'
-      - 'scripts/extract_narration.mjs'
-      - 'scripts/generate_piper_audio.py'
-      - 'src/LessonOpening.tsx'
-      - 'src/LessonPlayer.tsx'
-      - 'src/NaturalRowPracticePlayer.tsx'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   generate:
-    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[voice-generated]') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[voice-generated]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -36,7 +25,7 @@ jobs:
       - name: Check out source branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Set up Node
@@ -82,5 +71,5 @@ jobs:
             echo 'Narration is already current.'
           else
             git commit -m 'Generate Piper neural narration [voice-generated]'
-            git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
+            git push origin HEAD:${{ github.ref_name }}
           fi
