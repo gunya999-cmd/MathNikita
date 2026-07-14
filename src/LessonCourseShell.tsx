@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from
 import { allRichLessons } from './data/richLessonContent';
 import { CourseCatalog } from './CourseCatalog';
 import { LessonPlayer } from './LessonPlayer';
-import { LessonOpening, buildGenericOpening, lessonOneOpening } from './LessonOpening';
+import { LessonTwoPlayer } from './LessonTwoPlayer';
+import { LessonOpening, buildGenericOpening, lessonOneOpening, lessonTwoOpening } from './LessonOpening';
 import { LessonReflection } from './LessonReflection';
 import { ProgressiveHintCoach, type ProgressiveHintState } from './ProgressiveHintCoach';
 import { VoiceNarrator } from './VoiceNarrator';
@@ -21,7 +22,7 @@ const emptyHintState: ProgressiveHintState = {
 
 function loadSelectedLesson() {
   const saved = Number(localStorage.getItem('mathnikita-selected-lesson'));
-  return Number.isFinite(saved) && saved > 0 ? saved : 1;
+  return saved === 2 ? 2 : 1;
 }
 
 export function LessonCourseShell() {
@@ -33,7 +34,11 @@ export function LessonCourseShell() {
   const feedbackTimerRef = useRef<number | null>(null);
 
   const lesson = allRichLessons.find(item => item.lessonNumber === selectedLesson) ?? allRichLessons[0];
-  const opening = selectedLesson === 1 ? lessonOneOpening : buildGenericOpening(lesson);
+  const opening = selectedLesson === 1
+    ? lessonOneOpening
+    : selectedLesson === 2
+      ? lessonTwoOpening
+      : buildGenericOpening(lesson);
   const showOpening = mode === 'opening';
 
   function clearHints() {
@@ -45,6 +50,7 @@ export function LessonCourseShell() {
   }
 
   function openLesson(lessonNumber: number) {
+    if (lessonNumber !== 1 && lessonNumber !== 2) return;
     stopVoice();
     setSelectedLesson(lessonNumber);
     localStorage.setItem('mathnikita-selected-lesson', String(lessonNumber));
@@ -80,7 +86,9 @@ export function LessonCourseShell() {
 
       const prompt = stageNode.querySelector<HTMLElement>('.activity-area h3')?.textContent?.trim() ?? 'Текущее задание';
       const stageTitle = stageNode.querySelector<HTMLElement>('.stage-copy h2')?.textContent?.trim() ?? 'Задание';
-      const fullExplanation = badFeedback.querySelector<HTMLElement>('span')?.textContent?.trim() ?? 'Вернись к правилу урока и проверь каждый шаг.';
+      const fullExplanation = badFeedback.dataset.explanation
+        ?? badFeedback.querySelector<HTMLElement>('span')?.textContent?.trim()
+        ?? 'Вернись к правилу урока и проверь каждый шаг.';
       const activityType = stageNode.querySelector('.order-bank')
         ? 'order'
         : stageNode.querySelector('.inline-answer input')
@@ -108,18 +116,6 @@ export function LessonCourseShell() {
       });
     }, 80);
   }
-
-  useEffect(() => {
-    if (mode !== 'lesson') return;
-
-    const frame = window.requestAnimationFrame(() => {
-      const buttons = Array.from(shellRef.current?.querySelectorAll<HTMLButtonElement>('.lesson-list button') ?? []);
-      const selectedButton = buttons.find(button => Number(button.querySelector(':scope > span')?.textContent) === selectedLesson);
-      if (selectedButton && !selectedButton.classList.contains('active')) selectedButton.click();
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [mode, selectedLesson]);
 
   useEffect(() => {
     const root = shellRef.current;
@@ -184,7 +180,7 @@ export function LessonCourseShell() {
       </div>
 
       <div className="lesson-runtime" hidden={mode !== 'lesson'}>
-        <LessonPlayer key={selectedLesson} />
+        {selectedLesson === 2 ? <LessonTwoPlayer key="lesson-2" /> : <LessonPlayer key="lesson-1" />}
       </div>
 
       <ProgressiveHintCoach
