@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { allRichLessons } from './data/richLessonContent';
 import './courseCatalog.css';
+import './focusCourseNavigation.css';
 
 type CourseCatalogProps = {
   selectedLesson: number;
