@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import './voiceNarrator.css';
 
 type VoiceNarratorProps = {
-  rootRef: React.RefObject<HTMLElement | null>;
+  rootRef: RefObject<HTMLElement | null>;
   mode: 'opening' | 'lesson';
 };
 
@@ -39,7 +39,7 @@ function getNarrationText(root: HTMLElement | null, mode: 'opening' | 'lesson') 
   if (!scope) return '';
 
   const selectors = mode === 'opening'
-    ? ['h1', '.lesson-opening-lead', '.opening-question', '.opening-goals li']
+    ? ['.lesson-opening-copy h1', '.lesson-opening-copy p', '.lesson-opening-question b', '.lesson-opening-plan li span']
     : ['.interactive-stage .stage-copy h2', '.interactive-stage .stage-copy p', '.interactive-stage .theory-note span', '.interactive-stage .activity-area h3', '.lesson-block h2', '.lesson-block .block-text', '.lesson-block .lesson-items li'];
 
   const parts = selectors.flatMap(selector =>
