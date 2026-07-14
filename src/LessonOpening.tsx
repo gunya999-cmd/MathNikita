@@ -55,6 +55,20 @@ export const lessonOneOpening: LessonOpeningData = {
   icon: '🔭',
 };
 
+export const lessonTwoOpening: LessonOpeningData = {
+  kicker: 'Урок 2 · вскрываем код записи',
+  title: 'Цифры. Десятичная запись натуральных чисел',
+  intro: 'Есть только десять цифр, но с их помощью записывают бесконечно много натуральных чисел. Более того, одна и та же цифра может означать 5, 50 или 500. Всё решает место.',
+  question: 'Как десяти цифрам удаётся записывать числа любой величины — и почему один пропущенный ноль может полностью изменить число?',
+  goals: [
+    'Различим число и цифру и разберём позиционный принцип.',
+    'Научимся читать большие числа по классам и сохранять нулевые разряды.',
+    'Будем записывать числа цифрами, раскладывать по разрядам и решим исследовательскую задачу.',
+  ],
+  durationMinutes: 40,
+  icon: '🔐',
+};
+
 export function LessonOpening({ data, onStart }: { data: LessonOpeningData; onStart: () => void }) {
   return (
     <section className="lesson-opening" aria-labelledby="lesson-opening-title">
