@@ -51,7 +51,7 @@ def encode_mp3(wav_path: Path, mp3_path: Path) -> None:
         "-i",
         str(wav_path),
         "-af",
-        "loudnorm=I=-18:LRA=7:TP=-1.5,afade=t=in:st=0:d=0.025,afade=t=out:st=0:d=0.04",
+        "loudnorm=I=-18:LRA=7:TP=-1.5,afade=t=in:st=0:d=0.025",
         "-ac",
         "1",
         "-ar",
