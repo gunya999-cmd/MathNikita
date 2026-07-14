@@ -5,6 +5,7 @@ import { LessonPlayer } from './LessonPlayer';
 import { LessonOpening, buildGenericOpening, lessonOneOpening } from './LessonOpening';
 import { LessonReflection } from './LessonReflection';
 import { ProgressiveHintCoach, type ProgressiveHintState } from './ProgressiveHintCoach';
+import { VoiceNarrator } from './VoiceNarrator';
 
 type CourseMode = 'catalog' | 'opening' | 'lesson';
 
@@ -39,7 +40,12 @@ export function LessonCourseShell() {
     setHintState(emptyHintState);
   }
 
+  function stopVoice() {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }
+
   function openLesson(lessonNumber: number) {
+    stopVoice();
     setSelectedLesson(lessonNumber);
     localStorage.setItem('mathnikita-selected-lesson', String(lessonNumber));
     setShowReflection(false);
@@ -49,6 +55,7 @@ export function LessonCourseShell() {
   }
 
   function returnToCatalog() {
+    stopVoice();
     setMode('catalog');
     setShowReflection(false);
     clearHints();
@@ -130,6 +137,7 @@ export function LessonCourseShell() {
   }, [mode, selectedLesson]);
 
   useEffect(() => {
+    stopVoice();
     clearHints();
     return () => {
       if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
@@ -139,7 +147,10 @@ export function LessonCourseShell() {
   function handleCourseClick(event: MouseEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement;
     if (target.closest('.check-button')) scheduleFeedbackAssessment();
-    if (target.closest('.lesson-controls button')) clearHints();
+    if (target.closest('.lesson-controls button')) {
+      stopVoice();
+      clearHints();
+    }
   }
 
   function handleCourseKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -164,6 +175,7 @@ export function LessonCourseShell() {
           <span>Урок {selectedLesson} из {allRichLessons.length}</span>
           <b>{lesson.title}</b>
         </div>
+        <VoiceNarrator rootRef={shellRef} mode={showOpening ? 'opening' : 'lesson'} />
         {mode === 'lesson' ? <button type="button" onClick={() => setMode('opening')}>Вступление</button> : <span />}
       </div>
 
