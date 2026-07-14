@@ -8,6 +8,8 @@ type CourseCatalogProps = {
   onOpenLesson: (lessonNumber: number) => void;
 };
 
+const readyLessonNumbers = new Set([1, 2]);
+
 export function CourseCatalog({ selectedLesson, onOpenLesson }: CourseCatalogProps) {
   const [query, setQuery] = useState('');
 
@@ -30,7 +32,7 @@ export function CourseCatalog({ selectedLesson, onOpenLesson }: CourseCatalogPro
         <div>
           <span>Математика · 5 класс</span>
           <h1>Программа курса</h1>
-          <p>Выбери тему здесь. После начала урока каталог исчезнет, чтобы на экране осталась только текущая задача.</p>
+          <p>Открываются только уроки, прошедшие методическую и техническую проверку. Остальные темы видны в программе, но не подменяются черновыми конспектами.</p>
         </div>
         <div className="course-resume-card">
           <small>Продолжить</small>
@@ -42,8 +44,8 @@ export function CourseCatalog({ selectedLesson, onOpenLesson }: CourseCatalogPro
 
       <section className="course-catalog-toolbar" aria-label="Поиск урока">
         <div>
-          <b>{allRichLessons.length} уроков</b>
-          <span>Первый урок — интерактивный эталон. Остальные пока доступны как учебные конспекты.</span>
+          <b>{allRichLessons.length} уроков в программе</b>
+          <span>Готовы два интерактивных урока. Следующий откроется только после работы с источниками и проверки.</span>
         </div>
         <label>
           <span className="sr-only">Найти урок</span>
@@ -57,23 +59,25 @@ export function CourseCatalog({ selectedLesson, onOpenLesson }: CourseCatalogPro
 
       <section className="course-lesson-grid" aria-label="Список уроков">
         {filteredLessons.map(lesson => {
-          const isInteractive = lesson.lessonNumber === 1;
+          const isReady = readyLessonNumbers.has(lesson.lessonNumber);
           const isSelected = lesson.lessonNumber === selectedLesson;
 
           return (
             <button
               key={lesson.lessonNumber}
               type="button"
-              className={`${isInteractive ? 'is-interactive' : ''} ${isSelected ? 'is-selected' : ''}`}
-              onClick={() => onOpenLesson(lesson.lessonNumber)}
+              className={`${isReady ? 'is-interactive' : 'is-locked'} ${isSelected ? 'is-selected' : ''}`}
+              onClick={() => isReady && onOpenLesson(lesson.lessonNumber)}
+              disabled={!isReady}
+              aria-label={isReady ? `Открыть урок ${lesson.lessonNumber}: ${lesson.title}` : `Урок ${lesson.lessonNumber} в разработке`}
             >
               <span>{lesson.lessonNumber}</span>
               <div>
-                <small>{isInteractive ? 'Интерактивный урок' : 'Конспект курса'}</small>
+                <small>{isReady ? 'Интерактивный урок · по источникам' : 'В разработке'}</small>
                 <b>{lesson.title}</b>
                 <p>{lesson.goal}</p>
               </div>
-              <i aria-hidden="true">→</i>
+              <i aria-hidden="true">{isReady ? '→' : '🔒'}</i>
             </button>
           );
         })}
