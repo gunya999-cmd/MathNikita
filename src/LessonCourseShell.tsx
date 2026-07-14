@@ -1,17 +1,81 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { allRichLessons } from './data/richLessonContent';
 import { LessonPlayer } from './LessonPlayer';
 import { LessonOpening, buildGenericOpening, lessonOneOpening } from './LessonOpening';
 import { LessonReflection } from './LessonReflection';
+import { ProgressiveHintCoach, type ProgressiveHintState } from './ProgressiveHintCoach';
+
+const emptyHintState: ProgressiveHintState = {
+  prompt: '',
+  stageTitle: '',
+  activityType: '',
+  attempts: 0,
+  revealedLevel: 0,
+  fullExplanation: '',
+  mountNode: null,
+};
 
 export function LessonCourseShell() {
   const [selectedLesson, setSelectedLesson] = useState(1);
   const [showOpening, setShowOpening] = useState(true);
   const [showReflection, setShowReflection] = useState(false);
+  const [hintState, setHintState] = useState<ProgressiveHintState>(emptyHintState);
   const shellRef = useRef<HTMLDivElement>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
 
   const lesson = allRichLessons.find(item => item.lessonNumber === selectedLesson) ?? allRichLessons[0];
   const opening = selectedLesson === 1 ? lessonOneOpening : buildGenericOpening(lesson);
+
+  function clearHints() {
+    setHintState(emptyHintState);
+  }
+
+  function scheduleFeedbackAssessment() {
+    if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
+    feedbackTimerRef.current = window.setTimeout(() => {
+      const root = shellRef.current;
+      if (!root) return;
+
+      const goodFeedback = root.querySelector<HTMLElement>('.instant-feedback.good');
+      if (goodFeedback) {
+        clearHints();
+        return;
+      }
+
+      const badFeedback = root.querySelector<HTMLElement>('.instant-feedback.bad');
+      const stageNode = root.querySelector<HTMLElement>('.interactive-stage');
+      if (!badFeedback || !stageNode) return;
+
+      const prompt = stageNode.querySelector<HTMLElement>('.activity-area h3')?.textContent?.trim() ?? 'Текущее задание';
+      const stageTitle = stageNode.querySelector<HTMLElement>('.stage-copy h2')?.textContent?.trim() ?? 'Задание';
+      const fullExplanation = badFeedback.querySelector<HTMLElement>('span')?.textContent?.trim() ?? 'Вернись к правилу урока и проверь каждый шаг.';
+      const activityType = stageNode.querySelector('.order-bank')
+        ? 'order'
+        : stageNode.querySelector('.inline-answer input')
+          ? 'input'
+          : stageNode.querySelector('.compare-board')
+            ? 'compare'
+            : stageNode.querySelector('.number-line')
+              ? 'number-line'
+              : 'choice';
+
+      setHintState(previous => {
+        const sameTask = previous.prompt === prompt && previous.stageTitle === stageTitle;
+        const attempts = sameTask ? previous.attempts + 1 : 1;
+        const automaticLevel = Math.min(attempts, 3);
+
+        return {
+          prompt,
+          stageTitle,
+          activityType,
+          attempts,
+          revealedLevel: sameTask ? Math.max(previous.revealedLevel, automaticLevel) : automaticLevel,
+          fullExplanation,
+          mountNode: stageNode,
+        };
+      });
+    }, 80);
+  }
 
   useEffect(() => {
     const root = shellRef.current;
@@ -28,22 +92,44 @@ export function LessonCourseShell() {
     return () => observer.disconnect();
   }, [showOpening, selectedLesson]);
 
+  useEffect(() => {
+    clearHints();
+    return () => {
+      if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
+    };
+  }, [showOpening, selectedLesson]);
+
   function handleCourseClick(event: MouseEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement;
     const lessonButton = target.closest('.lesson-list button');
-    if (!lessonButton) return;
+    if (lessonButton) {
+      const numberText = lessonButton.querySelector(':scope > span')?.textContent;
+      const lessonNumber = Number(numberText);
+      if (!Number.isFinite(lessonNumber)) return;
 
-    const numberText = lessonButton.querySelector(':scope > span')?.textContent;
-    const lessonNumber = Number(numberText);
-    if (!Number.isFinite(lessonNumber)) return;
+      setSelectedLesson(lessonNumber);
+      setShowReflection(false);
+      setShowOpening(true);
+      clearHints();
+      return;
+    }
 
-    setSelectedLesson(lessonNumber);
-    setShowReflection(false);
-    setShowOpening(true);
+    if (target.closest('.check-button')) scheduleFeedbackAssessment();
+    if (target.closest('.lesson-controls button')) clearHints();
+  }
+
+  function handleCourseKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    if (event.key === 'Enter' && target.closest('.inline-answer input')) scheduleFeedbackAssessment();
   }
 
   return (
-    <div ref={shellRef} className={`lesson-course-shell ${showOpening ? 'is-opening' : 'is-learning'}`} onClickCapture={handleCourseClick}>
+    <div
+      ref={shellRef}
+      className={`lesson-course-shell ${showOpening ? 'is-opening' : 'is-learning'}`}
+      onClickCapture={handleCourseClick}
+      onKeyDownCapture={handleCourseKeyDown}
+    >
       <div className="opening-screen" hidden={!showOpening}>
         <LessonOpening data={opening} onStart={() => setShowOpening(false)} />
       </div>
@@ -51,6 +137,11 @@ export function LessonCourseShell() {
       <div className="lesson-runtime" hidden={showOpening}>
         <LessonPlayer />
       </div>
+
+      <ProgressiveHintCoach
+        state={hintState}
+        onRevealNext={() => setHintState(previous => ({ ...previous, revealedLevel: Math.min(previous.revealedLevel + 1, 4) }))}
+      />
 
       {!showOpening && showReflection ? (
         <LessonReflection
@@ -62,6 +153,7 @@ export function LessonCourseShell() {
           onReviewOpening={() => {
             setShowReflection(false);
             setShowOpening(true);
+            clearHints();
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         />
