@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
 import { allRichLessons } from './data/richLessonContent';
+import { CourseCatalog } from './CourseCatalog';
 import { LessonPlayer } from './LessonPlayer';
 import { LessonOpening, buildGenericOpening, lessonOneOpening } from './LessonOpening';
 import { LessonReflection } from './LessonReflection';
 import { ProgressiveHintCoach, type ProgressiveHintState } from './ProgressiveHintCoach';
+
+type CourseMode = 'catalog' | 'opening' | 'lesson';
 
 const emptyHintState: ProgressiveHintState = {
   prompt: '',
@@ -15,9 +18,14 @@ const emptyHintState: ProgressiveHintState = {
   mountNode: null,
 };
 
+function loadSelectedLesson() {
+  const saved = Number(localStorage.getItem('mathnikita-selected-lesson'));
+  return Number.isFinite(saved) && saved > 0 ? saved : 1;
+}
+
 export function LessonCourseShell() {
-  const [selectedLesson, setSelectedLesson] = useState(1);
-  const [showOpening, setShowOpening] = useState(true);
+  const [selectedLesson, setSelectedLesson] = useState(loadSelectedLesson);
+  const [mode, setMode] = useState<CourseMode>('catalog');
   const [showReflection, setShowReflection] = useState(false);
   const [hintState, setHintState] = useState<ProgressiveHintState>(emptyHintState);
   const shellRef = useRef<HTMLDivElement>(null);
@@ -25,9 +33,26 @@ export function LessonCourseShell() {
 
   const lesson = allRichLessons.find(item => item.lessonNumber === selectedLesson) ?? allRichLessons[0];
   const opening = selectedLesson === 1 ? lessonOneOpening : buildGenericOpening(lesson);
+  const showOpening = mode === 'opening';
 
   function clearHints() {
     setHintState(emptyHintState);
+  }
+
+  function openLesson(lessonNumber: number) {
+    setSelectedLesson(lessonNumber);
+    localStorage.setItem('mathnikita-selected-lesson', String(lessonNumber));
+    setShowReflection(false);
+    clearHints();
+    setMode('opening');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function returnToCatalog() {
+    setMode('catalog');
+    setShowReflection(false);
+    clearHints();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function scheduleFeedbackAssessment() {
@@ -78,42 +103,41 @@ export function LessonCourseShell() {
   }
 
   useEffect(() => {
+    if (mode !== 'lesson') return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const buttons = Array.from(shellRef.current?.querySelectorAll<HTMLButtonElement>('.lesson-list button') ?? []);
+      const selectedButton = buttons.find(button => Number(button.querySelector(':scope > span')?.textContent) === selectedLesson);
+      if (selectedButton && !selectedButton.classList.contains('active')) selectedButton.click();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [mode, selectedLesson]);
+
+  useEffect(() => {
     const root = shellRef.current;
-    if (!root) return;
+    if (!root || mode !== 'lesson') return;
 
     const updateReflectionVisibility = () => {
       const reachedSummary = Boolean(root.querySelector('.stage-summary, .block-summary'));
-      setShowReflection(!showOpening && reachedSummary);
+      setShowReflection(reachedSummary);
     };
 
     updateReflectionVisibility();
     const observer = new MutationObserver(updateReflectionVisibility);
     observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
-  }, [showOpening, selectedLesson]);
+  }, [mode, selectedLesson]);
 
   useEffect(() => {
     clearHints();
     return () => {
       if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
     };
-  }, [showOpening, selectedLesson]);
+  }, [mode, selectedLesson]);
 
   function handleCourseClick(event: MouseEvent<HTMLDivElement>) {
     const target = event.target as HTMLElement;
-    const lessonButton = target.closest('.lesson-list button');
-    if (lessonButton) {
-      const numberText = lessonButton.querySelector(':scope > span')?.textContent;
-      const lessonNumber = Number(numberText);
-      if (!Number.isFinite(lessonNumber)) return;
-
-      setSelectedLesson(lessonNumber);
-      setShowReflection(false);
-      setShowOpening(true);
-      clearHints();
-      return;
-    }
-
     if (target.closest('.check-button')) scheduleFeedbackAssessment();
     if (target.closest('.lesson-controls button')) clearHints();
   }
@@ -123,6 +147,10 @@ export function LessonCourseShell() {
     if (event.key === 'Enter' && target.closest('.inline-answer input')) scheduleFeedbackAssessment();
   }
 
+  if (mode === 'catalog') {
+    return <CourseCatalog selectedLesson={selectedLesson} onOpenLesson={openLesson} />;
+  }
+
   return (
     <div
       ref={shellRef}
@@ -130,12 +158,21 @@ export function LessonCourseShell() {
       onClickCapture={handleCourseClick}
       onKeyDownCapture={handleCourseKeyDown}
     >
-      <div className="opening-screen" hidden={!showOpening}>
-        <LessonOpening data={opening} onStart={() => setShowOpening(false)} />
+      <div className="lesson-mode-toolbar">
+        <button type="button" onClick={returnToCatalog}>← Все уроки</button>
+        <div>
+          <span>Урок {selectedLesson} из {allRichLessons.length}</span>
+          <b>{lesson.title}</b>
+        </div>
+        {mode === 'lesson' ? <button type="button" onClick={() => setMode('opening')}>Вступление</button> : <span />}
       </div>
 
-      <div className="lesson-runtime" hidden={showOpening}>
-        <LessonPlayer />
+      <div className="opening-screen" hidden={!showOpening}>
+        <LessonOpening data={opening} onStart={() => setMode('lesson')} />
+      </div>
+
+      <div className="lesson-runtime" hidden={mode !== 'lesson'}>
+        <LessonPlayer key={selectedLesson} />
       </div>
 
       <ProgressiveHintCoach
@@ -143,7 +180,7 @@ export function LessonCourseShell() {
         onRevealNext={() => setHintState(previous => ({ ...previous, revealedLevel: Math.min(previous.revealedLevel + 1, 4) }))}
       />
 
-      {!showOpening && showReflection ? (
+      {mode === 'lesson' && showReflection ? (
         <LessonReflection
           key={selectedLesson}
           lessonNumber={selectedLesson}
@@ -152,7 +189,7 @@ export function LessonCourseShell() {
           goals={opening.goals}
           onReviewOpening={() => {
             setShowReflection(false);
-            setShowOpening(true);
+            setMode('opening');
             clearHints();
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
