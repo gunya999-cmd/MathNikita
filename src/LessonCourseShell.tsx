@@ -7,6 +7,7 @@ import { LessonOpening, buildGenericOpening, lessonOneOpening, lessonTwoOpening 
 import { LessonReflection } from './LessonReflection';
 import { ProgressiveHintCoach, type ProgressiveHintState } from './ProgressiveHintCoach';
 import { VoiceNarrator } from './VoiceNarrator';
+import { CatMentor, type MentorSignal } from './CatMentor';
 
 type CourseMode = 'catalog' | 'opening' | 'lesson';
 
@@ -20,6 +21,11 @@ const emptyHintState: ProgressiveHintState = {
   mountNode: null,
 };
 
+const emptyMentorSignal: MentorSignal = {
+  kind: 'idle',
+  version: 0,
+};
+
 function loadSelectedLesson() {
   const saved = Number(localStorage.getItem('mathnikita-selected-lesson'));
   return saved === 2 ? 2 : 1;
@@ -30,6 +36,7 @@ export function LessonCourseShell() {
   const [mode, setMode] = useState<CourseMode>('catalog');
   const [showReflection, setShowReflection] = useState(false);
   const [hintState, setHintState] = useState<ProgressiveHintState>(emptyHintState);
+  const [mentorSignal, setMentorSignal] = useState<MentorSignal>(emptyMentorSignal);
   const shellRef = useRef<HTMLDivElement>(null);
   const feedbackTimerRef = useRef<number | null>(null);
 
@@ -45,8 +52,17 @@ export function LessonCourseShell() {
     setHintState(emptyHintState);
   }
 
+  function resetMentor() {
+    setMentorSignal(previous => ({ kind: 'idle', version: previous.version + 1 }));
+  }
+
+  function signalMentor(kind: MentorSignal['kind']) {
+    setMentorSignal(previous => ({ kind, version: previous.version + 1 }));
+  }
+
   function stopVoice() {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));
   }
 
   function openLesson(lessonNumber: number) {
@@ -56,6 +72,7 @@ export function LessonCourseShell() {
     localStorage.setItem('mathnikita-selected-lesson', String(lessonNumber));
     setShowReflection(false);
     clearHints();
+    resetMentor();
     setMode('opening');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -65,6 +82,7 @@ export function LessonCourseShell() {
     setMode('catalog');
     setShowReflection(false);
     clearHints();
+    resetMentor();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -77,6 +95,7 @@ export function LessonCourseShell() {
       const goodFeedback = root.querySelector<HTMLElement>('.instant-feedback.good');
       if (goodFeedback) {
         clearHints();
+        signalMentor('correct');
         return;
       }
 
@@ -84,6 +103,7 @@ export function LessonCourseShell() {
       const stageNode = root.querySelector<HTMLElement>('.interactive-stage');
       if (!badFeedback || !stageNode) return;
 
+      signalMentor('wrong');
       const prompt = stageNode.querySelector<HTMLElement>('.activity-area h3')?.textContent?.trim() ?? 'Текущее задание';
       const stageTitle = stageNode.querySelector<HTMLElement>('.stage-copy h2')?.textContent?.trim() ?? 'Задание';
       const fullExplanation = badFeedback.dataset.explanation
@@ -135,6 +155,7 @@ export function LessonCourseShell() {
   useEffect(() => {
     stopVoice();
     clearHints();
+    resetMentor();
     return () => {
       if (feedbackTimerRef.current !== null) window.clearTimeout(feedbackTimerRef.current);
     };
@@ -146,6 +167,7 @@ export function LessonCourseShell() {
     if (target.closest('.lesson-controls button')) {
       stopVoice();
       clearHints();
+      resetMentor();
     }
   }
 
@@ -175,34 +197,46 @@ export function LessonCourseShell() {
         {mode === 'lesson' ? <button type="button" onClick={() => setMode('opening')}>Вступление</button> : <span />}
       </div>
 
-      <div className="opening-screen" hidden={!showOpening}>
-        <LessonOpening data={opening} onStart={() => setMode('lesson')} />
-      </div>
+      <div className="mentor-learning-layout">
+        <div className="mentor-learning-main">
+          <div className="opening-screen" hidden={!showOpening}>
+            <LessonOpening data={opening} onStart={() => setMode('lesson')} />
+          </div>
 
-      <div className="lesson-runtime" hidden={mode !== 'lesson'}>
-        {selectedLesson === 2 ? <NaturalRowPracticePlayer key="lesson-2" /> : <LessonPlayer key="lesson-1" />}
-      </div>
+          <div className="lesson-runtime" hidden={mode !== 'lesson'}>
+            {selectedLesson === 2 ? <NaturalRowPracticePlayer key="lesson-2" /> : <LessonPlayer key="lesson-1" />}
+          </div>
 
-      <ProgressiveHintCoach
-        state={hintState}
-        onRevealNext={() => setHintState(previous => ({ ...previous, revealedLevel: Math.min(previous.revealedLevel + 1, 4) }))}
-      />
+          <ProgressiveHintCoach
+            state={hintState}
+            onRevealNext={() => setHintState(previous => ({ ...previous, revealedLevel: Math.min(previous.revealedLevel + 1, 4) }))}
+          />
 
-      {mode === 'lesson' && showReflection ? (
-        <LessonReflection
-          key={selectedLesson}
+          {mode === 'lesson' && showReflection ? (
+            <LessonReflection
+              key={selectedLesson}
+              lessonNumber={selectedLesson}
+              lessonTitle={lesson.title}
+              openingQuestion={opening.question}
+              goals={opening.goals}
+              onReviewOpening={() => {
+                setShowReflection(false);
+                setMode('opening');
+                clearHints();
+                resetMentor();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          ) : null}
+        </div>
+
+        <CatMentor
+          rootRef={shellRef}
           lessonNumber={selectedLesson}
-          lessonTitle={lesson.title}
-          openingQuestion={opening.question}
-          goals={opening.goals}
-          onReviewOpening={() => {
-            setShowReflection(false);
-            setMode('opening');
-            clearHints();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          mode={showOpening ? 'opening' : 'lesson'}
+          signal={mentorSignal}
         />
-      ) : null}
+      </div>
     </div>
   );
 }
