@@ -5,6 +5,7 @@ on:
     branches:
       - 'feature/**'
     paths:
+      - '.github/workflows/generate-neural-narration.yml'
       - 'scripts/extract_narration.mjs'
       - 'scripts/generate_piper_audio.py'
       - 'src/data/mentorScripts.json'
