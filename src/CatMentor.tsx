@@ -17,6 +17,7 @@ type CatMentorProps = {
 
 type SceneSnapshot = {
   key: string;
+  stageId: string;
   title: string;
   body: string;
   prompt: string;
@@ -39,6 +40,7 @@ const AUTO_GUIDE_KEY = 'mathnikita-mentor-auto-guide';
 
 const emptyScene: SceneSnapshot = {
   key: 'empty',
+  stageId: '',
   title: '',
   body: '',
   prompt: '',
@@ -58,22 +60,27 @@ function readVisibleScene(root: HTMLElement | null, mode: 'opening' | 'lesson'):
     const title = cleanText(scope.querySelector('.lesson-opening-copy h1')?.textContent);
     const body = cleanText(scope.querySelector('.lesson-opening-copy p')?.textContent);
     const prompt = cleanText(scope.querySelector('.lesson-opening-question b')?.textContent);
-    return { key: `opening:${title}`, title, body, prompt, note: '' };
+    return { key: `opening:${title}`, stageId: '', title, body, prompt, note: '' };
   }
 
   const scope = root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');
   const stage = scope?.querySelector<HTMLElement>('.interactive-stage');
   if (!stage) return emptyScene;
 
+  const stageId = stage.dataset.stageId ?? '';
   const title = cleanText(stage.querySelector('.stage-copy h2')?.textContent);
   const body = cleanText(stage.querySelector('.stage-copy p')?.textContent);
   const prompt = cleanText(stage.querySelector('.activity-area h3')?.textContent);
   const note = cleanText(stage.querySelector('.theory-note span')?.textContent);
-  return { key: `${title}|${prompt}`, title, body, prompt, note };
+  return { key: stageId || `${title}|${prompt}`, stageId, title, body, prompt, note };
 }
 
 function selectScriptKey(scene: SceneSnapshot, lessonNumber: number, mode: 'opening' | 'lesson'): MentorScriptKey {
   if (mode === 'opening') return lessonNumber === 1 ? 'opening-1' : 'opening-2';
+  if (lessonNumber === 1 && scene.stageId) {
+    const key = `l1-${scene.stageId}` as MentorScriptKey;
+    if (key in mentorScriptsData) return key;
+  }
   const text = `${scene.title} ${scene.body} ${scene.prompt} ${scene.note}`.toLowerCase();
   if (/между|границ|промежут|включительно|k\s*[−-]\s*1|n\s*\+\s*k/.test(text)) return 'between';
   if (/последователь|закономер|шаг|продолж|пропуск/.test(text)) return 'sequence';
@@ -153,7 +160,7 @@ export function CatMentor({ rootRef, lessonNumber, mode, signal }: CatMentorProp
     };
     refresh();
     const observer = new MutationObserver(refresh);
-    observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden'] });
+    observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'hidden', 'data-stage-id'] });
     return () => observer.disconnect();
   }, [rootRef, lessonNumber, mode]);
 
@@ -233,6 +240,7 @@ export function CatMentor({ rootRef, lessonNumber, mode, signal }: CatMentorProp
       lessonNumber={lessonNumber}
       mode={mode}
       sceneKey={scene.key}
+      stageId={scene.stageId}
       title={scene.title}
       body={scene.body}
       prompt={scene.prompt}
