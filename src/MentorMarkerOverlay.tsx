@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import './mentorMarkerOverlay.css';
+import './catMentorVoice.css';
 
 type MentorMarkerOverlayProps = {
   rootRef: RefObject<HTMLElement | null>;
@@ -12,6 +13,8 @@ type MentorMarkerOverlayProps = {
   prompt: string;
   action: 'welcome' | 'different' | 'example' | 'hint' | 'why';
 };
+
+type MarkerValue = number | 'gap';
 
 function extractBounds(text: string) {
   const values = (text.match(/\d[\d\s\u00a0]*/g) ?? [])
@@ -65,9 +68,9 @@ export function MentorMarkerOverlay({
     if (difference <= 0) return null;
     const inclusive = /включительно/i.test(text);
     const result = inclusive ? difference + 1 : Math.max(0, difference - 1);
-    const visibleNumbers = difference <= 12
+    const visibleNumbers: MarkerValue[] = difference <= 12
       ? Array.from({ length: difference + 1 }, (_, index) => left + index)
-      : [left, right];
+      : [left, 'gap', right];
 
     return { left, right, difference, inclusive, result, visibleNumbers };
   }, [title, body, prompt]);
@@ -84,27 +87,22 @@ export function MentorMarkerOverlay({
   return createPortal(
     <section className={`mentor-marker-overlay marker-${action}`} aria-label="Разбор Пифагора электронным маркером">
       <header>
-        <div>
-          <span>Электронный маркер</span>
-          <b>Пифагор показывает ход мысли</b>
-        </div>
+        <div><span>Электронный маркер</span><b>Пифагор показывает ход мысли</b></div>
         <button type="button" onClick={() => setDismissed(true)} aria-label="Скрыть разбор">×</button>
       </header>
 
-      <div className="mentor-number-track" style={{ '--marker-count': data.visibleNumbers.length } as React.CSSProperties}>
-        {data.visibleNumbers.map((number, index) => {
-          const boundary = index === 0 || index === data.visibleNumbers.length - 1;
-          const hiddenGap = data.difference > 12 && index === 1;
+      <div className="mentor-number-track" style={{ '--marker-count': data.visibleNumbers.length } as CSSProperties}>
+        {data.visibleNumbers.map((value, index) => {
+          const gap = value === 'gap';
+          const boundary = !gap && (index === 0 || index === data.visibleNumbers.length - 1);
           return (
-            <div key={`${number}-${index}`} className={boundary ? 'is-boundary' : 'is-between'}>
-              {hiddenGap ? <span className="marker-ellipsis">…</span> : <span>{number.toLocaleString('ru-RU')}</span>}
-              {!boundary && !hiddenGap ? <i aria-hidden="true" /> : null}
+            <div key={`${value}-${index}`} className={gap ? 'is-gap' : boundary ? 'is-boundary' : 'is-between'}>
+              {gap ? <span className="marker-ellipsis">…</span> : <span>{value.toLocaleString('ru-RU')}</span>}
+              {!boundary && !gap ? <i aria-hidden="true" /> : null}
             </div>
           );
         })}
-        <svg className="mentor-marker-arc" viewBox="0 0 600 90" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M18 72 C140 4 460 4 582 72" />
-        </svg>
+        <svg className="mentor-marker-arc" viewBox="0 0 600 90" preserveAspectRatio="none" aria-hidden="true"><path d="M18 72 C140 4 460 4 582 72" /></svg>
       </div>
 
       <div className="mentor-marker-formula">
