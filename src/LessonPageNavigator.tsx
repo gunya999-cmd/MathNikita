@@ -2,44 +2,28 @@ import { useEffect, useMemo, useState } from 'react';
 import { lessonOneStages } from './LessonPlayer';
 import './lessonPageNavigator.css';
 
-const STORAGE_KEY = 'mathnikita-lesson-1-progress-v2';
-
-type SavedProgress = {
-  version: 2;
-  stageIndex: number;
-  answer: string;
-  ordered: string[];
-  checked: boolean;
-  correct: boolean;
-  modelValue: number;
-  results: Record<string, boolean>;
-  completedAt?: string;
-};
-
-function readCurrentPage() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as Partial<SavedProgress> | null;
-    return Math.min(Math.max(Number(parsed?.stageIndex) || 0, 0), lessonOneStages.length - 1);
-  } catch {
-    return 0;
-  }
+function activeStageIndex() {
+  const stageId = document.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage')?.dataset.stageId;
+  const index = lessonOneStages.findIndex(stage => stage.id === stageId);
+  return index >= 0 ? index : 0;
 }
 
 export function LessonPageNavigator() {
   const [visible, setVisible] = useState(false);
   const [open, setOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(readCurrentPage);
+  const [currentPage, setCurrentPage] = useState(0);
 
   useEffect(() => {
-    const updateVisibility = () => {
+    const refresh = () => {
       const active = Boolean(document.querySelector('.lesson-runtime:not([hidden]) .lesson-player-page'));
       setVisible(active);
-      if (!active) setOpen(false);
+      if (active) setCurrentPage(activeStageIndex());
+      else setOpen(false);
     };
 
-    updateVisibility();
-    const observer = new MutationObserver(updateVisibility);
-    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'class'] });
+    refresh();
+    const observer = new MutationObserver(refresh);
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['hidden', 'class', 'data-stage-id'] });
     return () => observer.disconnect();
   }, []);
 
@@ -50,26 +34,29 @@ export function LessonPageNavigator() {
     { label: 'Завершение', indexes: [19, 20] },
   ], []);
 
-  function jumpTo(index: number) {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as Partial<SavedProgress> | null;
-      const next: SavedProgress = {
-        version: 2,
-        stageIndex: index,
-        answer: '',
-        ordered: [],
-        checked: false,
-        correct: false,
-        modelValue: Number(parsed?.modelValue) || 1,
-        results: parsed?.results ?? {},
-        completedAt: parsed?.completedAt,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      setCurrentPage(index);
-      window.location.reload();
-    } catch {
-      window.location.reload();
-    }
+  function jumpTo(targetIndex: number) {
+    setOpen(false);
+
+    const move = () => {
+      const currentIndex = activeStageIndex();
+      if (currentIndex === targetIndex) {
+        setCurrentPage(targetIndex);
+        return;
+      }
+
+      const controls = document.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .lesson-controls');
+      const buttons = controls?.querySelectorAll<HTMLButtonElement>('button');
+      const button = targetIndex < currentIndex ? buttons?.[0] : buttons?.[1];
+      if (!button) return;
+
+      const wasDisabled = button.disabled;
+      if (wasDisabled) button.disabled = false;
+      button.click();
+      if (wasDisabled) button.disabled = true;
+      window.setTimeout(move, 45);
+    };
+
+    move();
   }
 
   if (!visible) return null;
@@ -87,7 +74,7 @@ export function LessonPageNavigator() {
             <div><span>Быстрый просмотр</span><b>Перейти к странице урока</b></div>
             <button type="button" onClick={() => setOpen(false)} aria-label="Закрыть навигацию">×</button>
           </header>
-          <p>Режим для взрослого: можно открыть любую страницу без прохождения предыдущих заданий. Уже сохранённые результаты не удаляются.</p>
+          <p>Режим для взрослого: можно открыть любую страницу без прохождения предыдущих заданий. Сохранённые результаты при просмотре не удаляются.</p>
 
           <div className="lesson-page-navigator-groups">
             {groups.map(group => (
