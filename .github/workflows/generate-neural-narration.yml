@@ -1,5 +1,6 @@
 name: Generate neural narration
 
+# Regenerate static lesson and mentor audio whenever verified scripts change.
 on:
   push:
     branches:
