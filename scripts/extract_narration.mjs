@@ -89,11 +89,31 @@ function extractStages(relativePath, variableName, lessonNumber) {
     });
 }
 
+function extractMentorScripts(relativePath) {
+  const absolutePath = path.join(projectRoot, relativePath);
+  const scripts = JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+  const responseOrder = ['welcome', 'different', 'example', 'hint', 'why', 'success', 'retry'];
+  const items = [];
+
+  for (const [scriptKey, script] of Object.entries(scripts)) {
+    for (const responseKey of responseOrder) {
+      const text = script[responseKey];
+      if (typeof text !== 'string' || !text.trim()) {
+        throw new Error(`Mentor phrase ${scriptKey}.${responseKey} is missing`);
+      }
+      items.push({ id: `mentor-${scriptKey}-${responseKey}`, text: text.trim() });
+    }
+  }
+
+  return items;
+}
+
 const items = [
   extractOpening('src/LessonOpening.tsx', 'lessonOneOpening', 'lesson-01-opening'),
   ...extractStages('src/LessonPlayer.tsx', 'lessonOneStages', 1),
   extractOpening('src/LessonOpening.tsx', 'lessonTwoOpening', 'lesson-02-opening'),
   ...extractStages('src/NaturalRowPracticePlayer.tsx', 'stages', 2),
+  ...extractMentorScripts('src/data/mentorScripts.json'),
 ];
 
 const outputDir = path.join(projectRoot, 'build');

@@ -5,8 +5,10 @@ on:
     branches:
       - 'feature/**'
     paths:
+      - '.github/workflows/generate-neural-narration.yml'
       - 'scripts/extract_narration.mjs'
       - 'scripts/generate_piper_audio.py'
+      - 'src/data/mentorScripts.json'
       - 'src/LessonOpening.tsx'
       - 'src/LessonPlayer.tsx'
       - 'src/NaturalRowPracticePlayer.tsx'
@@ -36,7 +38,7 @@ jobs:
       - name: Install project dependencies
         run: npm install
 
-      - name: Extract lesson narration text
+      - name: Extract lesson and mentor narration text
         run: node scripts/extract_narration.mjs
 
       - name: Set up Python
