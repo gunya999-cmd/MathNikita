@@ -41,9 +41,9 @@ jobs:
           retention-days: 7
 
   ipad-webkit:
-    name: iPad WebKit lesson smoke tests
+    name: iPad WebKit complete lesson walkthrough
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Test all four lessons in iPad WebKit
+      - name: Complete every exercise in all four lessons
         run: npm run test:ipad
       - name: Upload failure traces
         if: failure()
