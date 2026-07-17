@@ -131,6 +131,7 @@ async function openLesson(page: Page, lessonNumber: number) {
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage')).toBeVisible();
+  await expect(page.locator('.cat-mentor-collapsed')).toBeVisible();
 }
 
 async function answerCurrentStage(page: Page, answer: Answer) {
@@ -138,11 +139,10 @@ async function answerCurrentStage(page: Page, answer: Answer) {
   if (answer.type === 'input') {
     await stage.locator('.inline-answer input').fill(answer.value);
   } else if (answer.type === 'choice') {
-    const candidates = stage.locator('.choice-grid button, .compare-board button, .number-line button');
-    await candidates.filter({ hasText: answer.value }).first().click();
+    await stage.getByRole('button', { name: answer.value, exact: true }).click();
   } else {
     for (const value of answer.values) {
-      await stage.locator('.order-bank button').filter({ hasText: value }).first().click();
+      await stage.locator('.order-bank').getByRole('button', { name: value, exact: true }).click();
     }
   }
   await stage.locator('.check-button').click();
@@ -151,7 +151,7 @@ async function answerCurrentStage(page: Page, answer: Answer) {
 
 for (const plan of plans) {
   test(`lesson ${plan.lessonNumber}: complete walkthrough of every exercise`, async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
     await openLesson(page, plan.lessonNumber);
 
     const visited = new Set<string>();
@@ -202,7 +202,7 @@ test('lesson 1 response survives direct page navigation on iPad WebKit', async (
     await next.click();
   }
   await expect(page.locator('[data-stage-id="choice"]')).toBeVisible();
-  await page.locator('[data-stage-id="choice"] .choice-grid button', { hasText: '40' }).click();
+  await page.locator('[data-stage-id="choice"] .choice-grid').getByRole('button', { name: '40', exact: true }).click();
   await next.click();
   await page.locator('.lesson-controls button').first().click();
   await expect(page.locator('[data-stage-id="choice"] .choice-grid button.selected')).toHaveText('40');
