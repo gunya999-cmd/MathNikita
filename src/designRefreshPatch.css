@@ -31,6 +31,33 @@
 .cat-mentor-voice-row button.is-on{background:#e8f0ff!important;border-color:#8ca7ef!important}
 .cat-mentor-speak{background:#315cf5!important;color:#fff!important}
 
+.year-status,.task-card,.mission-column article,.map-preview,.world-grid article,.score-row article,.skills-grid article,.parent-grid article{
+  border-color:#dce5f1;
+  box-shadow:0 16px 42px rgba(24,44,86,.075);
+}
+.year-status button,.map-preview button,.feedback button{
+  background:linear-gradient(135deg,#315cf5,#5278ff);
+  box-shadow:0 9px 20px rgba(49,92,245,.18);
+}
+.year-bar i,.mini-bar i,.bar i{background:linear-gradient(90deg,#315cf5,#20bfe3)}
+.product-hero{
+  background:
+    linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px),
+    radial-gradient(circle at 65% 18%,rgba(32,191,227,.25),transparent 28%),
+    linear-gradient(135deg,#0b1430,#172a5d 58%,#164463);
+  background-size:34px 34px,34px 34px,auto,auto;
+}
+.hero-copy>span{color:#aaedff}
+.cat-emoji{background:radial-gradient(circle at 34% 28%,#fff2a8,#ffd25b 65%,#f2a72f);box-shadow:0 20px 42px rgba(0,0,0,.22),0 0 0 9px rgba(49,92,245,.13)}
+.hero-mascot>b{background:#b7e54a;color:#263100}
+.route-strip>span.current{background:#315cf5;box-shadow:0 0 0 8px rgba(49,92,245,.13),0 12px 30px rgba(49,92,245,.28)}
+.hero-note{border:1px solid rgba(255,255,255,.10)}
+.task-meta{background:#f5f8fd;border-color:#e0e7f2}
+.task-meta span,.phase-tag,.dashboard header span{color:#315cf5}
+.answer-box input:focus{border-color:#315cf5;box-shadow:0 0 0 4px rgba(49,92,245,.09)}
+.answer-box button{background:linear-gradient(135deg,#315cf5,#5278ff)}
+
 @media(max-width:700px){
   .lesson-mode-toolbar{grid-template-columns:auto minmax(0,1fr) auto}
   .lesson-mode-toolbar>.voice-narrator{grid-column:3;grid-row:1}
