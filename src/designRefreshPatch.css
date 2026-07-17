@@ -10,6 +10,7 @@
 .voice-settings-panel{border-color:#d5e0f0;box-shadow:0 22px 54px rgba(12,27,61,.22)}
 .voice-settings-panel input[type=range]{accent-color:#315cf5}
 
+.lesson-page-navigator{bottom:92px}
 .lesson-page-navigator-toggle{
   border:1px solid rgba(255,255,255,.14);
   background:linear-gradient(145deg,#172a5c,#315cf5);
@@ -27,6 +28,7 @@
 .lesson-page-navigator-groups button.active{border-color:#315cf5;background:#eaf0ff}
 .lesson-page-navigator-groups button.active span{background:#315cf5}
 
+.cat-mentor-collapsed{bottom:92px}
 .cat-mentor-voice-row button{border-color:#d7e2ef!important;background:#f6f9ff!important;color:#31559a!important}
 .cat-mentor-voice-row button.is-on{background:#e8f0ff!important;border-color:#8ca7ef!important}
 .cat-mentor-speak{background:#315cf5!important;color:#fff!important}
@@ -63,4 +65,5 @@
   .lesson-mode-toolbar>.voice-narrator{grid-column:3;grid-row:1}
   .lesson-mode-toolbar>button:last-of-type{display:none}
   .lesson-mode-toolbar .voice-narrator>button:first-child{width:42px;padding:0;justify-content:center}
+  .lesson-page-navigator,.cat-mentor-collapsed{bottom:82px}
 }
