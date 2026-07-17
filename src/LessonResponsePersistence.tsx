@@ -2,14 +2,10 @@ import { useEffect, type RefObject } from 'react';
 
 type SavedStage = { answer?: string; order?: string[] };
 type SavedLesson = { version: 1; stages: Record<string, SavedStage> };
-
 type Props = { rootRef: RefObject<HTMLElement | null>; lessonNumber: number; active: boolean };
 
 const PREFIX = 'mathnikita-stage-responses-v1-lesson-';
-
-function storageKey(lessonNumber: number) {
-  return `${PREFIX}${lessonNumber}`;
-}
+const storageKey = (lessonNumber: number) => `${PREFIX}${lessonNumber}`;
 
 function load(lessonNumber: number): SavedLesson {
   try {
@@ -40,13 +36,17 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
     if (!root) return;
     let restoring = false;
     let restoreTimer = 0;
-
     const getStage = () => root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage');
 
     const capture = (event: Event) => {
       if (restoring) return;
-      const stage = getStage();
       const target = event.target as HTMLElement;
+      const resetButton = target.closest<HTMLButtonElement>('.stage-counter button');
+      if (resetButton?.textContent?.includes('Начать заново')) {
+        localStorage.removeItem(storageKey(lessonNumber));
+        return;
+      }
+      const stage = getStage();
       if (!stage || !stage.contains(target)) return;
       const stageId = stage.dataset.stageId;
       if (!stageId) return;
@@ -119,15 +119,6 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
       root.removeEventListener('click', capture, true);
     };
   }, [rootRef, lessonNumber, active]);
-
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const detail = (event as CustomEvent<{ lessonNumber?: number }>).detail;
-      if (detail?.lessonNumber && detail.lessonNumber <= 3) localStorage.removeItem(storageKey(detail.lessonNumber));
-    };
-    window.addEventListener('mathnikita-reset-lesson-responses', handler);
-    return () => window.removeEventListener('mathnikita-reset-lesson-responses', handler);
-  }, []);
 
   return null;
 }
