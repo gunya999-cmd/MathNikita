@@ -6,6 +6,7 @@ import './styles.css';
 import './adaptive.css';
 import './map.css';
 import './designRefresh.css';
+import './designRefreshPatch.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
