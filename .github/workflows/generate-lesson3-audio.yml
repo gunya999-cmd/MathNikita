@@ -1,0 +1,58 @@
+name: Generate lesson 3 audio
+
+on:
+  push:
+    paths:
+      - 'src/data/lessonThreeMentorScripts.json'
+      - 'src/data/lessonThreeNarration.json'
+      - 'scripts/generate_lesson3_audio.py'
+      - '.github/workflows/generate-lesson3-audio.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install audio tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install piper-tts
+
+      - name: Download Russian Piper voice
+        run: |
+          mkdir -p .cache/piper
+          curl -L --retry 3 --fail \
+            'https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx?download=true' \
+            -o .cache/piper/ru_RU-irina-medium.onnx
+          curl -L --retry 3 --fail \
+            'https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx.json?download=true' \
+            -o .cache/piper/ru_RU-irina-medium.onnx.json
+
+      - name: Generate lesson and mentor clips
+        run: python scripts/generate_lesson3_audio.py
+
+      - name: Commit generated audio
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/audio/neural/irina public/audio/neural/manifest.json
+          if git diff --cached --quiet; then
+            echo 'No generated changes'
+            exit 0
+          fi
+          git commit -m 'Generate neural audio for lesson 3'
+          git push origin HEAD:${{ github.ref_name }}
