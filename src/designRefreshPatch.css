@@ -1,0 +1,69 @@
+.lesson-mode-toolbar .voice-narrator>button{
+  min-height:42px;
+  color:#eef4ff;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.11);
+  box-shadow:none;
+}
+.lesson-mode-toolbar .voice-narrator>button.is-speaking{background:#cf4d62}
+.lesson-mode-toolbar .voice-narrator>.voice-settings-button{color:#dce7ff;background:rgba(255,255,255,.08)}
+.voice-settings-panel{border-color:#d5e0f0;box-shadow:0 22px 54px rgba(12,27,61,.22)}
+.voice-settings-panel input[type=range]{accent-color:#315cf5}
+
+.lesson-page-navigator{bottom:92px}
+.lesson-page-navigator-toggle{
+  border:1px solid rgba(255,255,255,.14);
+  background:linear-gradient(145deg,#172a5c,#315cf5);
+  box-shadow:0 16px 36px rgba(28,57,136,.28);
+}
+.lesson-page-navigator-panel{
+  border-color:#d7e2f1;
+  background:rgba(255,255,255,.97);
+  box-shadow:0 24px 64px rgba(16,35,77,.23);
+  backdrop-filter:blur(18px);
+}
+.lesson-page-navigator-panel>header span{color:#315cf5}
+.lesson-page-navigator-groups button{border-color:#dce5f1;background:#fafcff}
+.lesson-page-navigator-groups button:hover{border-color:#9db4ed;background:#f1f5ff}
+.lesson-page-navigator-groups button.active{border-color:#315cf5;background:#eaf0ff}
+.lesson-page-navigator-groups button.active span{background:#315cf5}
+
+.cat-mentor-collapsed{bottom:92px}
+.cat-mentor-voice-row button{border-color:#d7e2ef!important;background:#f6f9ff!important;color:#31559a!important}
+.cat-mentor-voice-row button.is-on{background:#e8f0ff!important;border-color:#8ca7ef!important}
+.cat-mentor-speak{background:#315cf5!important;color:#fff!important}
+
+.year-status,.task-card,.mission-column article,.map-preview,.world-grid article,.score-row article,.skills-grid article,.parent-grid article{
+  border-color:#dce5f1;
+  box-shadow:0 16px 42px rgba(24,44,86,.075);
+}
+.year-status button,.map-preview button,.feedback button{
+  background:linear-gradient(135deg,#315cf5,#5278ff);
+  box-shadow:0 9px 20px rgba(49,92,245,.18);
+}
+.year-bar i,.mini-bar i,.bar i{background:linear-gradient(90deg,#315cf5,#20bfe3)}
+.product-hero{
+  background:
+    linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px),
+    radial-gradient(circle at 65% 18%,rgba(32,191,227,.25),transparent 28%),
+    linear-gradient(135deg,#0b1430,#172a5d 58%,#164463);
+  background-size:34px 34px,34px 34px,auto,auto;
+}
+.hero-copy>span{color:#aaedff}
+.cat-emoji{background:radial-gradient(circle at 34% 28%,#fff2a8,#ffd25b 65%,#f2a72f);box-shadow:0 20px 42px rgba(0,0,0,.22),0 0 0 9px rgba(49,92,245,.13)}
+.hero-mascot>b{background:#b7e54a;color:#263100}
+.route-strip>span.current{background:#315cf5;box-shadow:0 0 0 8px rgba(49,92,245,.13),0 12px 30px rgba(49,92,245,.28)}
+.hero-note{border:1px solid rgba(255,255,255,.10)}
+.task-meta{background:#f5f8fd;border-color:#e0e7f2}
+.task-meta span,.phase-tag,.dashboard header span{color:#315cf5}
+.answer-box input:focus{border-color:#315cf5;box-shadow:0 0 0 4px rgba(49,92,245,.09)}
+.answer-box button{background:linear-gradient(135deg,#315cf5,#5278ff)}
+
+@media(max-width:700px){
+  .lesson-mode-toolbar{grid-template-columns:auto minmax(0,1fr) auto}
+  .lesson-mode-toolbar>.voice-narrator{grid-column:3;grid-row:1}
+  .lesson-mode-toolbar>button:last-of-type{display:none}
+  .lesson-mode-toolbar .voice-narrator>button:first-child{width:42px;padding:0;justify-content:center}
+  .lesson-page-navigator,.cat-mentor-collapsed{bottom:82px}
+}

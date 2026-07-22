@@ -21,26 +21,47 @@ jobs:
     name: TypeScript and Vite build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
-
       - name: Install dependencies
         run: npm install
-
       - name: Build application
         run: npm run build
-
       - name: Upload production bundle
         uses: actions/upload-artifact@v4
         with:
           name: mathnikita-dist-${{ github.sha }}
           path: dist
           if-no-files-found: error
+          retention-days: 7
+
+  ipad-webkit:
+    name: iPad WebKit complete lesson walkthrough
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install WebKit browser
+        run: npx playwright install --with-deps webkit
+      - name: Complete every exercise in all four lessons
+        run: npm run test:ipad
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipad-webkit-traces-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
           retention-days: 7
