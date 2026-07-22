@@ -126,7 +126,7 @@ const plans: LessonPlan[] = [
 async function openLesson(page: Page, lessonNumber: number) {
   await page.goto('/');
   const lessons = page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(4);
+  await expect(lessons).toHaveCount(5);
   await lessons.nth(lessonNumber - 1).click();
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
   await page.locator('.lesson-opening-start').click();
