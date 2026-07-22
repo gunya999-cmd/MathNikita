@@ -189,23 +189,22 @@ for (const plan of plans) {
   });
 }
 
-async function useLessonOneNavigator(page: Page, pageIndex: number) {
-  await page.locator('.lesson-page-navigator-toggle').click();
-  const target = page.locator('.lesson-page-navigator-groups button').nth(pageIndex);
-  await expect(target).toBeVisible();
-  await target.click();
-}
-
-test('lesson 1 response survives direct page navigation on iPad WebKit', async ({ page }) => {
+test('lesson 1 response survives normal backward and forward navigation on iPad WebKit', async ({ page }) => {
   await openLesson(page, 1);
 
-  await useLessonOneNavigator(page, 8);
-  await expect(page.locator('[data-stage-id="choice"]')).toBeVisible();
-  await page.locator('[data-stage-id="choice"] .choice-grid').getByRole('button', { name: '40', exact: true }).click();
+  const next = page.locator('.lesson-controls .primary');
+  for (let index = 0; index < 3; index += 1) {
+    await expect(next).toBeEnabled();
+    await next.click();
+  }
 
-  await useLessonOneNavigator(page, 9);
-  await expect(page.locator('[data-stage-id="compare"]')).toBeVisible();
-  await useLessonOneNavigator(page, 8);
+  const stage = page.locator('[data-stage-id="natural-check"]');
+  await expect(stage).toBeVisible();
+  await stage.getByRole('button', { name: '1, 7, 24', exact: true }).click();
 
-  await expect(page.locator('[data-stage-id="choice"] .choice-grid button.selected')).toHaveText('40');
+  await page.locator('.lesson-controls button').first().click();
+  await expect(page.locator('[data-stage-id="measure"]')).toBeVisible();
+  await page.locator('.lesson-controls .primary').click();
+
+  await expect(page.locator('[data-stage-id="natural-check"] .choice-grid button.selected')).toHaveText('1, 7, 24');
 });
