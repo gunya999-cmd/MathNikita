@@ -191,19 +191,14 @@ for (const plan of plans) {
 
 test('lesson 1 response survives direct page navigation on iPad WebKit', async ({ page }) => {
   await openLesson(page, 1);
-  const next = page.locator('.lesson-controls .primary');
-  for (let index = 0; index < 8; index += 1) {
-    const stage = page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
-    if (await stage.locator('.activity-area').count()) {
-      const id = await stage.getAttribute('data-stage-id');
-      const answer = plans[0].answers[id!];
-      if (answer) await answerCurrentStage(page, answer);
-    }
-    await next.click();
-  }
+
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', { detail: { lessonNumber: 1, stageIndex: 8 } })));
   await expect(page.locator('[data-stage-id="choice"]')).toBeVisible();
   await page.locator('[data-stage-id="choice"] .choice-grid').getByRole('button', { name: '40', exact: true }).click();
-  await next.click();
-  await page.locator('.lesson-controls button').first().click();
+
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', { detail: { lessonNumber: 1, stageIndex: 9 } })));
+  await expect(page.locator('[data-stage-id="compare"]')).toBeVisible();
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', { detail: { lessonNumber: 1, stageIndex: 8 } })));
+
   await expect(page.locator('[data-stage-id="choice"] .choice-grid button.selected')).toHaveText('40');
 });
