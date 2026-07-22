@@ -1,7 +1,48 @@
 import { useMemo,useState } from 'react';
-import { allRichLessons } from './data/richLessonContent';
+import { richLessonByNumber } from './data/richLessonContent';
+import { totalLessons,yearLessonByNumber,yearPlan,yearUnits,type YearLesson } from './data/yearPlan';
 import './courseCatalog.css';
 import './focusCourseNavigation.css';
+import './coursePlanCatalog.css';
+
 type Props={selectedLesson:number;onOpenLesson:(lessonNumber:number)=>void};
-const readyLessonNumbers=new Set([1,2,3,4]);
-export function CourseCatalog({selectedLesson,onOpenLesson}:Props){const[query,setQuery]=useState('');const filteredLessons=useMemo(()=>{const n=query.trim().toLowerCase();return n?allRichLessons.filter(l=>String(l.lessonNumber).includes(n)||l.title.toLowerCase().includes(n)||l.goal.toLowerCase().includes(n)):allRichLessons},[query]);const current=allRichLessons.find(l=>l.lessonNumber===selectedLesson)??allRichLessons[0];return <main className="course-catalog-page"><section className="course-catalog-hero"><div><span>Математическая лаборатория · 5 класс</span><h1>Выбирай тему и начинай</h1><p>Короткие объяснения, наглядные модели и задачи, в которых можно разобраться самому. Пифагор подскажет, но решение останется за тобой.</p></div><div className="course-resume-card"><small>Продолжить обучение</small><b>Урок {current.lessonNumber}</b><strong>{current.title}</strong><button type="button" onClick={()=>onOpenLesson(current.lessonNumber)}>Перейти к уроку →</button></div></section><section className="course-catalog-toolbar" aria-label="Поиск урока"><div><b>{allRichLessons.length} уроков в программе</b><span>Первые четыре урока уже готовы для полного интерактивного прохождения.</span></div><label><span className="sr-only">Найти урок</span><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Найти тему или номер урока"/></label></section><section className="course-lesson-grid" aria-label="Список уроков">{filteredLessons.map(lesson=>{const ready=readyLessonNumbers.has(lesson.lessonNumber);const selected=lesson.lessonNumber===selectedLesson;return <button key={lesson.lessonNumber} type="button" className={`${ready?'is-interactive':'is-locked'} ${selected?'is-selected':''}`} onClick={()=>ready&&onOpenLesson(lesson.lessonNumber)} disabled={!ready} aria-label={ready?`Открыть урок ${lesson.lessonNumber}: ${lesson.title}`:`Урок ${lesson.lessonNumber} в разработке`}><span>{lesson.lessonNumber}</span><div><small>{ready?'Готов к прохождению':'Скоро'}</small><b>{lesson.title}</b><p>{lesson.goal}</p></div><i aria-hidden="true">{ready?'→':'🔒'}</i></button>})}</section>{!filteredLessons.length?<div className="course-empty-search">По такому запросу уроков не найдено.</div>:null}</main>}
+
+function planLabel(lesson:YearLesson){
+  if(lesson.paragraph.startsWith('§'))return `${lesson.paragraph} · урок ${lesson.topicLessonIndex} из ${lesson.topicLessonCount}`;
+  if(lesson.topicLessonCount>1)return `${lesson.paragraph} · урок ${lesson.topicLessonIndex} из ${lesson.topicLessonCount}`;
+  return lesson.paragraph;
+}
+
+export function CourseCatalog({selectedLesson,onOpenLesson}:Props){
+  const[query,setQuery]=useState('');
+  const filteredLessons=useMemo(()=>{
+    const normalized=query.trim().toLowerCase();
+    if(!normalized)return yearPlan;
+    return yearPlan.filter(lesson=>
+      String(lesson.number).includes(normalized)||
+      lesson.title.toLowerCase().includes(normalized)||
+      lesson.unit.toLowerCase().includes(normalized)||
+      lesson.paragraph.toLowerCase().includes(normalized)
+    );
+  },[query]);
+  const groups=useMemo(()=>yearUnits.map(unit=>({unit,lessons:filteredLessons.filter(lesson=>lesson.unit===unit)})).filter(group=>group.lessons.length),[filteredLessons]);
+  const current=yearLessonByNumber.get(selectedLesson)??yearPlan[0];
+  return <main className="course-catalog-page">
+    <section className="course-catalog-hero">
+      <div><span>Математическая лаборатория · 5 класс</span><h1>175 уроков по учебнику Мерзляка</h1><p>Курс построен по I варианту примерного тематического планирования: 5 часов в неделю, 38 параграфов, повторение и контрольные работы.</p></div>
+      <div className="course-resume-card"><small>Продолжить обучение</small><b>Урок {current.number} из {totalLessons}</b><strong>{current.title}</strong><span>{planLabel(current)}</span><button type="button" onClick={()=>onOpenLesson(current.number)}>Перейти к уроку →</button></div>
+    </section>
+    <section className="course-catalog-toolbar" aria-label="Поиск урока"><div><b>{totalLessons} уроков в официальном плане</b><span>Полностью готовы первые четыре интерактивных урока. Остальные сохранены в точной последовательности учебного года.</span></div><label><span className="sr-only">Найти урок</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Найти тему, параграф или номер урока"/></label></section>
+    <div className="course-chapter-list">{groups.map((group,groupIndex)=>{
+      const first=group.lessons[0];const last=group.lessons[group.lessons.length-1];const containsSelected=group.lessons.some(lesson=>lesson.number===selectedLesson);
+      return <details className="course-chapter-group" key={group.unit} open={containsSelected||groupIndex===0||Boolean(query.trim())}>
+        <summary><div><small>{group.unit.startsWith('Глава')?'Раздел учебника':'Завершение курса'}</small><h2>{group.unit}</h2></div><span>{first.number===last.number?`урок ${first.number}`:`уроки ${first.number}–${last.number}`} · {group.lessons.length}</span></summary>
+        <section className="course-lesson-grid" aria-label={group.unit}>{group.lessons.map(lesson=>{
+          const ready=lesson.available;const selected=lesson.number===selectedLesson;const rich=richLessonByNumber.get(lesson.number);const description=ready&&rich?rich.goal:planLabel(lesson);
+          return <button key={lesson.number} type="button" className={`${ready?'is-interactive':'is-locked'} ${selected?'is-selected':''} is-${lesson.lessonType}`} onClick={()=>ready&&onOpenLesson(lesson.number)} disabled={!ready} aria-label={ready?`Открыть урок ${lesson.number}: ${lesson.title}`:`Урок ${lesson.number} в разработке`}><span>{lesson.number}</span><div><small>{ready?'Готов к прохождению':planLabel(lesson)}</small><b>{lesson.title}</b><p>{description}</p></div><i aria-hidden="true">{ready?'→':lesson.lessonType==='control'||lesson.lessonType==='final'?'✓':'🔒'}</i></button>
+        })}</section>
+      </details>;
+    })}</div>
+    {!filteredLessons.length?<div className="course-empty-search">По такому запросу уроков не найдено.</div>:null}
+  </main>;
+}
