@@ -97,7 +97,7 @@ export const yearPlan: YearLesson[] = segments.flatMap(segment => {
     paragraph:segment.paragraph,
     title:segment.topic,
     lessonType:lessonType(segment, offset),
-    available:segment.from + offset <= 4,
+    available:segment.from + offset <= 5,
     topicLessonIndex:offset + 1,
     topicLessonCount,
   }));
