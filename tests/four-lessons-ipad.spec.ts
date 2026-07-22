@@ -189,16 +189,23 @@ for (const plan of plans) {
   });
 }
 
+async function useLessonOneNavigator(page: Page, pageIndex: number) {
+  await page.locator('.lesson-page-navigator-toggle').click();
+  const target = page.locator('.lesson-page-navigator-groups button').nth(pageIndex);
+  await expect(target).toBeVisible();
+  await target.click();
+}
+
 test('lesson 1 response survives direct page navigation on iPad WebKit', async ({ page }) => {
   await openLesson(page, 1);
 
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', { detail: { lessonNumber: 1, stageIndex: 8 } })));
+  await useLessonOneNavigator(page, 8);
   await expect(page.locator('[data-stage-id="choice"]')).toBeVisible();
   await page.locator('[data-stage-id="choice"] .choice-grid').getByRole('button', { name: '40', exact: true }).click();
 
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', { detail: { lessonNumber: 1, stageIndex: 9 } })));
+  await useLessonOneNavigator(page, 9);
   await expect(page.locator('[data-stage-id="compare"]')).toBeVisible();
-  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', { detail: { lessonNumber: 1, stageIndex: 8 } })));
+  await useLessonOneNavigator(page, 8);
 
   await expect(page.locator('[data-stage-id="choice"] .choice-grid button.selected')).toHaveText('40');
 });
