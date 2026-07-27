@@ -6,7 +6,7 @@ import './focusCourseNavigation.css';
 import './coursePlanCatalog.css';
 
 type Props={selectedLesson:number;onOpenLesson:(lessonNumber:number)=>void};
-const readyDescriptions:Record<number,string>={5:'Обобщение § 2: чтение, запись и разбор многозначных чисел, ведущий нуль и задачи на количество цифр.',6:'Новая тема § 3: точка и отрезок, измерение и построение длины, равные отрезки и свойство AB = AC + CB.',7:'Закрепление § 3: измерение и построение, цепочки точек, перевод единиц и задачи № 59, 61, 63–66 и 75.',8:'Новая тема § 3: ломаная, её вершины и звенья, длина ломаной, замкнутые ломаные и задачи № 68, 71, 74, 77.'};
+const readyDescriptions:Record<number,string>={5:'Обобщение § 2: чтение, запись и разбор многозначных чисел, ведущий нуль и задачи на количество цифр.',6:'Новая тема § 3: точка и отрезок, измерение и построение длины, равные отрезки и свойство AB = AC + CB.',7:'Закрепление § 3: измерение и построение, цепочки точек, перевод единиц и задачи № 59, 61, 63–66 и 75.',8:'Новая тема § 3: ломаная, её вершины и звенья, длина ломаной, замкнутые ломаные и задачи № 68, 71, 74, 77.',9:'Обобщение § 3: точка, отрезок, свойство длины, единицы, равные отрезки, ломаная и итоговый контроль темы.'};
 
 function planLabel(lesson:YearLesson){
   if(lesson.paragraph.startsWith('§'))return `${lesson.paragraph} · урок ${lesson.topicLessonIndex} из ${lesson.topicLessonCount}`;
@@ -33,7 +33,7 @@ export function CourseCatalog({selectedLesson,onOpenLesson}:Props){
       <div><span>Математическая лаборатория · 5 класс</span><h1>175 уроков по учебнику Мерзляка</h1><p>Курс построен по I варианту примерного тематического планирования: 5 часов в неделю, 38 параграфов, повторение и контрольные работы.</p></div>
       <div className="course-resume-card"><small>Продолжить обучение</small><b>Урок {current.number} из {totalLessons}</b><strong>{current.title}</strong><span>{planLabel(current)}</span><button type="button" onClick={()=>onOpenLesson(current.number)}>Перейти к уроку →</button></div>
     </section>
-    <section className="course-catalog-toolbar" aria-label="Поиск урока"><div><b>{totalLessons} уроков в официальном плане</b><span>Полностью готовы первые восемь интерактивных уроков. Остальные сохранены в точной последовательности учебного года.</span></div><label><span className="sr-only">Найти урок</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Найти тему, параграф или номер урока"/></label></section>
+    <section className="course-catalog-toolbar" aria-label="Поиск урока"><div><b>{totalLessons} уроков в официальном плане</b><span>Полностью готовы первые девять интерактивных уроков. Остальные сохранены в точной последовательности учебного года.</span></div><label><span className="sr-only">Найти урок</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Найти тему, параграф или номер урока"/></label></section>
     <div className="course-chapter-list">{groups.map((group,groupIndex)=>{
       const first=group.lessons[0];const last=group.lessons[group.lessons.length-1];const containsSelected=group.lessons.some(lesson=>lesson.number===selectedLesson);
       return <details className="course-chapter-group" key={group.unit} open={containsSelected||groupIndex===0||Boolean(query.trim())}>
