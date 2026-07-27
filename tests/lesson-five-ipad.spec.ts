@@ -29,7 +29,7 @@ const answers:Record<string,Answer> = {
 async function openLessonFive(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(7);
+  await expect(lessons).toHaveCount(8);
   await lessons.nth(4).click();
   await expect(page.getByRole('heading',{name:'Десятичная запись: обобщение'})).toBeVisible();
   await page.locator('.lesson-opening-start').click();
@@ -49,52 +49,25 @@ async function answerStage(page:Page,answer:Answer){
 test('lesson 5 completes every stage and produces full scores on iPad WebKit',async({page})=>{
   test.setTimeout(180_000);
   await openLessonFive(page);
-
   const visited=new Set<string>();
   for(let step=0;step<24;step+=1){
     const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
     const stageId=await stage.getAttribute('data-stage-id');
     expect(stageId,`Stage ${step+1} must have data-stage-id`).toBeTruthy();
     visited.add(stageId!);
-
-    if(await stage.locator('.activity-area').count()){
-      const answer=answers[stageId!];
-      expect(answer,`Missing automated answer for ${stageId}`).toBeTruthy();
-      await answerStage(page,answer);
-    }
-
+    if(await stage.locator('.activity-area').count()){const answer=answers[stageId!];expect(answer,`Missing automated answer for ${stageId}`).toBeTruthy();await answerStage(page,answer)}
     if(stageId==='l5-summary')break;
-    const next=page.locator('.lesson-controls .primary');
-    await expect(next).toBeEnabled();
-    await next.click();
-    await expect(stage).not.toHaveAttribute('data-stage-id',stageId!);
+    const next=page.locator('.lesson-controls .primary');await expect(next).toBeEnabled();await next.click();await expect(stage).not.toHaveAttribute('data-stage-id',stageId!);
   }
-
-  await expect(page.locator('[data-stage-id="l5-summary"]')).toBeVisible();
-  expect(visited.size).toBe(24);
-  expect(Object.keys(answers).every(stageId=>visited.has(stageId))).toBe(true);
-
-  const summary=page.locator('.summary-card');
-  await expect(summary).toContainText('5/5');
-  await expect(summary).toContainText('6/6');
-  await expect(summary).toContainText('Завершён');
-  await expect(page.locator('.lesson-page-navigator-toggle')).toContainText('Страница 24/24');
-
-  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(2);
+  await expect(page.locator('[data-stage-id="l5-summary"]')).toBeVisible();expect(visited.size).toBe(24);expect(Object.keys(answers).every(stageId=>visited.has(stageId))).toBe(true);
+  const summary=page.locator('.summary-card');await expect(summary).toContainText('5/5');await expect(summary).toContainText('6/6');await expect(summary).toContainText('Завершён');await expect(page.locator('.lesson-page-navigator-toggle')).toContainText('Страница 24/24');
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);expect(overflow).toBeLessThanOrEqual(2);
 });
 
 test('lesson 5 keeps a selected answer after direct page navigation',async({page})=>{
   await openLessonFive(page);
-
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:5,stageIndex:7}})));
-  const reading=page.locator('[data-stage-id="l5-read"]');
-  await expect(reading).toBeVisible();
-  await reading.getByRole('button',{name:'сорок восемь миллиардов семь миллионов пять тысяч девяносто',exact:true}).click();
-
-  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:5,stageIndex:8}})));
-  await expect(page.locator('[data-stage-id="l5-write"]')).toBeVisible();
-  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:5,stageIndex:7}})));
-
+  const reading=page.locator('[data-stage-id="l5-read"]');await expect(reading).toBeVisible();await reading.getByRole('button',{name:'сорок восемь миллиардов семь миллионов пять тысяч девяносто',exact:true}).click();
+  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:5,stageIndex:8}})));await expect(page.locator('[data-stage-id="l5-write"]')).toBeVisible();await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:5,stageIndex:7}})));
   await expect(page.locator('[data-stage-id="l5-read"] .choice-grid button.selected')).toContainText('сорок восемь миллиардов');
 });
