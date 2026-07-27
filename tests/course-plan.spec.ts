@@ -8,7 +8,7 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
 
   const lessons = page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(7);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(8);
 
   await expect(lessons.nth(0)).toContainText('Ряд натуральных чисел');
   await expect(lessons.nth(1)).toContainText('Ряд натуральных чисел');
@@ -16,11 +16,12 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
   await expect(lessons.nth(4)).toContainText('Цифры. Десятичная запись натуральных чисел');
   await expect(lessons.nth(5)).toContainText('Отрезок. Длина отрезка');
   await expect(lessons.nth(6)).toContainText('Отрезок. Длина отрезка');
+  await expect(lessons.nth(7)).toContainText('Отрезок. Длина отрезка');
   await expect(lessons.nth(19)).toContainText('Контрольная работа № 1');
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
 
   await expect(page.locator('body')).not.toContainText('Открытие темы');
-  await expect(page.getByText('Полностью готовы первые семь интерактивных уроков.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы первые восемь интерактивных уроков.')).toBeVisible();
 });
