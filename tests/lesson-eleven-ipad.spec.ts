@@ -19,9 +19,9 @@ const answers:Record<string,Answer>={
 
 async function openLessonEleven(page:Page){
   await page.goto('/');
-  const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(11);
-  await lessons.nth(10).click();
+  const readyLessons=page.locator('.course-lesson-grid > button:not([disabled])');
+  await expect(readyLessons).toHaveCount(11);
+  await readyLessons.nth(10).click();
   await expect(page.getByRole('heading',{name:'Плоскость. Прямая. Луч — закрепление'}).first()).toBeVisible();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l11-story"]')).toBeVisible();
