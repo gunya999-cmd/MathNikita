@@ -11,7 +11,7 @@ type StoredVoiceSettings = { engine?: VoiceEngine; voiceURI?: string; rate?: num
 type NeuralNarrationManifest = { engine: string; voice: string; license?: string; clips: Record<string, string> };
 type AudioRequestDetail = { source?: 'narrator' | 'mentor' | string };
 
-const STORAGE_KEY = 'mathnikita-voice-settings';
+const STORAGE_KEY = 'mathnikita-voice-settings-v2';
 const MANIFEST_URL = '/audio/neural/manifest.json';
 
 function loadSettings(): StoredVoiceSettings {
@@ -23,9 +23,12 @@ function scoreVoice(voice: SpeechSynthesisVoice) {
   const name = voice.name.toLowerCase();
   let score = 0;
   if (voice.lang.toLowerCase().startsWith('ru')) score += 100;
-  if (/milena|katya|irina|алёна|alena|premium|enhanced|natural/.test(name)) score += 40;
-  if (/google|microsoft|apple/.test(name)) score += 20;
-  if (voice.localService) score += 8;
+  if (/milena|katya|irina|алёна|alena/.test(name)) score += 55;
+  if (/premium|enhanced|natural/.test(name)) score += 50;
+  if (/apple/.test(name)) score += 35;
+  if (/microsoft|google/.test(name)) score += 25;
+  if (voice.localService) score += 12;
+  if (/compact|espeak|piper/.test(name)) score -= 30;
   return score;
 }
 
@@ -64,7 +67,7 @@ function splitForSpeech(text: string) {
   let current = '';
   for (const sentence of sentences) {
     const next = `${current} ${sentence}`.trim();
-    if (next.length > 220 && current) { chunks.push(current); current = sentence.trim(); }
+    if (next.length > 180 && current) { chunks.push(current); current = sentence.trim(); }
     else current = next;
   }
   if (current) chunks.push(current);
@@ -80,9 +83,9 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
   const [speaking, setSpeaking] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const initialSettings = useMemo(loadSettings, []);
-  const [engine, setEngine] = useState<VoiceEngine>(initialSettings.engine ?? 'neural');
+  const [engine, setEngine] = useState<VoiceEngine>(initialSettings.engine ?? 'system');
   const [voiceURI, setVoiceURI] = useState(initialSettings.voiceURI ?? '');
-  const [rate, setRate] = useState(initialSettings.rate ?? 1);
+  const [rate, setRate] = useState(initialSettings.rate ?? 0.96);
   const sessionRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -103,10 +106,7 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
     const loadVoices = () => {
       const next = window.speechSynthesis.getVoices().sort((a, b) => scoreVoice(b) - scoreVoice(a));
       setVoices(next);
-      if (!voiceURI && next.length) {
-        const preferred = next.find(voice => voice.lang.toLowerCase().startsWith('ru')) ?? next[0];
-        setVoiceURI(preferred.voiceURI);
-      }
+      if (!voiceURI && next.length) setVoiceURI(next[0].voiceURI);
     };
     loadVoices();
     window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
@@ -167,9 +167,9 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
       utterance.lang = selectedVoice?.lang ?? 'ru-RU';
       utterance.voice = selectedVoice ?? null;
       utterance.rate = rate;
-      utterance.pitch = 1;
+      utterance.pitch = 1.02;
       utterance.volume = 1;
-      utterance.onend = () => { index += 1; playNext(); };
+      utterance.onend = () => { index += 1; window.setTimeout(playNext, 90); };
       utterance.onerror = () => setSpeaking(false);
       window.speechSynthesis.speak(utterance);
     };
@@ -217,10 +217,10 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
     <button type="button" className={speaking ? 'is-speaking' : ''} onClick={speak} aria-pressed={speaking}><span aria-hidden="true">{speaking ? '■' : '▶'}</span>{speaking ? 'Остановить' : 'Слушать'}</button>
     <button type="button" className="voice-settings-button" onClick={() => setSettingsOpen(open => !open)} aria-expanded={settingsOpen} aria-label="Настройки голоса">⚙</button>
     {settingsOpen ? <div className="voice-settings-panel">
-      <label><span>Режим озвучки</span><select value={engine} onChange={event => setEngine(event.target.value as VoiceEngine)}><option value="neural">Нейроголос Ирина · рекомендуется</option><option value="system">Системный голос · резервный</option></select></label>
-      {engine === 'system' ? <label><span>Системный голос</span><select value={voiceURI} onChange={event => setVoiceURI(event.target.value)}>{voiceOptions.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.localService ? ' · на устройстве' : ''}</option>)}</select></label> : null}
-      <label><span>Скорость: {rate.toFixed(2)}×</span><input type="range" min="0.86" max="1.12" step="0.02" value={rate} onChange={event => setRate(Number(event.target.value))}/></label>
-      <small className={neuralReady ? 'voice-engine-ready' : 'voice-engine-pending'}>{engine === 'neural' ? neuralReady ? `Готовая нейросетевая дорожка «${manifest?.voice}»: запускается сразу и одинаково звучит на всех устройствах.` : manifestChecked ? 'Для этой сцены готовой дорожки пока нет. Временно используется лучший доступный системный голос.' : 'Загружаем подготовленную нейросетевую дорожку…' : 'Системный голос зависит от устройства и используется как резервный вариант.'}</small>
+      <label><span>Режим озвучки</span><select value={engine} onChange={event => setEngine(event.target.value as VoiceEngine)}><option value="system">Естественный голос устройства · рекомендуется</option><option value="neural">Встроенная офлайн-дорожка «Ирина»</option></select></label>
+      {engine === 'system' ? <label><span>Голос</span><select value={voiceURI} onChange={event => setVoiceURI(event.target.value)}>{voiceOptions.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.localService ? ' · на устройстве' : ''}</option>)}</select></label> : null}
+      <label><span>Скорость: {rate.toFixed(2)}×</span><input type="range" min="0.86" max="1.08" step="0.02" value={rate} onChange={event => setRate(Number(event.target.value))}/></label>
+      <small className={engine === 'system' ? 'voice-engine-ready' : neuralReady ? 'voice-engine-ready' : 'voice-engine-pending'}>{engine === 'system' ? 'На iPad сначала выбирается лучший русский голос Premium/Enhanced, если он установлен в iOS.' : neuralReady ? `Офлайн-дорожка «${manifest?.voice}» работает одинаково на всех устройствах, но звучит более синтетически.` : manifestChecked ? 'Офлайн-дорожка недоступна — используется системный голос.' : 'Загружаем офлайн-дорожку…'}</small>
     </div> : null}
   </div>;
 }
