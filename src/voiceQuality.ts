@@ -77,9 +77,8 @@ function speakLatinToken(token: string) {
 }
 
 export function prepareRussianSpeechText(value: string) {
-  let text = value.normalize('NFKC').replace(/\u00a0/g, ' ');
+  let text = value.replace(/№\s*(\d+)/g, 'номер $1').normalize('NFKC').replace(/\u00a0/g, ' ');
   text = text.replace(/§\s*(\d+)/g, 'параграф $1');
-  text = text.replace(/№\s*(\d+)/g, 'номер $1');
   text = text.replace(/(\d+(?:[.,]\d+)?)\s*(км|дм|см|мм|м)(?=\s|[.,;:!?)]|$)/gi, (_, numberText: string, unit: string) => {
     const forms = UNIT_FORMS[unit.toLowerCase()];
     return forms ? `${numberText} ${inflectedUnit(numberText, forms)}` : `${numberText} ${unit}`;
