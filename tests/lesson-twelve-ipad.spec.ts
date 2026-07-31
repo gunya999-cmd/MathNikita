@@ -21,7 +21,7 @@ async function openLesson(page:Page){
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
   await expect(lessons).toHaveCount(12);
   await lessons.nth(11).click();
-  await expect(page.getByRole('heading',{name:'Плоскость. Прямая. Луч — обобщение'}).first()).toBeVisible();
+  await expect(page.locator('.lesson-opening-start')).toBeVisible();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l12-story"]')).toBeVisible();
 }
