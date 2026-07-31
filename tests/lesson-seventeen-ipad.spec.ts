@@ -39,51 +39,6 @@ async function answerStage(page:Page,answer:Answer){
   await expect(stage.locator('.instant-feedback.good')).toBeVisible();
 }
 
-async function captureLayoutDiagnostics(page:Page){
-  return page.evaluate(()=>{
-    const round=(value:number)=>Math.round(value*10)/10;
-    const metrics=(element:Element|null)=>{
-      if(!(element instanceof HTMLElement))return null;
-      const rect=element.getBoundingClientRect();
-      const style=getComputedStyle(element);
-      const pseudo=(name:'::before'|'::after')=>{
-        const value=getComputedStyle(element,name);
-        return{content:value.content,width:value.width,minWidth:value.minWidth,maxWidth:value.maxWidth,left:value.left,right:value.right,position:value.position,transform:value.transform,display:value.display};
-      };
-      return{
-        tag:element.tagName,
-        id:element.id,
-        className:element.className,
-        left:round(rect.left),right:round(rect.right),top:round(rect.top),width:round(rect.width),
-        scrollWidth:element.scrollWidth,clientWidth:element.clientWidth,offsetWidth:element.offsetWidth,
-        position:style.position,display:style.display,overflowX:style.overflowX,
-        widthStyle:style.width,minWidth:style.minWidth,maxWidth:style.maxWidth,
-        marginLeft:style.marginLeft,marginRight:style.marginRight,
-        paddingLeft:style.paddingLeft,paddingRight:style.paddingRight,
-        boxSizing:style.boxSizing,transform:style.transform,
-        flex:style.flex,flexBasis:style.flexBasis,gridTemplateColumns:style.gridTemplateColumns,
-        text:(element.textContent??'').trim().replace(/\s+/g,' ').slice(0,120),
-        before:pseudo('::before'),after:pseudo('::after'),
-      };
-    };
-    const viewport=document.documentElement.clientWidth;
-    const selectors=['html','body','#root','.app-shell','.topbar','.brand','.topbar nav','.xp-pill','.lesson-course-shell','.lesson-mode-toolbar','.mentor-learning-layout','.mentor-learning-main','.lesson-runtime','.lesson-player-page','.interactive-stage','.stage-copy','.comparison-practice-mission','.lesson-controls','.lesson-page-navigator','.lesson-page-navigator-toggle','.cat-mentor-collapsed'];
-    const offenders=Array.from(document.querySelectorAll<HTMLElement>('*'))
-      .map(element=>metrics(element))
-      .filter((item):item is NonNullable<typeof item>=>Boolean(item))
-      .filter(item=>item.right>viewport+2||item.left<-2||item.scrollWidth>item.clientWidth+2)
-      .sort((a,b)=>Math.max(b.right-viewport,b.scrollWidth-b.clientWidth)-Math.max(a.right-viewport,a.scrollWidth-a.clientWidth))
-      .slice(0,50);
-    return{
-      viewport:{innerWidth:window.innerWidth,visualViewportWidth:window.visualViewport?.width??null,documentClientWidth:viewport,documentScrollWidth:document.documentElement.scrollWidth,documentOffsetWidth:document.documentElement.offsetWidth,bodyClientWidth:document.body.clientWidth,bodyScrollWidth:document.body.scrollWidth,bodyOffsetWidth:document.body.offsetWidth},
-      scroll:{x:window.scrollX,y:window.scrollY},
-      specific:Object.fromEntries(selectors.map(selector=>[selector,metrics(document.querySelector(selector))])),
-      bodyChildren:Array.from(document.body.children).map(child=>metrics(child)),
-      offenders,
-    };
-  });
-}
-
 test('lesson 17 completes every exercise and produces full scores on iPad WebKit',async({page})=>{
   test.setTimeout(180_000);
   await openLesson(page);
@@ -94,10 +49,6 @@ test('lesson 17 completes every exercise and produces full scores on iPad WebKit
     expect(stageId,`Stage ${step+1} must have data-stage-id`).toBeTruthy();
     visited.add(stageId!);
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-    if(overflow>2){
-      const diagnostics=await captureLayoutDiagnostics(page);
-      console.log(`L17_LAYOUT ${JSON.stringify(diagnostics)}`);
-    }
     expect(overflow,`Horizontal overflow at ${stageId}`).toBeLessThanOrEqual(2);
     if(await stage.locator('.activity-area').count()){
       const answer=answers[stageId!];
