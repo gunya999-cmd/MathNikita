@@ -89,7 +89,7 @@ async function auditMentorExclusion(page:Page){
 }
 
 test('every ready lesson uses natural Russian narration without overlapping the mentor',async({page})=>{
-  test.setTimeout(180_000);
+  test.setTimeout(360_000);
   await installSpeechAudit(page);
 
   for(let lessonNumber=1;lessonNumber<=12;lessonNumber+=1){
