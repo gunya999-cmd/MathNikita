@@ -15,6 +15,7 @@ import { lessonThirteenStages } from './ScaleCoordinateRayPlayer';
 import { lessonFourteenStages } from './ScaleCoordinateRayPracticePlayer';
 import { lessonFifteenStages } from './ScaleCoordinateRaySummaryPlayer';
 import { lessonSixteenStages } from './NaturalNumberComparisonPlayer';
+import { lessonSeventeenStages } from './NaturalNumberComparisonPracticePlayer';
 import './lessonPageNavigator.css';
 
 type PageItem={id:string;title:string};
@@ -36,25 +37,28 @@ const groups13:PageGroup[]=[{label:'Шкалы и координатный лу�
 const groups14:PageGroup[]=[{label:'Повторение и масштаб',indexes:[0,1,2]},{label:'Практика',indexes:[3,4,5,6,7,8,9,10]},{label:'Ошибки и контроль',indexes:[11,12,13,14,15,16,17,18,19]},{label:'Задача и итог',indexes:[20,21,22]}];
 const groups15:PageGroup[]=[{label:'Система § 5',indexes:[0,1,2]},{label:'Практика',indexes:[3,4,5,6,7,8,9,10,11]},{label:'Коррекция и контроль',indexes:[12,13,14,15,16,17,18,19]},{label:'Задача и итог',indexes:[20,21,22]}];
 const groups16:PageGroup[]=[{label:'Правила сравнения',indexes:[0,1,2,3,4,5,6,7,8,9]},{label:'Двойное неравенство и алгоритм',indexes:[10,11,12,13,14]},{label:'Контроль',indexes:[15,16,17,18,19]},{label:'Олимпиада и итог',indexes:[20,21,22,23]}];
+const groups17:PageGroup[]=[{label:'Сравнение и координатный луч',indexes:[0,1,2,3,4]},{label:'Практика и перебор вариантов',indexes:[5,6,7,8,9,10,11,12]},{label:'Коррекция и контроль',indexes:[13,14,15,16,17,18,19]},{label:'Задача и итог',indexes:[20,21,22]}];
 
 const pagesByLesson:Record<number,PageItem[]>={
   1:lessonOneStages,2:lessonTwoStages,3:lessonThreeStages,4:lessonFourStages,
   5:lessonFiveStages,6:lessonSixStages,7:lessonSevenStages,8:lessonEightStages,
   9:lessonNineStages,10:lessonTenStages,11:lessonElevenStages,12:lessonTwelveStages,
   13:lessonThirteenStages,14:lessonFourteenStages,15:lessonFifteenStages,16:lessonSixteenStages,
+  17:lessonSeventeenStages,
 };
 const groupsByLesson:Record<number,PageGroup[]>={
   1:groups1,2:groups2,3:groups3,4:groups4,5:groups5,6:groups6,7:groups7,8:groups8,
   9:groups9,10:groups10,11:groups11,12:groups12,13:groups13,14:groups14,15:groups15,16:groups16,
+  17:groups17,
 };
 
 function activeLessonNumber(){
   const text=document.querySelector<HTMLElement>('.lesson-mode-toolbar')?.textContent??'';
-  for(let lessonNumber=16;lessonNumber>=2;lessonNumber-=1){
+  for(let lessonNumber=17;lessonNumber>=2;lessonNumber-=1){
     if(new RegExp(`Урок\\s+${lessonNumber}\\s+из`).test(text))return lessonNumber;
   }
   const saved=Number(localStorage.getItem('mathnikita-selected-lesson'));
-  return saved>=2&&saved<=16?saved:1;
+  return saved>=2&&saved<=17?saved:1;
 }
 function pagesForLesson(lessonNumber:number):PageItem[]{return pagesByLesson[lessonNumber]??lessonOneStages}
 function groupsForLesson(lessonNumber:number){return groupsByLesson[lessonNumber]??groups1}
@@ -93,7 +97,7 @@ export function LessonPageNavigator(){
 
   function jumpTo(targetIndex:number){
     setOpen(false);
-    if(lessonNumber>=2&&lessonNumber<=16){
+    if(lessonNumber>=2&&lessonNumber<=17){
       window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex:targetIndex}}));
       setCurrentPage(targetIndex);
       return;
