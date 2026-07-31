@@ -55,7 +55,7 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Complete every exercise and audit narration in all fourteen lessons
+      - name: Complete every exercise and audit narration in all fifteen lessons
         run: npm run test:ipad
       - name: Upload failure traces
         if: failure()
