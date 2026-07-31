@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { isNaturalRussianVoice, isRussianVoice, prepareRussianSpeechText, rankRussianVoices, selectBestRussianVoice } from './voiceQuality';
 import './voiceNarrator.css';
 
 type VoiceNarratorProps = {
@@ -11,22 +12,13 @@ type StoredVoiceSettings = { engine?: VoiceEngine; voiceURI?: string; rate?: num
 type NeuralNarrationManifest = { engine: string; voice: string; license?: string; clips: Record<string, string> };
 type AudioRequestDetail = { source?: 'narrator' | 'mentor' | string };
 
-const STORAGE_KEY = 'mathnikita-voice-settings';
+const STORAGE_KEY = 'mathnikita-voice-settings-v3';
 const MANIFEST_URL = '/audio/neural/manifest.json';
+const DEFAULT_RATE = 0.94;
 
 function loadSettings(): StoredVoiceSettings {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as StoredVoiceSettings; }
   catch { return {}; }
-}
-
-function scoreVoice(voice: SpeechSynthesisVoice) {
-  const name = voice.name.toLowerCase();
-  let score = 0;
-  if (voice.lang.toLowerCase().startsWith('ru')) score += 100;
-  if (/milena|katya|irina|алёна|alena|premium|enhanced|natural/.test(name)) score += 40;
-  if (/google|microsoft|apple/.test(name)) score += 20;
-  if (voice.localService) score += 8;
-  return score;
 }
 
 function getNarrationText(root: HTMLElement | null, mode: VoiceNarratorProps['mode']) {
@@ -64,7 +56,7 @@ function splitForSpeech(text: string) {
   let current = '';
   for (const sentence of sentences) {
     const next = `${current} ${sentence}`.trim();
-    if (next.length > 220 && current) { chunks.push(current); current = sentence.trim(); }
+    if (next.length > 180 && current) { chunks.push(current); current = sentence.trim(); }
     else current = next;
   }
   if (current) chunks.push(current);
@@ -80,9 +72,9 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
   const [speaking, setSpeaking] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const initialSettings = useMemo(loadSettings, []);
-  const [engine, setEngine] = useState<VoiceEngine>(initialSettings.engine ?? 'neural');
+  const [engine, setEngine] = useState<VoiceEngine>(initialSettings.engine ?? 'system');
   const [voiceURI, setVoiceURI] = useState(initialSettings.voiceURI ?? '');
-  const [rate, setRate] = useState(initialSettings.rate ?? 1);
+  const [rate, setRate] = useState(initialSettings.rate ?? DEFAULT_RATE);
   const sessionRef = useRef(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -101,17 +93,14 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
   useEffect(() => {
     if (!systemSupported) return;
     const loadVoices = () => {
-      const next = window.speechSynthesis.getVoices().sort((a, b) => scoreVoice(b) - scoreVoice(a));
+      const next = rankRussianVoices(window.speechSynthesis.getVoices());
       setVoices(next);
-      if (!voiceURI && next.length) {
-        const preferred = next.find(voice => voice.lang.toLowerCase().startsWith('ru')) ?? next[0];
-        setVoiceURI(preferred.voiceURI);
-      }
+      setVoiceURI(current => selectBestRussianVoice(next, current)?.voiceURI ?? '');
     };
     loadVoices();
     window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
     return () => window.speechSynthesis.removeEventListener('voiceschanged', loadVoices);
-  }, [systemSupported, voiceURI]);
+  }, [systemSupported]);
 
   useEffect(() => {
     let active = true;
@@ -155,21 +144,19 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
   function startSystemSpeech(text: string, session: number) {
     if (!systemSupported || !text) { setSpeaking(false); return; }
     window.speechSynthesis.cancel();
-    const chunks = splitForSpeech(text);
-    const selectedVoice = voices.find(voice => voice.voiceURI === voiceURI)
-      ?? voices.find(voice => voice.lang.toLowerCase().startsWith('ru'))
-      ?? voices[0];
+    const chunks = splitForSpeech(prepareRussianSpeechText(text));
+    const selectedVoice = selectBestRussianVoice(voices, voiceURI);
     setSpeaking(true);
     let index = 0;
     const playNext = () => {
       if (sessionRef.current !== session || index >= chunks.length) { setSpeaking(false); return; }
       const utterance = new SpeechSynthesisUtterance(chunks[index]);
-      utterance.lang = selectedVoice?.lang ?? 'ru-RU';
+      utterance.lang = 'ru-RU';
       utterance.voice = selectedVoice ?? null;
-      utterance.rate = rate;
+      utterance.rate = Math.min(Math.max(rate, 0.88), 1.04);
       utterance.pitch = 1;
       utterance.volume = 1;
-      utterance.onend = () => { index += 1; playNext(); };
+      utterance.onend = () => { index += 1; window.setTimeout(playNext, 130); };
       utterance.onerror = () => setSpeaking(false);
       window.speechSynthesis.speak(utterance);
     };
@@ -209,18 +196,23 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
   }
 
   if (!audioSupported && !systemSupported) return null;
-  const russianVoices = voices.filter(voice => voice.lang.toLowerCase().startsWith('ru'));
-  const voiceOptions = russianVoices.length ? russianVoices : voices;
+  const voiceOptions = rankRussianVoices(voices);
+  const selectedVoice = selectBestRussianVoice(voiceOptions, voiceURI);
   const neuralReady = Boolean(manifest && Object.keys(manifest.clips).length);
+  const systemVoiceMessage = !selectedVoice
+    ? 'На устройстве не найден русский голос. iOS попробует подобрать его по языку ru-RU; для лучшего результата установите расширенный русский голос в настройках устройства.'
+    : isNaturalRussianVoice(selectedVoice)
+      ? `Выбран лучший доступный русский голос: ${selectedVoice.name}.`
+      : `Выбран базовый русский голос: ${selectedVoice.name}. Для максимально естественного звучания установите версию Premium или Enhanced в настройках устройства.`;
 
   return <div className="voice-narrator">
     <button type="button" className={speaking ? 'is-speaking' : ''} onClick={speak} aria-pressed={speaking}><span aria-hidden="true">{speaking ? '■' : '▶'}</span>{speaking ? 'Остановить' : 'Слушать'}</button>
     <button type="button" className="voice-settings-button" onClick={() => setSettingsOpen(open => !open)} aria-expanded={settingsOpen} aria-label="Настройки голоса">⚙</button>
     {settingsOpen ? <div className="voice-settings-panel">
-      <label><span>Режим озвучки</span><select value={engine} onChange={event => setEngine(event.target.value as VoiceEngine)}><option value="neural">Нейроголос Ирина · рекомендуется</option><option value="system">Системный голос · резервный</option></select></label>
-      {engine === 'system' ? <label><span>Системный голос</span><select value={voiceURI} onChange={event => setVoiceURI(event.target.value)}>{voiceOptions.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.localService ? ' · на устройстве' : ''}</option>)}</select></label> : null}
-      <label><span>Скорость: {rate.toFixed(2)}×</span><input type="range" min="0.86" max="1.12" step="0.02" value={rate} onChange={event => setRate(Number(event.target.value))}/></label>
-      <small className={neuralReady ? 'voice-engine-ready' : 'voice-engine-pending'}>{engine === 'neural' ? neuralReady ? `Готовая нейросетевая дорожка «${manifest?.voice}»: запускается сразу и одинаково звучит на всех устройствах.` : manifestChecked ? 'Для этой сцены готовой дорожки пока нет. Временно используется лучший доступный системный голос.' : 'Загружаем подготовленную нейросетевую дорожку…' : 'Системный голос зависит от устройства и используется как резервный вариант.'}</small>
+      <label><span>Режим озвучки</span><select value={engine} onChange={event => setEngine(event.target.value as VoiceEngine)}><option value="system">Естественный русский голос устройства · рекомендуется</option><option value="neural">Резервная офлайн-дорожка «Ирина» · более синтетическая</option></select></label>
+      {engine === 'system' && voiceOptions.length ? <label><span>Русский голос</span><select value={selectedVoice?.voiceURI ?? ''} onChange={event => setVoiceURI(event.target.value)}>{voiceOptions.map((voice, index) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{index === 0 ? ' · рекомендуется' : ''}{voice.localService ? ' · на устройстве' : ''}</option>)}</select></label> : null}
+      <label><span>Скорость: {rate.toFixed(2)}×</span><input type="range" min="0.88" max="1.04" step="0.02" value={rate} onChange={event => setRate(Number(event.target.value))}/></label>
+      <small className={engine === 'system' ? isRussianVoice(selectedVoice ?? { name: '', lang: '', voiceURI: '', localService: false }) ? 'voice-engine-ready' : 'voice-engine-pending' : neuralReady ? 'voice-engine-ready' : 'voice-engine-pending'}>{engine === 'system' ? systemVoiceMessage : neuralReady ? `Офлайн-дорожка «${manifest?.voice}» доступна только как резерв и звучит более синтетически.` : manifestChecked ? 'Офлайн-дорожка недоступна — используется естественный системный голос.' : 'Загружаем резервную офлайн-дорожку…'}</small>
     </div> : null}
   </div>;
 }

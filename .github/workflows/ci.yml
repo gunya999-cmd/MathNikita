@@ -41,7 +41,7 @@ jobs:
           retention-days: 7
 
   ipad-webkit:
-    name: iPad WebKit complete lesson walkthrough
+    name: iPad WebKit complete lesson and narration audit
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -55,7 +55,7 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Complete every exercise in all eleven lessons
+      - name: Complete every exercise and audit narration in all fifteen lessons
         run: npm run test:ipad
       - name: Upload failure traces
         if: failure()
