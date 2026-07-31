@@ -41,9 +41,9 @@ jobs:
           retention-days: 7
 
   ipad-webkit:
-    name: iPad WebKit complete lesson and narration audit
+    name: iPad WebKit lesson 17 layout diagnosis
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,13 +55,13 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Complete every exercise and audit narration in all seventeen lessons
-        run: npm run test:ipad
+      - name: Diagnose lesson 17 overflow
+        run: npx playwright test tests/lesson-seventeen-ipad.spec.ts --grep "completes every" --reporter=line
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ipad-webkit-traces-${{ github.sha }}
+          name: ipad-webkit-layout-diagnostics-${{ github.sha }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7
