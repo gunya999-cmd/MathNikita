@@ -76,7 +76,7 @@ export function CourseCatalog({selectedLesson,onOpenLesson}:Props){
           </summary>
           <section className="course-lesson-grid" aria-label={group.unit}>
             {group.lessons.map(lesson=>{
-              const ready=lesson.available||lesson.number===17;
+              const ready=lesson.available;
               const selected=lesson.number===selectedLesson;
               const rich=richLessonByNumber.get(lesson.number);
               const description=ready?(readyDescriptions[lesson.number]??rich?.goal??planLabel(lesson)):planLabel(lesson);
