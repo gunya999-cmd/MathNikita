@@ -42,7 +42,7 @@ test('lesson 16 completes every exercise and produces full scores on iPad WebKit
   test.setTimeout(180_000);
   await openLesson(page);
   const visited=new Set<string>();
-  for(let step=0;step<23;step+=1){
+  for(let step=0;step<24;step+=1){
     const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
     const stageId=await stage.getAttribute('data-stage-id');
     expect(stageId,`Stage ${step+1} must have data-stage-id`).toBeTruthy();
@@ -61,7 +61,7 @@ test('lesson 16 completes every exercise and produces full scores on iPad WebKit
     await expect(stage).not.toHaveAttribute('data-stage-id',stageId!);
   }
   await expect(page.locator('[data-stage-id="l16-summary"]')).toBeVisible();
-  expect(visited.size).toBe(23);
+  expect(visited.size).toBe(24);
   expect(Object.keys(answers).every(id=>visited.has(id))).toBe(true);
   const summary=page.locator('.summary-card');
   await expect(summary).toContainText('5/5');
