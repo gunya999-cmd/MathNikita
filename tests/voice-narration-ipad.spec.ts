@@ -53,7 +53,7 @@ async function assertNaturalRussianSpeech(page:Page,previousCount=0){
 async function openLesson(page:Page,lessonNumber:number){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(12);
+  await expect(lessons).toHaveCount(13);
   await lessons.nth(lessonNumber-1).click();
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
   await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v3')??'{}').voiceURI)).toBe('ru-enhanced');
@@ -89,10 +89,10 @@ async function auditMentorExclusion(page:Page){
 }
 
 test('every ready lesson uses natural Russian narration without overlapping the mentor',async({page})=>{
-  test.setTimeout(360_000);
+  test.setTimeout(420_000);
   await installSpeechAudit(page);
 
-  for(let lessonNumber=1;lessonNumber<=12;lessonNumber+=1){
+  for(let lessonNumber=1;lessonNumber<=13;lessonNumber+=1){
     await openLesson(page,lessonNumber);
 
     await clearSpeech(page);
