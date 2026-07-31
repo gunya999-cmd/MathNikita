@@ -20,6 +20,7 @@ const readyDescriptions:Record<number,string>={
   14:'Закрепление § 5: выбор масштаба, восстановление шага по двум точкам, построение координат и поиск ошибок.',
   15:'Обобщение § 5: точки между границами, восстановление шкалы, обратная проверка и итоговый контроль темы.',
   16:'Новая тема § 6: сравнение по количеству цифр и разрядам, знаки >, <, =, двойные неравенства и поиск граничных чисел.',
+  17:'Закрепление § 6: связь «меньше — левее», «больше — правее», координатный луч, перебор цифр и ключевая задача № 155.',
 };
 
 function planLabel(lesson:YearLesson){
@@ -56,7 +57,7 @@ export function CourseCatalog({selectedLesson,onOpenLesson}:Props){
     <section className="course-catalog-toolbar" aria-label="Поиск урока">
       <div>
         <b>{totalLessons} уроков в официальном плане</b>
-        <span>Полностью готовы первые шестнадцать интерактивных уроков. Остальные сохранены в точной последовательности учебного года.</span>
+        <span>Полностью готовы первые семнадцать интерактивных уроков. Остальные сохранены в точной последовательности учебного года.</span>
       </div>
       <label>
         <span className="sr-only">Найти урок</span>
@@ -75,7 +76,7 @@ export function CourseCatalog({selectedLesson,onOpenLesson}:Props){
           </summary>
           <section className="course-lesson-grid" aria-label={group.unit}>
             {group.lessons.map(lesson=>{
-              const ready=lesson.available;
+              const ready=lesson.available||lesson.number===17;
               const selected=lesson.number===selectedLesson;
               const rich=richLessonByNumber.get(lesson.number);
               const description=ready?(readyDescriptions[lesson.number]??rich?.goal??planLabel(lesson)):planLabel(lesson);
