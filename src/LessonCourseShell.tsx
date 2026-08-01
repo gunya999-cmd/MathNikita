@@ -21,6 +21,7 @@ import { NaturalNumberComparisonPlayer } from './NaturalNumberComparisonPlayer';
 import { NaturalNumberComparisonPracticePlayer } from './NaturalNumberComparisonPracticePlayer';
 import { NaturalNumberComparisonSummaryPlayer } from './NaturalNumberComparisonSummaryPlayer';
 import { ChapterOneReviewPlayer } from './ChapterOneReviewPlayer';
+import { ControlWorkOnePlayer } from './ControlWorkOnePlayer';
 import { LessonOpening,buildGenericOpening,lessonOneOpening,lessonTwoOpening,lessonThreeOpening,lessonFourOpening,lessonFiveOpening,lessonSixOpening,lessonSevenOpening,lessonEightOpening,lessonNineOpening,lessonTenOpening,lessonElevenOpening } from './LessonOpening';
 import { lessonThirteenOpening } from './LessonThirteenOpening';
 import { lessonFourteenOpening } from './LessonFourteenOpening';
@@ -29,6 +30,7 @@ import { lessonSixteenOpening } from './LessonSixteenOpening';
 import { lessonSeventeenOpening } from './LessonSeventeenOpening';
 import { lessonEighteenOpening } from './LessonEighteenOpening';
 import { lessonNineteenOpening } from './LessonNineteenOpening';
+import { lessonTwentyOpening } from './LessonTwentyOpening';
 import { LessonReflection } from './LessonReflection';
 import { ProgressiveHintCoach,type ProgressiveHintState } from './ProgressiveHintCoach';
 import { VoiceNarrator } from './VoiceNarrator';
@@ -39,7 +41,7 @@ import { MentorResponsiveBehavior } from './MentorResponsiveBehavior';
 type CourseMode='catalog'|'opening'|'lesson';
 const emptyHintState:ProgressiveHintState={prompt:'',stageTitle:'',activityType:'',attempts:0,revealedLevel:0,fullExplanation:'',mountNode:null};
 const emptyMentorSignal:MentorSignal={kind:'idle',version:0};
-const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19];
+const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 
 function loadSelectedLesson(){
   const saved=Number(localStorage.getItem('mathnikita-selected-lesson'));
@@ -56,6 +58,7 @@ export function LessonCourseShell(){
   const feedbackTimerRef=useRef<number|null>(null);
   const lesson=allRichLessons.find(item=>item.lessonNumber===selectedLesson)??allRichLessons[0];
   const officialLesson=yearLessonByNumber.get(selectedLesson);
+  const isControlWork=selectedLesson===20;
   const opening=
     selectedLesson===1?lessonOneOpening:
     selectedLesson===2?lessonTwoOpening:
@@ -75,6 +78,7 @@ export function LessonCourseShell(){
     selectedLesson===17?lessonSeventeenOpening:
     selectedLesson===18?lessonEighteenOpening:
     selectedLesson===19?lessonNineteenOpening:
+    selectedLesson===20?lessonTwentyOpening:
     buildGenericOpening(lesson);
   const showOpening=mode==='opening';
 
@@ -102,6 +106,7 @@ export function LessonCourseShell(){
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function scheduleFeedbackAssessment(){
+    if(isControlWork)return;
     if(feedbackTimerRef.current!==null)window.clearTimeout(feedbackTimerRef.current);
     feedbackTimerRef.current=window.setTimeout(()=>{
       const root=shellRef.current;
@@ -127,13 +132,13 @@ export function LessonCourseShell(){
 
   useEffect(()=>{
     const root=shellRef.current;
-    if(!root||mode!=='lesson')return;
+    if(!root||mode!=='lesson'||isControlWork)return;
     const update=()=>setShowReflection(Boolean(root.querySelector('.stage-summary, .block-summary, .summary-card')));
     update();
     const observer=new MutationObserver(update);
     observer.observe(root,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});
     return()=>observer.disconnect();
-  },[mode,selectedLesson]);
+  },[mode,selectedLesson,isControlWork]);
   useEffect(()=>{
     stopVoice();
     clearHints();
@@ -147,11 +152,13 @@ export function LessonCourseShell(){
   },[]);
 
   function handleCourseClick(event:MouseEvent<HTMLDivElement>){
+    if(isControlWork)return;
     const target=event.target as HTMLElement;
     if(target.closest('.check-button'))scheduleFeedbackAssessment();
     if(target.closest('.lesson-controls button')){stopVoice();clearHints();resetMentor()}
   }
   function handleCourseKeyDown(event:KeyboardEvent<HTMLDivElement>){
+    if(isControlWork)return;
     const target=event.target as HTMLElement;
     if(event.key==='Enter'&&target.closest('.inline-answer input'))scheduleFeedbackAssessment();
   }
@@ -159,6 +166,7 @@ export function LessonCourseShell(){
   if(mode==='catalog')return <CourseCatalog selectedLesson={selectedLesson} onOpenLesson={openLesson}/>;
 
   const runtime=
+    selectedLesson===20?<ControlWorkOnePlayer key="lesson-20"/>:
     selectedLesson===19?<ChapterOneReviewPlayer key="lesson-19"/>:
     selectedLesson===18?<NaturalNumberComparisonSummaryPlayer key="lesson-18"/>:
     selectedLesson===17?<NaturalNumberComparisonPracticePlayer key="lesson-17"/>:
@@ -179,23 +187,23 @@ export function LessonCourseShell(){
     selectedLesson===2?<NaturalRowPracticePlayer key="lesson-2"/>:
     <LessonPlayer key="lesson-1"/>;
 
-  return <div ref={shellRef} className={`lesson-course-shell ${showOpening?'is-opening':'is-learning'}`} onClickCapture={handleCourseClick} onKeyDownCapture={handleCourseKeyDown}>
-    <LessonResponsePersistence rootRef={shellRef} lessonNumber={selectedLesson} active={mode==='lesson'}/>
-    <MentorResponsiveBehavior rootRef={shellRef} lessonNumber={selectedLesson} mode={showOpening?'opening':'lesson'}/>
+  return <div ref={shellRef} className={`lesson-course-shell ${showOpening?'is-opening':'is-learning'} ${isControlWork?'is-control-work':''}`} onClickCapture={handleCourseClick} onKeyDownCapture={handleCourseKeyDown}>
+    {!isControlWork?<LessonResponsePersistence rootRef={shellRef} lessonNumber={selectedLesson} active={mode==='lesson'}/>:null}
+    {!isControlWork?<MentorResponsiveBehavior rootRef={shellRef} lessonNumber={selectedLesson} mode={showOpening?'opening':'lesson'}/>:null}
     <div className="lesson-mode-toolbar">
       <button type="button" onClick={returnToCatalog}>← Все уроки</button>
       <div><span>Урок {selectedLesson} из {totalLessons}</span><b>{officialLesson?.title??lesson.title}</b></div>
       <VoiceNarrator rootRef={shellRef} mode={showOpening?'opening':'lesson'}/>
       {mode==='lesson'?<button type="button" onClick={()=>setMode('opening')}>Вступление</button>:<span/>}
     </div>
-    <div className="mentor-learning-layout">
+    <div className={`mentor-learning-layout ${isControlWork?'control-layout':''}`}>
       <div className="mentor-learning-main">
         <div className="opening-screen" hidden={!showOpening}><LessonOpening data={opening} onStart={()=>setMode('lesson')}/></div>
         <div className="lesson-runtime" hidden={mode!=='lesson'}>{runtime}</div>
-        <ProgressiveHintCoach state={hintState} onRevealNext={()=>setHintState(previous=>({...previous,revealedLevel:Math.min(previous.revealedLevel+1,4)}))}/>
-        {mode==='lesson'&&showReflection?<LessonReflection key={selectedLesson} lessonNumber={selectedLesson} lessonTitle={officialLesson?.title??lesson.title} openingQuestion={opening.question} goals={opening.goals} onReviewOpening={()=>{setShowReflection(false);setMode('opening');clearHints();resetMentor();window.scrollTo({top:0,behavior:'smooth'})}}/>:null}
+        {!isControlWork?<ProgressiveHintCoach state={hintState} onRevealNext={()=>setHintState(previous=>({...previous,revealedLevel:Math.min(previous.revealedLevel+1,4)}))}/>:null}
+        {mode==='lesson'&&showReflection&&!isControlWork?<LessonReflection key={selectedLesson} lessonNumber={selectedLesson} lessonTitle={officialLesson?.title??lesson.title} openingQuestion={opening.question} goals={opening.goals} onReviewOpening={()=>{setShowReflection(false);setMode('opening');clearHints();resetMentor();window.scrollTo({top:0,behavior:'smooth'})}}/>:null}
       </div>
-      <CatMentor rootRef={shellRef} lessonNumber={selectedLesson} mode={showOpening?'opening':'lesson'} signal={mentorSignal}/>
+      {!isControlWork?<CatMentor rootRef={shellRef} lessonNumber={selectedLesson} mode={showOpening?'opening':'lesson'} signal={mentorSignal}/>:null}
     </div>
   </div>;
 }
