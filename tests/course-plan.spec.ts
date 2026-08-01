@@ -8,7 +8,9 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
 
   const lessons = page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(20);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(19);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(20);
+  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(1);
 
   await expect(lessons.nth(0)).toContainText('Ряд натуральных чисел');
   await expect(lessons.nth(1)).toContainText('Ряд натуральных чисел');
