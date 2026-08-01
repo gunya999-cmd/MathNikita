@@ -26,8 +26,12 @@ test('lesson 5 narrator reads choice options and feedback in mandatory practice'
   });
 
   await page.goto('/');
-  await page.getByRole('button',{name:/Открыть урок 5:/}).click();
-  await page.locator('.lesson-opening-start').click();
+  const lessonButton=page.getByRole('button',{name:/Открыть урок 5:/});
+  await expect(lessonButton).toBeVisible();
+  await lessonButton.evaluate((button:HTMLButtonElement)=>button.click());
+  const start=page.locator('.lesson-opening-start');
+  await expect(start).toBeVisible();
+  await start.evaluate((button:HTMLButtonElement)=>button.click());
   const task=page.locator('[data-practice-task="l5-p1"]');
   await expect(task).toBeVisible();
 
