@@ -1,6 +1,6 @@
 import { expect,test } from '@playwright/test';
 
-test('iPad WebKit plays asynchronously fetched studio audio without falling back to device speech',async({page})=>{
+test('iPad WebKit plays asynchronously fetched studio audio without falling back to device speech',async({page,request})=>{
   await page.addInitScript(()=>{
     const audit={systemSpeech:0};
     const voice={name:'Milena Enhanced',lang:'ru-RU',voiceURI:'ru-enhanced',localService:true,default:true};
@@ -17,7 +17,7 @@ test('iPad WebKit plays asynchronously fetched studio audio without falling back
     // Deliberately delay the response: this reproduces the real server-TTS path where
     // playback starts after the original click handler has already awaited network I/O.
     await new Promise(resolve=>setTimeout(resolve,180));
-    const fixture=await page.request.get('/audio/neural/irina/lesson-01-opening.mp3');
+    const fixture=await request.get('/audio/neural/irina/lesson-01-opening.mp3');
     await route.fulfill({status:200,contentType:'audio/mpeg',body:await fixture.body()});
   });
 
