@@ -7,6 +7,23 @@ type Props = {
 };
 
 export function MentorResponsiveBehavior({ rootRef, lessonNumber, mode }: Props) {
+  useEffect(()=>{
+    if(![4,5].includes(lessonNumber)||mode!=='opening')return;
+    const root=rootRef.current;
+    if(!root)return;
+    const normalizeDuration=()=>{
+      const durationBlock=root.querySelector<HTMLElement>('.opening-screen:not([hidden]) .lesson-opening-plan > div');
+      const label=durationBlock?.querySelector<HTMLElement>('span');
+      const value=durationBlock?.querySelector<HTMLElement>('strong');
+      if(label)label.textContent='Время урока';
+      if(value)value.textContent='измеряется';
+    };
+    normalizeDuration();
+    const observer=new MutationObserver(normalizeDuration);
+    observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden']});
+    return()=>observer.disconnect();
+  },[rootRef,lessonNumber,mode]);
+
   useEffect(() => {
     if (!window.matchMedia('(max-width: 1279px)').matches) return;
     const timer = window.setTimeout(() => {
