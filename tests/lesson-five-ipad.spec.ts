@@ -26,12 +26,22 @@ const answers:Record<string,Answer> = {
   'l5-challenge': { type:'input', value:'704' },
 };
 
+async function expectNoHorizontalOverflow(page:Page){
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(2);
+}
+
 async function openLessonFive(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
   await expect(lessons).toHaveCount(22);
   await lessons.nth(4).click();
   await expect(page.getByRole('heading',{name:'Десятичная запись: обобщение'})).toBeVisible();
+  const openingDuration=page.locator('.opening-screen:not([hidden]) .lesson-opening-plan > div');
+  await expect(openingDuration).toContainText('Время урока');
+  await expect(openingDuration).toContainText('измеряется');
+  await expect(openingDuration).not.toContainText('45 мин');
+  await expectNoHorizontalOverflow(page);
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible();
   await expect(page.locator('.cat-mentor-collapsed')).toBeVisible();
@@ -56,6 +66,7 @@ test('lesson 5 completes every main stage but does not claim full completion bef
     const stageId=await stage.getAttribute('data-stage-id');
     expect(stageId,`Stage ${step+1} must have data-stage-id`).toBeTruthy();
     visited.add(stageId!);
+    await expectNoHorizontalOverflow(page);
     if(await stage.locator('.activity-area').count()){const answer=answers[stageId!];expect(answer,`Missing automated answer for ${stageId}`).toBeTruthy();await answerStage(page,answer)}
     if(stageId==='l5-summary')break;
     const next=page.locator('.lesson-controls .primary');await expect(next).toBeEnabled();await next.click();await expect(stage).not.toHaveAttribute('data-stage-id',stageId!);
@@ -69,7 +80,7 @@ test('lesson 5 completes every main stage but does not claim full completion bef
   await expect(page.locator('.lesson-controls > span')).toHaveText('Основная часть пройдена');
   await expect(page.locator('[data-lesson-completion-gate="5"]')).toContainText('Урок ещё не завершён');
   await expect(page.locator('.lesson-page-navigator-toggle')).toContainText('Страница 24/24');
-  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);expect(overflow).toBeLessThanOrEqual(2);
+  await expectNoHorizontalOverflow(page);
 });
 
 test('lesson 5 keeps a selected answer after direct page navigation',async({page})=>{
@@ -78,4 +89,5 @@ test('lesson 5 keeps a selected answer after direct page navigation',async({page
   const reading=page.locator('[data-stage-id="l5-read"]');await expect(reading).toBeVisible();await reading.getByRole('button',{name:'сорок восемь миллиардов семь миллионов пять тысяч девяносто',exact:true}).click();
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:5,stageIndex:8}})));await expect(page.locator('[data-stage-id="l5-write"]')).toBeVisible();await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:5,stageIndex:7}})));
   await expect(page.locator('[data-stage-id="l5-read"] .choice-grid button.selected')).toContainText('сорок восемь миллиардов');
+  await expectNoHorizontalOverflow(page);
 });
