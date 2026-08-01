@@ -33,6 +33,7 @@ function nativeSetInputValue(input: HTMLInputElement, value: string) {
 export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Props) {
   useEffect(()=>{
     if(!active)return;
+    const root=rootRef.current;
     let timing=loadLessonTiming(lessonNumber);
     timing={...timing,sessions:timing.sessions+1,updatedAt:new Date().toISOString()};
     saveLessonTiming(lessonNumber,timing);
@@ -58,16 +59,29 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
       unsavedSeconds+=delta;
       if(unsavedSeconds>=5)flush();
     };
+    const handleRestart=(event:Event)=>{
+      const target=event.target as HTMLElement;
+      const resetButton=target.closest<HTMLButtonElement>('.stage-counter button');
+      if(!resetButton?.textContent?.includes('Начать заново'))return;
+      resetLessonTiming(lessonNumber);
+      activeSeconds=0;
+      unsavedSeconds=0;
+      lastTick=performance.now();
+      timing={version:1,activeSeconds:0,sessions:1,updatedAt:new Date().toISOString()};
+      saveLessonTiming(lessonNumber,timing);
+    };
     const timer=window.setInterval(tick,1000);
     const visibility=()=>{tick();lastTick=performance.now()};
     document.addEventListener('visibilitychange',visibility);
+    root?.addEventListener('click',handleRestart,true);
     return()=>{
       tick();
       flush();
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange',visibility);
+      root?.removeEventListener('click',handleRestart,true);
     };
-  },[lessonNumber,active]);
+  },[rootRef,lessonNumber,active]);
 
   useEffect(() => {
     if (!active || lessonNumber > 3) return;
@@ -83,7 +97,6 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
       const resetButton = target.closest<HTMLButtonElement>('.stage-counter button');
       if (resetButton?.textContent?.includes('Начать заново')) {
         localStorage.removeItem(storageKey(lessonNumber));
-        resetLessonTiming(lessonNumber);
         return;
       }
       const stage = getStage();
