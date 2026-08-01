@@ -46,7 +46,7 @@ test('lesson 5 has a varied full-paragraph mastery workload',()=>{
   const prompts=practice.tasks.map(task=>task.prompt).join('\n');
   expect(prompts).toContain('нумерацию');
   expect(prompts).toContain('четырёхзначные числа');
-  expect(prompts).toContain('разрядный состав');
+  expect(prompts).toContain('по разрядам и количеству полных единиц');
   expect(prompts).toContain('разрядную границу');
 });
 
