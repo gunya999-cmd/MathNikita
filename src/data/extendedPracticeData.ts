@@ -20,6 +20,7 @@ import { extendedPracticeLesson16 } from './extendedPracticeLesson16';
 import { extendedPracticeLesson17 } from './extendedPracticeLesson17';
 import { extendedPracticeLesson18 } from './extendedPracticeLesson18';
 import { extendedPracticeLesson19 } from './extendedPracticeLesson19';
+import { extendedPracticeLesson20 } from './extendedPracticeLesson20';
 
 const lesson3: ExtendedPracticeSet = {
   title:'Тренировочная мастерская: десятичная запись',
@@ -55,6 +56,7 @@ export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = {
   17:extendedPracticeLesson17,
   18:extendedPracticeLesson18,
   19:extendedPracticeLesson19,
+  20:extendedPracticeLesson20,
 };
 
 export const extendedPracticeLessonNumbers = Object.keys(extendedPracticeByLesson).map(Number);
