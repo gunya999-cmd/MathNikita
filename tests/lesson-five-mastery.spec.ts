@@ -36,9 +36,9 @@ test('lesson 5 is not complete before mandatory mastery practice and reflection'
 
   const task=page.locator('[data-practice-task="l5-master-10"]');
   await task.getByLabel('Следующее натуральное число').fill('10 000 000');
-  await task.getByLabel('Количество цифр в 9 999 999').fill('7');
-  await task.getByLabel('Количество цифр в следующем числе').fill('8');
-  await task.getByLabel('Количество классов в 10 000 000').fill('3');
+  await task.getByLabel('На сколько следующее натуральное число больше предыдущего?').fill('1');
+  await task.getByLabel('Самое маленькое натуральное число').fill('1');
+  await task.getByLabel('Существует ли наибольшее натуральное число?').fill('нет');
   await task.getByRole('button',{name:'Проверить'}).click();
   await expect(task.locator('.extended-practice-feedback.is-correct')).toBeVisible();
   await task.getByRole('button',{name:'Завершить практику'}).click();
@@ -47,7 +47,7 @@ test('lesson 5 is not complete before mandatory mastery practice and reflection'
   await expect(page.locator('.extended-practice.is-finished')).toContainText('50 проверяемых ответов');
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
-  await finalStep.locator('textarea').fill('Многозначное число нужно читать и записывать по классам. Нули сохраняют разряды, а разложение и количество полных разрядных единиц помогают проверить структуру числа.');
+  await finalStep.locator('textarea').fill('Многозначное число нужно читать и записывать по классам. Нули сохраняют разряды, а натуральный ряд начинается с 1, идёт с шагом 1 и не имеет последнего числа.');
   await finalStep.getByRole('button',{name:'Завершить урок'}).click();
   await expect(finalStep).toContainText('Урок завершён ✓');
   expect(await page.evaluate(()=>Boolean(localStorage.getItem('mathnikita:lesson-complete:5')))).toBe(true);
