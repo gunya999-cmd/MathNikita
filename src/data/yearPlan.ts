@@ -20,8 +20,6 @@ type Segment = {
   kind?: 'review' | 'control' | 'final';
 };
 
-// I вариант из примерного тематического планирования:
-// 5 часов в неделю, 175 уроков за учебный год.
 const segments: Segment[] = [
   { unit:'Глава 1. Натуральные числа', paragraph:'§ 1', topic:'Ряд натуральных чисел', from:1, to:2 },
   { unit:'Глава 1. Натуральные числа', paragraph:'§ 2', topic:'Цифры. Десятичная запись натуральных чисел', from:3, to:5 },
@@ -92,7 +90,7 @@ export const yearPlan: YearLesson[] = segments.flatMap(segment => {
     paragraph:segment.paragraph,
     title:segment.topic,
     lessonType:lessonType(segment, offset),
-    available:segment.from + offset <= 21,
+    available:segment.from + offset <= 22,
     topicLessonIndex:offset + 1,
     topicLessonCount,
   }));
