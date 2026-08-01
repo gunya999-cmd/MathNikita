@@ -4,6 +4,12 @@ type TutorRequest = {
   diagnosticSummary?: unknown;
 };
 
+type NarrationRequest = {
+  id?: string;
+  text?: string;
+  version?: string;
+};
+
 type Env = {
   ASSETS: Fetcher;
   OPENAI_API_KEY?: string;
@@ -26,6 +32,19 @@ const TUTOR_SYSTEM_PROMPT = [
   'Если сообщение очень короткое, например "%", считай, что ученик просит объяснить проценты.',
   'Не давай просто ответ: объясни ход решения и задай один проверочный вопрос.',
   'Не начинай длинные лекции не по теме вопроса.',
+].join(' ');
+
+const NARRATION_MODEL='gpt-4o-mini-tts';
+const NARRATION_VOICE='marin';
+const NARRATION_VERSION='ru-teacher-marin-v1';
+const NARRATION_MAX_CHARS=1800;
+const NARRATION_ID=/^(?:lesson-\d{2}-(?:opening|reflection|stage-\d{2}|practice-[a-z0-9-]+)|mentor-[a-z0-9-]+)$/i;
+const NARRATION_INSTRUCTIONS=[
+  'Говори только на естественном русском языке.',
+  'Голос спокойного доброжелательного преподавателя математики для ребёнка 10–12 лет.',
+  'Темп умеренный, дикция ясная, интонация живая и человеческая, без рекламной манеры и без театральности.',
+  'Математические числа, действия и обозначения произноси особенно отчётливо.',
+  'Между смысловыми частями делай короткие естественные паузы.',
 ].join(' ');
 
 function json(data: unknown, init: ResponseInit = {}) {
@@ -229,9 +248,74 @@ async function handleTutor(request: Request, env: Env) {
   return json({ answer: ai.answer, mode: 'ai', provider: ai.provider });
 }
 
+async function sha256(value:string){
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
+}
+
+function narrationHeaders(cacheState:'hit'|'miss'){
+  return {
+    'content-type':'audio/mpeg',
+    'cache-control':'public, max-age=31536000, immutable',
+    'x-mathnikita-narration':NARRATION_VERSION,
+    'x-mathnikita-cache':cacheState,
+  };
+}
+
+async function handleNarration(request:Request,env:Env,ctx:ExecutionContext){
+  if(request.method!=='POST')return json({error:'Method not allowed'},{status:405});
+  if(!env.OPENAI_API_KEY)return json({error:'Unified narration is not configured'},{status:503});
+  const requestUrl=new URL(request.url);const origin=request.headers.get('origin');
+  if(origin&&origin!==requestUrl.origin)return json({error:'Cross-origin narration is not allowed'},{status:403});
+
+  let body:NarrationRequest;
+  try{body=await request.json() as NarrationRequest}catch{return json({error:'Invalid JSON'},{status:400})}
+  const id=String(body.id??'').trim();const text=String(body.text??'').replace(/\s+/g,' ').trim();
+  if(!NARRATION_ID.test(id))return json({error:'Invalid narration id'},{status:400});
+  if(!text||text.length>NARRATION_MAX_CHARS)return json({error:`Narration text must be 1-${NARRATION_MAX_CHARS} characters`},{status:400});
+  if(body.version&&body.version!==NARRATION_VERSION)return json({error:'Unsupported narration voice version'},{status:409});
+
+  const digest=await sha256(`${NARRATION_VERSION}|${id}|${text}`);
+  const cacheKey=new Request(`${requestUrl.origin}/__narration-cache/${NARRATION_VERSION}/${digest}.mp3`,{method:'GET'});
+  const cached=await caches.default.match(cacheKey);
+  if(cached)return new Response(cached.body,{status:200,headers:narrationHeaders('hit')});
+
+  const response=await fetch('https://api.openai.com/v1/audio/speech',{
+    method:'POST',
+    headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},
+    body:JSON.stringify({
+      model:NARRATION_MODEL,
+      voice:NARRATION_VOICE,
+      input:text,
+      instructions:NARRATION_INSTRUCTIONS,
+      response_format:'mp3',
+    }),
+  });
+  if(!response.ok){const error=await response.text();return json({error:'Narration provider error',status:response.status,detail:error.slice(0,300)},{status:502})}
+  const audio=await response.arrayBuffer();
+  const result=new Response(audio,{status:200,headers:narrationHeaders('miss')});
+  ctx.waitUntil(caches.default.put(cacheKey,result.clone()));
+  return result;
+}
+
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx:ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname === '/api/narration-status') {
+      return json({
+        ok:true,
+        studioConfigured:Boolean(env.OPENAI_API_KEY),
+        model:NARRATION_MODEL,
+        voice:NARRATION_VOICE,
+        version:NARRATION_VERSION,
+        disclosure:'AI-generated voice',
+      },{'headers':{'cache-control':'no-store'}});
+    }
+
+    if (url.pathname === '/api/narration') {
+      return handleNarration(request,env,ctx);
+    }
 
     if (url.pathname === '/api/tutor-status') {
       return json({
