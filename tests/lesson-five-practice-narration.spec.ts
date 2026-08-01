@@ -25,7 +25,7 @@ test('lesson 5 narrator reads the active mandatory-practice task',async({page})=
       results:{'l5-p1':true,'l5-p2':true,'l5-p3':true,'l5-p4':true,'l5-p5':true,'l5-p6':true,'l5-q1':true,'l5-q2':true,'l5-q3':true,'l5-q4':true,'l5-q5':true},
       completedAt:new Date().toISOString(),
     }));
-    localStorage.setItem('mathnikita:extended-practice:5:v1','19');
+    localStorage.setItem('mathnikita:extended-practice:5:v2','19');
   });
 
   await page.goto('/');
