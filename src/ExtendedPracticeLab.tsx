@@ -28,7 +28,6 @@ export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
   const[checkState,setCheckState]=useState<CheckState>('idle');
   const[attempts,setAttempts]=useState(0);
   const responseCount=useMemo(()=>practice?extendedPracticeSetResponseCount(practice):0,[practice]);
-  const currentTask=practice&&completed<practice.tasks.length?practice.tasks[completed]:null;
 
   useEffect(()=>{
     const nextCompleted=loadExtendedPracticeProgress(lessonNumber,practice?.tasks.length??0);
@@ -40,12 +39,6 @@ export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
     setCheckState('idle');
     setAttempts(0);
   },[lessonNumber,practice?.tasks.length]);
-
-  useEffect(()=>{
-    if(!currentTask)return;
-    if(!response&&!Object.values(multiResponse).some(value=>value.trim())){clearDraft(lessonNumber);return}
-    saveDraft(lessonNumber,{taskId:currentTask.id,response,multiResponse});
-  },[lessonNumber,currentTask?.id,response,multiResponse]);
 
   const finished=Boolean(practice&&completed>=practice.tasks.length);
   useEffect(()=>{if(finished)onComplete?.()},[finished,onComplete]);
@@ -93,7 +86,7 @@ export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
     <header className="extended-practice-header"><div><span>Обязательная практика · {practice.tasks.length} заданий · {responseCount} проверяемых ответов</span><h2 id={`extended-practice-title-${lessonNumber}`}>{practice.title}</h2><p>{practice.subtitle}</p></div><strong>{completed+1} / {practice.tasks.length}</strong></header>
     <div className="extended-practice-progress" aria-label={`Выполнено ${completed} из ${practice.tasks.length}`}><i style={{width:`${percent}%`}}/></div>
     <article className="extended-practice-card"><div className="extended-practice-task-number">Задание {completed+1}</div><h3>{task.prompt}</h3><p className="extended-practice-instruction">{task.instruction}</p>
-      {task.type==='choice'?<div className="extended-practice-options">{task.options.map(option=><button key={option} type="button" className={response===option?'is-selected':''} aria-pressed={response===option} onClick={()=>{setResponse(option);setCheckState('idle')}} disabled={checkState==='correct'}>{option}</button>)}</div>:task.type==='multi-input'?<div className="extended-practice-multi">{task.fields.map(field=><label className="extended-practice-input" key={field.id}><span>{field.label}</span><input value={multiResponse[field.id]??''} onChange={event=>{setMultiResponse(previous=>({...previous,[field.id]:event.target.value}));setCheckState('idle')}} onKeyDown={event=>{if(event.key==='Enter'&&canCheck)checkAnswer()}} placeholder={field.placeholder??'Введи ответ'} disabled={checkState==='correct'}/></label>)}</div>:<label className="extended-practice-input"><span>Ответ</span><input value={response} onChange={event=>{setResponse(event.target.value);setCheckState('idle')}} onKeyDown={event=>{if(event.key==='Enter')checkAnswer()}} placeholder="Введи ответ" disabled={checkState==='correct'}/></label>}
+      {task.type==='choice'?<div className="extended-practice-options">{task.options.map(option=><button key={option} type="button" className={response===option?'is-selected':''} aria-pressed={response===option} onClick={()=>{setResponse(option);setCheckState('idle');saveDraft(lessonNumber,{taskId:task.id,response:option,multiResponse:{}})}} disabled={checkState==='correct'}>{option}</button>)}</div>:task.type==='multi-input'?<div className="extended-practice-multi">{task.fields.map(field=><label className="extended-practice-input" key={field.id}><span>{field.label}</span><input value={multiResponse[field.id]??''} onChange={event=>{const next={...multiResponse,[field.id]:event.target.value};setMultiResponse(next);setCheckState('idle');saveDraft(lessonNumber,{taskId:task.id,response:'',multiResponse:next})}} onKeyDown={event=>{if(event.key==='Enter'&&canCheck)checkAnswer()}} placeholder={field.placeholder??'Введи ответ'} disabled={checkState==='correct'}/></label>)}</div>:<label className="extended-practice-input"><span>Ответ</span><input value={response} onChange={event=>{const next=event.target.value;setResponse(next);setCheckState('idle');saveDraft(lessonNumber,{taskId:task.id,response:next,multiResponse:{}})}} onKeyDown={event=>{if(event.key==='Enter')checkAnswer()}} placeholder="Введи ответ" disabled={checkState==='correct'}/></label>}
       {checkState==='wrong'?<div className="extended-practice-feedback is-wrong" role="alert"><b>Пока неверно.</b><span>{attempts>=1?task.hint:'Проверь решение целиком и попробуй ещё раз.'}</span></div>:null}
       {checkState==='correct'?<div className="extended-practice-feedback is-correct" role="status"><b>Верно!</b><span>{task.explanation}</span></div>:null}
       <div className="extended-practice-actions">{checkState==='correct'?<button type="button" className="extended-practice-next" onClick={continuePractice}>{completed+1===practice.tasks.length?'Завершить практику':'Следующее задание →'}</button>:<button type="button" className="extended-practice-check" onClick={checkAnswer} disabled={!canCheck}>Проверить</button>}</div>
