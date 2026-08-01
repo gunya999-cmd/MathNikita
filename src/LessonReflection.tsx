@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ExtendedPracticeLab } from './ExtendedPracticeLab';
+import { formatActiveLessonTime,loadLessonTiming } from './lessonTiming';
 import './lessonReflection.css';
 
 export type LessonReflectionProps = {
@@ -10,17 +11,24 @@ export type LessonReflectionProps = {
   onReviewOpening: () => void;
 };
 
+type CompletionRecord={completedAt:string;activeSeconds:number};
+
 export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, goals, onReviewOpening }: LessonReflectionProps) {
   const storageKey = `mathnikita:reflection:${lessonNumber}`;
   const completionKey = `mathnikita:lesson-complete:${lessonNumber}`;
   const [response, setResponse] = useState('');
   const [saved, setSaved] = useState(false);
   const [practiceComplete, setPracticeComplete] = useState(false);
+  const [completedActiveSeconds,setCompletedActiveSeconds]=useState<number|null>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(storageKey) ?? '';
+    const rawCompletion=window.localStorage.getItem(completionKey);
+    let completion:CompletionRecord|null=null;
+    try{completion=rawCompletion?JSON.parse(rawCompletion) as CompletionRecord:null}catch{/* legacy or corrupted completion */}
     setResponse(stored);
-    setSaved(Boolean(stored&&window.localStorage.getItem(completionKey)));
+    setSaved(Boolean(stored&&rawCompletion));
+    setCompletedActiveSeconds(completion?.activeSeconds??null);
     setPracticeComplete(false);
   }, [storageKey, completionKey]);
 
@@ -39,10 +47,13 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
     const value = response.trim();
     if (!value || !practiceComplete) return;
     const completedAt=new Date().toISOString();
+    const activeSeconds=Math.round(loadLessonTiming(lessonNumber).activeSeconds);
+    const completion:CompletionRecord={completedAt,activeSeconds};
     window.localStorage.setItem(storageKey, value);
-    window.localStorage.setItem(completionKey,completedAt);
+    window.localStorage.setItem(completionKey,JSON.stringify(completion));
+    setCompletedActiveSeconds(activeSeconds);
     setSaved(true);
-    window.dispatchEvent(new CustomEvent('mathnikita-lesson-completed',{detail:{lessonNumber,completedAt}}));
+    window.dispatchEvent(new CustomEvent('mathnikita-lesson-completed',{detail:{lessonNumber,...completion}}));
   }
 
   return (
@@ -101,7 +112,7 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
         </div>
 
         <p className={`reflection-note ${saved?'is-complete':''}`} aria-live="polite">
-          {saved ? 'Урок завершён ✓ Основная часть, обязательная практика и собственное объяснение выполнены.' : 'Урок получит статус «завершён» только после сохранения этого ответа.'}
+          {saved ? `Урок завершён ✓ Фактическое активное время: ${formatActiveLessonTime(completedActiveSeconds??0)}.` : 'Урок получит статус «завершён» только после сохранения этого ответа. Фактическое активное время будет записано автоматически.'}
         </p>
       </div>
     </section>
