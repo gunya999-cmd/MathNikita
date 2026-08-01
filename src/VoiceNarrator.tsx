@@ -1,6 +1,6 @@
 import { useEffect,useMemo,useRef,useState,type RefObject } from 'react';
 import { isNaturalRussianVoice,isRussianVoice,rankRussianVoices,selectBestRussianVoice } from './voiceQuality';
-import { DEFAULT_VOICE_RATE,getStudioAudioUrl,loadVoiceSettings,saveVoiceSettings,STUDIO_VOICE_LABEL,studioNarrationText,type VoiceEngine } from './studioVoice';
+import { DEFAULT_VOICE_RATE,getStudioAudioUrl,loadVoiceSettings,peekStudioAudioUrl,prefetchStudioAudioUrl,saveVoiceSettings,STUDIO_VOICE_LABEL,studioNarrationText,type VoiceEngine } from './studioVoice';
 import './voiceNarrator.css';
 
 type VoiceNarratorProps={rootRef:RefObject<HTMLElement|null>;mode:'opening'|'lesson'};
@@ -45,21 +45,46 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
   useEffect(()=>{saveVoiceSettings({engine,voiceURI,rate})},[engine,voiceURI,rate]);
   useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
   useEffect(()=>{stop();const root=rootRef.current;if(!root)return;let currentId=getNarrationId(root,mode);const observer=new MutationObserver(()=>{const nextId=getNarrationId(root,mode);if(nextId&&nextId!==currentId){currentId=nextId;stop()}});observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();stop()}},[mode,rootRef]);
+  useEffect(()=>{
+    if(engine!=='studio'||studioStatus!=='ready'||!audioSupported)return;
+    const root=rootRef.current;if(!root)return;
+    const warm=()=>{const id=getNarrationId(root,mode);const text=getNarrationText(root,mode);if(id&&text)prefetchStudioAudioUrl(id,text)};
+    warm();
+    const observer=new MutationObserver(()=>window.setTimeout(warm,0));
+    observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});
+    return()=>observer.disconnect();
+  },[engine,studioStatus,audioSupported,mode,rootRef]);
 
   function startSystemSpeech(text:string,session:number){if(!systemSupported||!text){setSpeaking(false);return}window.speechSynthesis.cancel();const chunks=splitForSpeech(studioNarrationText(text));const selectedVoice=selectBestRussianVoice(voices,voiceURI);setSpeaking(true);let index=0;const playNext=()=>{if(sessionRef.current!==session||index>=chunks.length){setSpeaking(false);return}const utterance=new SpeechSynthesisUtterance(chunks[index]);utterance.lang='ru-RU';utterance.voice=selectedVoice??null;utterance.rate=Math.min(Math.max(rate,.88),1.04);utterance.pitch=1;utterance.volume=1;utterance.onend=()=>{index+=1;window.setTimeout(playNext,130)};utterance.onerror=()=>setSpeaking(false);window.speechSynthesis.speak(utterance)};playNext()}
+
+  function playStudioSource(source:string,text:string,session:number){
+    if(!audioSupported){startSystemSpeech(text,session);return}
+    const audio=new Audio(source);audio.preload='auto';audio.playbackRate=rate;audioRef.current=audio;setSpeaking(true);
+    const fallback=()=>{if(sessionRef.current!==session)return;audioRef.current=null;startSystemSpeech(text,session)};
+    audio.onended=()=>{if(sessionRef.current===session)setSpeaking(false);audioRef.current=null};audio.onerror=fallback;
+    void audio.play().catch(fallback);
+  }
 
   async function startStudioSpeech(text:string,narrationId:string,session:number){
     if(!audioSupported||!narrationId){startSystemSpeech(text,session);return}
     setSpeaking(true);
-    try{
-      const source=await getStudioAudioUrl(narrationId,text);if(sessionRef.current!==session)return;
-      const audio=new Audio(source);audio.preload='auto';audio.playbackRate=rate;audioRef.current=audio;
-      const fallback=()=>{if(sessionRef.current!==session)return;audioRef.current=null;startSystemSpeech(text,session)};
-      audio.onended=()=>{if(sessionRef.current===session)setSpeaking(false);audioRef.current=null};audio.onerror=fallback;await audio.play().catch(fallback);
-    }catch{if(sessionRef.current===session)startSystemSpeech(text,session)}
+    try{const source=await getStudioAudioUrl(narrationId,text);if(sessionRef.current===session)playStudioSource(source,text,session)}
+    catch{if(sessionRef.current===session)startSystemSpeech(text,session)}
   }
 
-  function speak(){if(speaking){stop();return}const text=getNarrationText(rootRef.current,mode);if(!text)return;stop();const session=sessionRef.current+1;sessionRef.current=session;window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator'}}));const narrationId=getNarrationId(rootRef.current,mode);if(engine==='studio'){void startStudioSpeech(text,narrationId,session);return}startSystemSpeech(text,session)}
+  function speak(){
+    if(speaking){stop();return}
+    const text=getNarrationText(rootRef.current,mode);if(!text)return;
+    stop();const session=sessionRef.current+1;sessionRef.current=session;
+    window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator'}}));
+    const narrationId=getNarrationId(rootRef.current,mode);
+    if(engine==='studio'){
+      const readySource=peekStudioAudioUrl(narrationId,text);
+      if(readySource){playStudioSource(readySource,text,session);return}
+      void startStudioSpeech(text,narrationId,session);return;
+    }
+    startSystemSpeech(text,session);
+  }
 
   if(!audioSupported&&!systemSupported)return null;const voiceOptions=rankRussianVoices(voices);const selectedVoice=selectBestRussianVoice(voiceOptions,voiceURI);
   const systemVoiceMessage=!selectedVoice?'На устройстве не найден русский голос. Системная озвучка будет только аварийным резервом.':isNaturalRussianVoice(selectedVoice)?`Резервный системный голос: ${selectedVoice.name}.`:`Резервный базовый голос: ${selectedVoice.name}.`;
