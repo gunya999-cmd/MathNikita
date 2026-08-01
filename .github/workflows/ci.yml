@@ -58,7 +58,7 @@ jobs:
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
       - name: Complete every exercise and audit narration in all twenty-three lessons
-        run: npm run test:ipad
+        run: npm run test:ipad -- --workers=4
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
