@@ -23,7 +23,10 @@ const answers:Record<string,Answer>={
 async function openLesson(page:Page){
   await page.goto('/');
   await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(21);
-  const lesson=page.locator('.course-lesson-grid > button').nth(20);
+  const chapterTwo=page.locator('.course-chapter-group').nth(1);
+  await chapterTwo.locator('summary').click();
+  const lesson=chapterTwo.getByRole('button',{name:/Открыть урок 21:/});
+  await expect(lesson).toBeVisible();
   await expect(lesson).toBeEnabled();
   await lesson.click();
   await expect(page.getByRole('heading',{name:'Сложение натуральных чисел'}).first()).toBeVisible();
