@@ -1,30 +1,58 @@
 import { expect,test } from '@playwright/test';
 import { extendedPracticeByLesson,extendedPracticeLessonNumbers } from '../src/data/extendedPracticeData';
+import { extendedPracticeSetResponseCount } from '../src/data/extendedPracticeTypes';
 import { isExtendedPracticeAnswerCorrect,normalizePracticeAnswer } from '../src/extendedPracticeEngine';
 
-test('all twenty-three lessons contain eight valid extended-practice tasks',()=>{
+test('all twenty-three lessons contain valid mandatory practice',()=>{
   expect(extendedPracticeLessonNumbers.sort((a,b)=>a-b)).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]);
   const allTasks=extendedPracticeLessonNumbers.flatMap(number=>extendedPracticeByLesson[number].tasks);
-  expect(allTasks).toHaveLength(184);
-  expect(new Set(allTasks.map(task=>task.id)).size).toBe(184);
-  expect(allTasks.filter(task=>task.type==='input').length).toBeGreaterThanOrEqual(98);
+  expect(allTasks).toHaveLength(196);
+  expect(new Set(allTasks.map(task=>task.id)).size).toBe(196);
   for(const number of extendedPracticeLessonNumbers){
     const practice=extendedPracticeByLesson[number];
-    expect(practice.tasks,`lesson ${number}`).toHaveLength(8);
-    expect(practice.estimatedMinutes).toBeGreaterThanOrEqual(14);
+    expect(practice.tasks.length,`lesson ${number}`).toBeGreaterThanOrEqual(8);
+    expect(extendedPracticeSetResponseCount(practice),`lesson ${number} checked responses`).toBeGreaterThanOrEqual(8);
+    expect(practice.estimatedMinutes).toBeGreaterThan(0);
     for(const task of practice.tasks){
       expect(task.prompt.trim()).not.toBe('');
       expect(task.hint.trim()).not.toBe('');
       expect(task.explanation.trim()).not.toBe('');
       if(task.type==='choice')expect(task.options).toContain(task.answer);
-      else expect(task.answers.length).toBeGreaterThan(0);
+      else if(task.type==='input')expect(task.answers.length).toBeGreaterThan(0);
+      else{
+        expect(task.fields.length).toBeGreaterThanOrEqual(2);
+        expect(new Set(task.fields.map(field=>field.id)).size).toBe(task.fields.length);
+        for(const field of task.fields){
+          expect(field.label.trim()).not.toBe('');
+          expect(field.answers.length).toBeGreaterThan(0);
+        }
+      }
     }
   }
 });
 
-test('practice checking accepts formatted numeric and unit answers',()=>{
+test('lesson 4 has a full mastery workload rather than a time label',()=>{
+  const practice=extendedPracticeByLesson[4];
+  expect(practice.tasks).toHaveLength(20);
+  expect(extendedPracticeSetResponseCount(practice)).toBe(50);
+  expect(practice.tasks.filter(task=>task.type==='multi-input')).toHaveLength(10);
+});
+
+test('practice checking accepts formatted, unit and multi-step answers',()=>{
   expect(normalizePracticeAnswer('3 000 000 + 40 000 + 200 + 5')).toBe('3000000+40000+200+5');
   expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[4].tasks[6],'3 000 000 + 40 000 + 200 + 5')).toBe(true);
+  expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[4].tasks[8],{
+    classes:'3',
+    'ten-thousands':'0',
+    'three-value':'300 000',
+    'full-thousands':'8 305',
+  })).toBe(true);
+  expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[4].tasks[8],{
+    classes:'3',
+    'ten-thousands':'5',
+    'three-value':'300 000',
+    'full-thousands':'8 305',
+  })).toBe(false);
   expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[7].tasks[1],'4 м 80 см')).toBe(true);
   expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[7].tasks[1],'4 м 8 см')).toBe(false);
   expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[13].tasks[1],'150 г')).toBe(true);
