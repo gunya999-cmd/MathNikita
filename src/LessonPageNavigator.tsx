@@ -18,6 +18,7 @@ import { lessonSixteenStages } from './NaturalNumberComparisonPlayer';
 import { lessonSeventeenStages } from './NaturalNumberComparisonPracticePlayer';
 import { lessonEighteenStages } from './NaturalNumberComparisonSummaryPlayer';
 import { lessonNineteenStages } from './ChapterOneReviewPlayer';
+import { lessonTwentyOneStages } from './NaturalNumberAdditionPlayer';
 import './lessonPageNavigator.css';
 
 type PageItem={id:string;title:string};
@@ -42,27 +43,28 @@ const groups16:PageGroup[]=[{label:'Правила сравнения',indexes:[
 const groups17:PageGroup[]=[{label:'Сравнение и координатный луч',indexes:[0,1,2,3,4]},{label:'Практика и перебор вариантов',indexes:[5,6,7,8,9,10,11,12]},{label:'Коррекция и контроль',indexes:[13,14,15,16,17,18,19]},{label:'Задача и итог',indexes:[20,21,22]}];
 const groups18:PageGroup[]=[{label:'Система правил',indexes:[0,1,2,3,4,5]},{label:'Неравенства и крайние значения',indexes:[6,7,8,9,10,11]},{label:'Координаты, единицы и коррекция',indexes:[12,13,14,15]},{label:'Итоговый контроль',indexes:[16,17,18,19,20]},{label:'Задача и итог § 6',indexes:[21,22,23]}];
 const groups19:PageGroup[]=[{label:'Карта главы и повторение § 1–6',indexes:[0,1,2,3,4,5,6,7,8]},{label:'Генеральная репетиция',indexes:[9,10,11,12,13,14,15,16,17,18,19,20]},{label:'Задача и итог',indexes:[21,22,23]}];
+const groups21:PageGroup[]=[{label:'Смысл сложения и разряды',indexes:[0,1,2,3,4]},{label:'Сложение в столбик и практика',indexes:[5,6,7,8,9,10,11,12,13,14,15,16]},{label:'Задача и контроль',indexes:[17,18,19,20,21,22]},{label:'Задача со звёздочкой и итог',indexes:[23,24]}];
 
 const pagesByLesson:Record<number,PageItem[]>={
   1:lessonOneStages,2:lessonTwoStages,3:lessonThreeStages,4:lessonFourStages,
   5:lessonFiveStages,6:lessonSixStages,7:lessonSevenStages,8:lessonEightStages,
   9:lessonNineStages,10:lessonTenStages,11:lessonElevenStages,12:lessonTwelveStages,
   13:lessonThirteenStages,14:lessonFourteenStages,15:lessonFifteenStages,16:lessonSixteenStages,
-  17:lessonSeventeenStages,18:lessonEighteenStages,19:lessonNineteenStages,
+  17:lessonSeventeenStages,18:lessonEighteenStages,19:lessonNineteenStages,21:lessonTwentyOneStages,
 };
 const groupsByLesson:Record<number,PageGroup[]>={
   1:groups1,2:groups2,3:groups3,4:groups4,5:groups5,6:groups6,7:groups7,8:groups8,
   9:groups9,10:groups10,11:groups11,12:groups12,13:groups13,14:groups14,15:groups15,16:groups16,
-  17:groups17,18:groups18,19:groups19,
+  17:groups17,18:groups18,19:groups19,21:groups21,
 };
 
 function activeLessonNumber(){
   const text=document.querySelector<HTMLElement>('.lesson-mode-toolbar')?.textContent??'';
-  for(let lessonNumber=19;lessonNumber>=2;lessonNumber-=1){
+  for(let lessonNumber=21;lessonNumber>=2;lessonNumber-=1){
     if(new RegExp(`Урок\\s+${lessonNumber}\\s+из`).test(text))return lessonNumber;
   }
   const saved=Number(localStorage.getItem('mathnikita-selected-lesson'));
-  return saved>=2&&saved<=19?saved:1;
+  return pagesByLesson[saved]?saved:1;
 }
 function pagesForLesson(lessonNumber:number):PageItem[]{return pagesByLesson[lessonNumber]??lessonOneStages}
 function groupsForLesson(lessonNumber:number){return groupsByLesson[lessonNumber]??groups1}
@@ -101,7 +103,7 @@ export function LessonPageNavigator(){
 
   function jumpTo(targetIndex:number){
     setOpen(false);
-    if(lessonNumber>=2&&lessonNumber<=19){
+    if(pagesByLesson[lessonNumber]){
       window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex:targetIndex}}));
       setCurrentPage(targetIndex);
       return;
@@ -127,7 +129,7 @@ export function LessonPageNavigator(){
     {open?<div className="lesson-page-navigator-panel">
       <header><div><span>Быстрый просмотр · урок {lessonNumber}</span><b>Перейти к странице урока</b></div><button type="button" onClick={()=>setOpen(false)} aria-label="Закрыть навигацию">×</button></header>
       <p>Можно открыть любую страницу урока без прохождения предыдущих заданий. Сохранённые результаты не удаляются.</p>
-      <div className="lesson-page-navigator-groups">{groups.map(group=><section key={group.label}><h3>{group.label}</h3><div>{group.indexes.map(index=>{const stage=pages[index];return stage?<button key={stage.id} type="button" className={index===currentPage?'active':''} onClick={()=>jumpTo(index)}><span>{index+1}</span><b>{stage.title}</b></button>:null})}</div></section>)}</div>
+      <div className="lesson-page-navigator-groups">{groups.map(group=><section key={group.label}><h3>{group.label}</h3><div>{group.indexes.map(index=>{const page=pages[index];return page?<button type="button" key={page.id} className={index===currentPage?'active':''} onClick={()=>jumpTo(index)}><span>{index+1}</span><b>{page.title}</b></button>:null})}</div></section>)}</div>
     </div>:null}
   </aside>;
 }
