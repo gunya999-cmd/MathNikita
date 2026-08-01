@@ -48,7 +48,11 @@ async function openLesson(page:Page,lessonNumber:number){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button:not([disabled])');
   await expect(lessons).toHaveCount(22);
-  if(lessonNumber>=21)await page.locator('.course-chapter-group').nth(1).locator('summary').click();
+  if(lessonNumber>=21){
+    const chapterTwo=page.locator('.course-chapter-group').nth(1);
+    const isOpen=await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open);
+    if(!isOpen)await chapterTwo.locator('summary').click();
+  }
   const lesson=page.getByRole('button',{name:new RegExp(`Открыть урок ${lessonNumber}:`)});
   await expect(lesson).toBeVisible();
   await lesson.click();
