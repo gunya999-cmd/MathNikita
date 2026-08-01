@@ -66,23 +66,39 @@ async function auditMentorExclusion(page:Page){
   await narrator.click();await assertNaturalRussianSpeech(page,2);await expect(mentor).toHaveAttribute('aria-label','Озвучить реплику');await expect(narrator).toContainText('Остановить');await narrator.click();
 }
 
-test('every ready lesson uses natural Russian narration without overlapping the mentor',async({page})=>{
-  test.setTimeout(650_000);await installSpeechAudit(page);
-  for(let lessonNumber=1;lessonNumber<=23;lessonNumber+=1){
-    await openLesson(page,lessonNumber);await clearSpeech(page);let narrator=await playNarrator(page);await assertNaturalRussianSpeech(page);await narrator.click();
-    await page.locator('.lesson-opening-start').click();const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');await expect(stage).toBeVisible();
+for(let lessonNumber=1;lessonNumber<=23;lessonNumber+=1){
+  test(`lesson ${lessonNumber}: natural Russian narration and no narrator/mentor overlap`,async({page})=>{
+    test.setTimeout(180_000);
+    await installSpeechAudit(page);
+    await openLesson(page,lessonNumber);
+    await clearSpeech(page);
+    let narrator=await playNarrator(page);
+    await assertNaturalRussianSpeech(page);
+    await narrator.click();
+
+    await page.locator('.lesson-opening-start').click();
+    const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
+    await expect(stage).toBeVisible();
     const specialIds=lessonNumber===18?lessonEighteenStageIds:lessonNumber===20?lessonTwentyStageIds:null;
     const counterText=specialIds?'':await page.locator('.lesson-runtime:not([hidden]) .stage-counter').evaluate(element=>element.firstElementChild?.textContent??element.textContent??'');
     const total=specialIds?specialIds.length:Number(counterText?.match(/из\s+(\d+)/i)?.[1]??1);
     const indexes=lessonNumber===1?[0]:Array.from({length:total},(_,index)=>index);
+
     for(const stageIndex of indexes){
       if(stageIndex>0){
         await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
-        if(specialIds)await expect(stage).toHaveAttribute('data-stage-id',specialIds[stageIndex]);else await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из`);
+        if(specialIds)await expect(stage).toHaveAttribute('data-stage-id',specialIds[stageIndex]);
+        else await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из`);
       }
-      await clearSpeech(page);narrator=await playNarrator(page);await assertNaturalRussianSpeech(page);await narrator.click();
+      await clearSpeech(page);
+      narrator=await playNarrator(page);
+      await assertNaturalRussianSpeech(page);
+      await narrator.click();
     }
-    await page.evaluate(({lessonNumber})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex:0}})),{lessonNumber});await expect(stage).toBeVisible();
-    if(lessonNumber===20){await expect(page.locator('.cat-mentor-collapsed')).toHaveCount(0)}else await auditMentorExclusion(page);
-  }
-});
+
+    await page.evaluate(({lessonNumber})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex:0}})),{lessonNumber});
+    await expect(stage).toBeVisible();
+    if(lessonNumber===20)await expect(page.locator('.cat-mentor-collapsed')).toHaveCount(0);
+    else await auditMentorExclusion(page);
+  });
+}
