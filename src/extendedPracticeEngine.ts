@@ -2,8 +2,11 @@ import type { ExtendedPracticeTask } from './data/extendedPracticeData';
 
 export type ExtendedPracticeResponse = string | Record<string,string>;
 
+const PRACTICE_VERSION_BY_LESSON:Record<number,number>={5:2};
+
 export function extendedPracticeStorageKey(lessonNumber:number){
-  return `mathnikita:extended-practice:${lessonNumber}:v1`;
+  const version=PRACTICE_VERSION_BY_LESSON[lessonNumber]??1;
+  return `mathnikita:extended-practice:${lessonNumber}:v${version}`;
 }
 
 export function normalizePracticeAnswer(value:string){
