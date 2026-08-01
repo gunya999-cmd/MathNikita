@@ -68,7 +68,7 @@ test('every ready lesson uses natural Russian narration without overlapping the 
     await openLesson(page,lessonNumber);await clearSpeech(page);let narrator=await playNarrator(page);await assertNaturalRussianSpeech(page);await narrator.click();
     await page.locator('.lesson-opening-start').click();const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');await expect(stage).toBeVisible();
     const specialIds=lessonNumber===18?lessonEighteenStageIds:lessonNumber===20?lessonTwentyStageIds:null;
-    const counterText=specialIds?'':await page.locator('.lesson-runtime:not([hidden]) .stage-counter > span').textContent();
+    const counterText=specialIds?'':await page.locator('.lesson-runtime:not([hidden]) .stage-counter').evaluate(element=>element.firstElementChild?.textContent??element.textContent??'');
     const total=specialIds?specialIds.length:Number(counterText?.match(/из\s+(\d+)/i)?.[1]??1);
     const indexes=lessonNumber===1?[0]:Array.from({length:total},(_,index)=>index);
     for(const stageIndex of indexes){
