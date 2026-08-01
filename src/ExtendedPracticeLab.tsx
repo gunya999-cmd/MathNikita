@@ -1,11 +1,24 @@
 import { useEffect,useMemo,useState } from 'react';
 import { extendedPracticeByLesson } from './data/extendedPracticeData';
 import { extendedPracticeSetResponseCount } from './data/extendedPracticeTypes';
-import { isExtendedPracticeAnswerCorrect,loadExtendedPracticeProgress,saveExtendedPracticeProgress } from './extendedPracticeEngine';
+import { extendedPracticeStorageKey,isExtendedPracticeAnswerCorrect,loadExtendedPracticeProgress,saveExtendedPracticeProgress } from './extendedPracticeEngine';
 import './extendedPracticeLab.css';
 
 type Props={lessonNumber:number;onComplete?:()=>void};
 type CheckState='idle'|'correct'|'wrong';
+type PracticeDraft={taskId:string;response:string;multiResponse:Record<string,string>};
+
+function draftStorageKey(lessonNumber:number){return `${extendedPracticeStorageKey(lessonNumber)}:draft`}
+function loadDraft(lessonNumber:number,taskId:string):PracticeDraft|null{
+  try{
+    const parsed=JSON.parse(localStorage.getItem(draftStorageKey(lessonNumber))??'null') as PracticeDraft|null;
+    return parsed?.taskId===taskId?parsed:null;
+  }catch{return null}
+}
+function saveDraft(lessonNumber:number,draft:PracticeDraft){
+  localStorage.setItem(draftStorageKey(lessonNumber),JSON.stringify(draft));
+}
+function clearDraft(lessonNumber:number){localStorage.removeItem(draftStorageKey(lessonNumber))}
 
 export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
   const practice=extendedPracticeByLesson[lessonNumber];
@@ -15,11 +28,24 @@ export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
   const[checkState,setCheckState]=useState<CheckState>('idle');
   const[attempts,setAttempts]=useState(0);
   const responseCount=useMemo(()=>practice?extendedPracticeSetResponseCount(practice):0,[practice]);
+  const currentTask=practice&&completed<practice.tasks.length?practice.tasks[completed]:null;
 
   useEffect(()=>{
-    setCompleted(loadExtendedPracticeProgress(lessonNumber,practice?.tasks.length??0));
-    setResponse('');setMultiResponse({});setCheckState('idle');setAttempts(0);
+    const nextCompleted=loadExtendedPracticeProgress(lessonNumber,practice?.tasks.length??0);
+    setCompleted(nextCompleted);
+    const nextTask=practice&&nextCompleted<practice.tasks.length?practice.tasks[nextCompleted]:null;
+    const draft=nextTask?loadDraft(lessonNumber,nextTask.id):null;
+    setResponse(draft?.response??'');
+    setMultiResponse(draft?.multiResponse??{});
+    setCheckState('idle');
+    setAttempts(0);
   },[lessonNumber,practice?.tasks.length]);
+
+  useEffect(()=>{
+    if(!currentTask)return;
+    if(!response&&!Object.values(multiResponse).some(value=>value.trim())){clearDraft(lessonNumber);return}
+    saveDraft(lessonNumber,{taskId:currentTask.id,response,multiResponse});
+  },[lessonNumber,currentTask?.id,response,multiResponse]);
 
   const finished=Boolean(practice&&completed>=practice.tasks.length);
   useEffect(()=>{if(finished)onComplete?.()},[finished,onComplete]);
@@ -47,11 +73,13 @@ export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
   function continuePractice(){
     if(checkState!=='correct')return;
     const next=completed+1;
+    clearDraft(lessonNumber);
     saveExtendedPracticeProgress(lessonNumber,next);
     setCompleted(next);resetCurrentResponse();
   }
 
   function restartPractice(){
+    clearDraft(lessonNumber);
     saveExtendedPracticeProgress(lessonNumber,0);
     setCompleted(0);resetCurrentResponse();
   }
