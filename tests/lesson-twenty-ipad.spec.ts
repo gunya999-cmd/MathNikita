@@ -3,9 +3,9 @@ import { expect,test,type Locator,type Page } from '@playwright/test';
 async function openControl(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button');
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(19);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(20);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(1);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(20);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(21);
   await expect(lessons.nth(19)).toBeEnabled();
   await lessons.nth(19).click();
   await expect(page.getByRole('heading',{name:'Натуральные числа — контрольная работа № 1'})).toBeVisible();
