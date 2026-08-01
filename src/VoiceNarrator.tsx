@@ -30,47 +30,36 @@ function visibleFinalReflection(root: HTMLElement) {
   return finalStep && !finalStep.hidden && finalStep.offsetParent !== null ? finalStep : null;
 }
 
+function collectVisibleText(scope:HTMLElement,selectors:string[]){
+  const parts=selectors.flatMap(selector=>Array.from(scope.querySelectorAll<HTMLElement>(selector))
+    .filter(node=>node.offsetParent!==null)
+    .map(node=>node.textContent?.trim()??'')
+    .filter(Boolean));
+  return Array.from(new Set(parts)).join('. ');
+}
+
 function getNarrationText(root: HTMLElement | null, mode: VoiceNarratorProps['mode']) {
   if (!root) return '';
   if (mode === 'opening') {
     const scope = root.querySelector<HTMLElement>('.opening-screen:not([hidden])');
-    if (!scope) return '';
-    const selectors = ['.lesson-opening-copy h1', '.lesson-opening-copy p', '.lesson-opening-question b', '.lesson-opening-plan li span'];
-    const parts = selectors.flatMap(selector => Array.from(scope.querySelectorAll<HTMLElement>(selector))
-      .filter(node => node.offsetParent !== null)
-      .map(node => node.textContent?.trim() ?? '')
-      .filter(Boolean));
-    return Array.from(new Set(parts)).join('. ');
+    return scope?collectVisibleText(scope,['.lesson-opening-copy h1','.lesson-opening-copy p','.lesson-opening-question b','.lesson-opening-plan li span']):'';
   }
 
   const practice = visiblePractice(root);
-  if (practice) {
-    const selectors = ['h3', '.extended-practice-instruction', '.extended-practice-input span'];
-    const parts = selectors.flatMap(selector => Array.from(practice.querySelectorAll<HTMLElement>(selector))
-      .filter(node => node.offsetParent !== null)
-      .map(node => node.textContent?.trim() ?? '')
-      .filter(Boolean));
-    return Array.from(new Set(parts)).join('. ');
-  }
+  if (practice) return collectVisibleText(practice,[
+    'h3',
+    '.extended-practice-instruction',
+    '.extended-practice-input span',
+    '.extended-practice-options button',
+    '.extended-practice-feedback b',
+    '.extended-practice-feedback span',
+  ]);
 
   const finalReflection = visibleFinalReflection(root);
-  if (finalReflection) {
-    const selectors = ['.reflection-heading h2', '.reflection-heading p', 'blockquote', '.reflection-answer > span'];
-    const parts = selectors.flatMap(selector => Array.from(finalReflection.querySelectorAll<HTMLElement>(selector))
-      .filter(node => node.offsetParent !== null)
-      .map(node => node.textContent?.trim() ?? '')
-      .filter(Boolean));
-    return Array.from(new Set(parts)).join('. ');
-  }
+  if (finalReflection) return collectVisibleText(finalReflection,['.reflection-heading h2','.reflection-heading p','blockquote','.reflection-answer > span']);
 
   const scope = root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');
-  if (!scope) return '';
-  const selectors = ['.interactive-stage .stage-copy h2', '.interactive-stage .stage-copy p', '.interactive-stage .theory-note span', '.interactive-stage .activity-area h3', '.lesson-block h2', '.lesson-block .block-text', '.lesson-block .lesson-items li'];
-  const parts = selectors.flatMap(selector => Array.from(scope.querySelectorAll<HTMLElement>(selector))
-    .filter(node => node.offsetParent !== null)
-    .map(node => node.textContent?.trim() ?? '')
-    .filter(Boolean));
-  return Array.from(new Set(parts)).join('. ');
+  return scope?collectVisibleText(scope,['.interactive-stage .stage-copy h2','.interactive-stage .stage-copy p','.interactive-stage .theory-note span','.interactive-stage .activity-area h3','.lesson-block h2','.lesson-block .block-text','.lesson-block .lesson-items li']):'';
 }
 
 function getNarrationId(root: HTMLElement | null, mode: VoiceNarratorProps['mode']) {
