@@ -35,6 +35,7 @@ async function openLessonFive(page:Page){
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible();
   await expect(page.locator('.cat-mentor-collapsed')).toBeVisible();
+  await expect(page.locator('.lesson-runtime:not([hidden]) .lesson-duration')).toHaveText('Фактическое время измеряется');
 }
 
 async function answerStage(page:Page,answer:Answer){
@@ -46,7 +47,7 @@ async function answerStage(page:Page,answer:Answer){
   await expect(stage.locator('.instant-feedback.good')).toBeVisible();
 }
 
-test('lesson 5 completes every stage and produces full scores on iPad WebKit',async({page})=>{
+test('lesson 5 completes every main stage but does not claim full completion before mastery',async({page})=>{
   test.setTimeout(180_000);
   await openLessonFive(page);
   const visited=new Set<string>();
@@ -60,7 +61,14 @@ test('lesson 5 completes every stage and produces full scores on iPad WebKit',as
     const next=page.locator('.lesson-controls .primary');await expect(next).toBeEnabled();await next.click();await expect(stage).not.toHaveAttribute('data-stage-id',stageId!);
   }
   await expect(page.locator('[data-stage-id="l5-summary"]')).toBeVisible();expect(visited.size).toBe(24);expect(Object.keys(answers).every(stageId=>visited.has(stageId))).toBe(true);
-  const summary=page.locator('.summary-card');await expect(summary).toContainText('5/5');await expect(summary).toContainText('6/6');await expect(summary).toContainText('Завершён');await expect(page.locator('.lesson-page-navigator-toggle')).toContainText('Страница 24/24');
+  const summary=page.locator('.summary-card');
+  await expect(summary).toContainText('5/5');
+  await expect(summary).toContainText('6/6');
+  await expect(summary).toContainText('Основная часть ✓');
+  await expect(summary).not.toContainText('Завершён');
+  await expect(page.locator('.lesson-controls > span')).toHaveText('Основная часть пройдена');
+  await expect(page.locator('[data-lesson-completion-gate="5"]')).toContainText('Урок ещё не завершён');
+  await expect(page.locator('.lesson-page-navigator-toggle')).toContainText('Страница 24/24');
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);expect(overflow).toBeLessThanOrEqual(2);
 });
 
