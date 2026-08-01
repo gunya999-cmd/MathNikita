@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { extendedPracticeStorageKey } from './extendedPracticeEngine';
 import { loadLessonTiming,resetLessonTiming,saveLessonTiming } from './lessonTiming';
 
 type SavedStage = { answer?: string; order?: string[] };
@@ -21,6 +22,14 @@ function save(lessonNumber: number, stageId: string, next: SavedStage) {
   const lesson = load(lessonNumber);
   lesson.stages[stageId] = { ...lesson.stages[stageId], ...next };
   localStorage.setItem(storageKey(lessonNumber), JSON.stringify(lesson));
+}
+
+function clearLessonCompletionState(lessonNumber:number){
+  const practiceKey=extendedPracticeStorageKey(lessonNumber);
+  localStorage.removeItem(practiceKey);
+  localStorage.removeItem(`${practiceKey}:draft`);
+  localStorage.removeItem(`mathnikita:reflection:${lessonNumber}`);
+  localStorage.removeItem(`mathnikita:lesson-complete:${lessonNumber}`);
 }
 
 function nativeSetInputValue(input: HTMLInputElement, value: string) {
@@ -63,6 +72,7 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
       const target=event.target as HTMLElement;
       const resetButton=target.closest<HTMLButtonElement>('.stage-counter button');
       if(!resetButton?.textContent?.includes('Начать заново'))return;
+      clearLessonCompletionState(lessonNumber);
       resetLessonTiming(lessonNumber);
       activeSeconds=0;
       unsavedSeconds=0;
