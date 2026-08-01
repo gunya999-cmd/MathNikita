@@ -21,15 +21,51 @@ function loadSettings(): StoredVoiceSettings {
   catch { return {}; }
 }
 
+function visiblePractice(root: HTMLElement) {
+  return root.querySelector<HTMLElement>('.lesson-reflection .extended-practice[data-practice-task]');
+}
+
+function visibleFinalReflection(root: HTMLElement) {
+  const finalStep = root.querySelector<HTMLElement>('.lesson-reflection .reflection-final-step');
+  return finalStep && !finalStep.hidden && finalStep.offsetParent !== null ? finalStep : null;
+}
+
 function getNarrationText(root: HTMLElement | null, mode: VoiceNarratorProps['mode']) {
   if (!root) return '';
-  const scope = mode === 'opening'
-    ? root.querySelector<HTMLElement>('.opening-screen:not([hidden])')
-    : root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');
+  if (mode === 'opening') {
+    const scope = root.querySelector<HTMLElement>('.opening-screen:not([hidden])');
+    if (!scope) return '';
+    const selectors = ['.lesson-opening-copy h1', '.lesson-opening-copy p', '.lesson-opening-question b', '.lesson-opening-plan li span'];
+    const parts = selectors.flatMap(selector => Array.from(scope.querySelectorAll<HTMLElement>(selector))
+      .filter(node => node.offsetParent !== null)
+      .map(node => node.textContent?.trim() ?? '')
+      .filter(Boolean));
+    return Array.from(new Set(parts)).join('. ');
+  }
+
+  const practice = visiblePractice(root);
+  if (practice) {
+    const selectors = ['h3', '.extended-practice-instruction', '.extended-practice-input span'];
+    const parts = selectors.flatMap(selector => Array.from(practice.querySelectorAll<HTMLElement>(selector))
+      .filter(node => node.offsetParent !== null)
+      .map(node => node.textContent?.trim() ?? '')
+      .filter(Boolean));
+    return Array.from(new Set(parts)).join('. ');
+  }
+
+  const finalReflection = visibleFinalReflection(root);
+  if (finalReflection) {
+    const selectors = ['.reflection-heading h2', '.reflection-heading p', 'blockquote', '.reflection-answer > span'];
+    const parts = selectors.flatMap(selector => Array.from(finalReflection.querySelectorAll<HTMLElement>(selector))
+      .filter(node => node.offsetParent !== null)
+      .map(node => node.textContent?.trim() ?? '')
+      .filter(Boolean));
+    return Array.from(new Set(parts)).join('. ');
+  }
+
+  const scope = root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');
   if (!scope) return '';
-  const selectors = mode === 'opening'
-    ? ['.lesson-opening-copy h1', '.lesson-opening-copy p', '.lesson-opening-question b', '.lesson-opening-plan li span']
-    : ['.interactive-stage .stage-copy h2', '.interactive-stage .stage-copy p', '.interactive-stage .theory-note span', '.interactive-stage .activity-area h3', '.lesson-block h2', '.lesson-block .block-text', '.lesson-block .lesson-items li'];
+  const selectors = ['.interactive-stage .stage-copy h2', '.interactive-stage .stage-copy p', '.interactive-stage .theory-note span', '.interactive-stage .activity-area h3', '.lesson-block h2', '.lesson-block .block-text', '.lesson-block .lesson-items li'];
   const parts = selectors.flatMap(selector => Array.from(scope.querySelectorAll<HTMLElement>(selector))
     .filter(node => node.offsetParent !== null)
     .map(node => node.textContent?.trim() ?? '')
@@ -44,6 +80,12 @@ function getNarrationId(root: HTMLElement | null, mode: VoiceNarratorProps['mode
   if (!lessonMatch) return '';
   const lessonNumber = String(Number(lessonMatch[1])).padStart(2, '0');
   if (mode === 'opening') return `lesson-${lessonNumber}-opening`;
+
+  const practice = visiblePractice(root);
+  const practiceId = practice?.dataset.practiceTask;
+  if (practiceId) return `lesson-${lessonNumber}-practice-${practiceId}`;
+  if (visibleFinalReflection(root)) return `lesson-${lessonNumber}-reflection`;
+
   const stageLabel = root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .stage-counter')?.textContent ?? '';
   const stageMatch = stageLabel.match(/Этап\s+(\d+)/i);
   if (!stageMatch) return '';
@@ -137,7 +179,7 @@ export function VoiceNarrator({ rootRef, mode }: VoiceNarratorProps) {
       const nextId = getNarrationId(root, mode);
       if (nextId && nextId !== currentId) { currentId = nextId; stop(); }
     });
-    observer.observe(root, { childList: true, subtree: true, characterData: true });
+    observer.observe(root, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['data-practice-task', 'data-stage-id', 'hidden'] });
     return () => { observer.disconnect(); stop(); };
   }, [mode, rootRef]);
 
