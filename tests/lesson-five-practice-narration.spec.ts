@@ -19,7 +19,7 @@ test('lesson 5 narrator reads the active mandatory-practice task',async({page})=
     Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synthesis});
     (window as unknown as {__lessonFiveSpeech:string[]}).__lessonFiveSpeech=log;
     localStorage.setItem('mathnikita-selected-lesson','5');
-    localStorage.setItem('mathnikita-voice-settings-v3',JSON.stringify({engine:'system',voiceURI:'ru-enhanced',rate:.94}));
+    localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'system',voiceURI:'ru-enhanced',rate:.94}));
     localStorage.setItem('mathnikita-lesson-5-progress-v1',JSON.stringify({
       version:1,stageIndex:23,responses:{},orders:{},checked:{},
       results:{'l5-p1':true,'l5-p2':true,'l5-p3':true,'l5-p4':true,'l5-p5':true,'l5-p6':true,'l5-q1':true,'l5-q2':true,'l5-q3':true,'l5-q4':true,'l5-q5':true},
