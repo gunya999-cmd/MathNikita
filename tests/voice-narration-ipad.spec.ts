@@ -47,8 +47,8 @@ async function assertNaturalRussianSpeech(page:Page,previousCount=0){
 async function openLesson(page:Page,lessonNumber:number){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button:not([disabled])');
-  await expect(lessons).toHaveCount(21);
-  if(lessonNumber===21)await page.locator('.course-chapter-group').nth(1).locator('summary').click();
+  await expect(lessons).toHaveCount(22);
+  if(lessonNumber>=21)await page.locator('.course-chapter-group').nth(1).locator('summary').click();
   const lesson=page.getByRole('button',{name:new RegExp(`Открыть урок ${lessonNumber}:`)});
   await expect(lesson).toBeVisible();
   await lesson.click();
@@ -64,7 +64,7 @@ async function auditMentorExclusion(page:Page){
 
 test('every ready lesson uses natural Russian narration without overlapping the mentor',async({page})=>{
   test.setTimeout(600_000);await installSpeechAudit(page);
-  for(let lessonNumber=1;lessonNumber<=21;lessonNumber+=1){
+  for(let lessonNumber=1;lessonNumber<=22;lessonNumber+=1){
     await openLesson(page,lessonNumber);await clearSpeech(page);let narrator=await playNarrator(page);await assertNaturalRussianSpeech(page);await narrator.click();
     await page.locator('.lesson-opening-start').click();const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');await expect(stage).toBeVisible();
     const specialIds=lessonNumber===18?lessonEighteenStageIds:lessonNumber===20?lessonTwentyStageIds:null;
