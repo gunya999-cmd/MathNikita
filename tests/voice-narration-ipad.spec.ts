@@ -33,7 +33,7 @@ async function installSpeechAudit(page:Page){
     Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,writable:true,value:MockUtterance});
     Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synthesis});
     (window as unknown as {__speechAudit:typeof audit}).__speechAudit=audit;
-    try{localStorage.setItem('mathnikita-voice-settings-v3',JSON.stringify({engine:'system',voiceURI:'en-premium',rate:.94}))}catch{}
+    try{localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'system',voiceURI:'en-premium',rate:.94}))}catch{}
   });
 }
 
@@ -57,7 +57,7 @@ async function openLesson(page:Page,lessonNumber:number){
   await expect(lesson).toBeVisible();
   await lesson.click();
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
-  await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v3')??'{}').voiceURI)).toBe('ru-enhanced');
+  await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v4')??'{}').voiceURI)).toBe('ru-enhanced');
 }
 async function playNarrator(page:Page){const narrator=page.locator('.voice-narrator > button').first();await narrator.click();await expect(narrator).toContainText('Остановить');return narrator}
 async function auditMentorExclusion(page:Page){
