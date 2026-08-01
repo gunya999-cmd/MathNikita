@@ -32,6 +32,19 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
     setPracticeComplete(false);
   }, [storageKey, completionKey]);
 
+  useEffect(()=>{
+    const reset=(event:Event)=>{
+      const detail=(event as CustomEvent<{lessonNumber?:number}>).detail;
+      if(detail?.lessonNumber!==lessonNumber)return;
+      setResponse('');
+      setSaved(false);
+      setPracticeComplete(false);
+      setCompletedActiveSeconds(null);
+    };
+    window.addEventListener('mathnikita-lesson-reset',reset);
+    return()=>window.removeEventListener('mathnikita-lesson-reset',reset);
+  },[lessonNumber]);
+
   const criteria = useMemo(() => {
     if (lessonNumber === 1) {
       return [
@@ -56,6 +69,13 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
     window.dispatchEvent(new CustomEvent('mathnikita-lesson-completed',{detail:{lessonNumber,...completion}}));
   }
 
+  function restartMandatoryPractice(){
+    window.localStorage.removeItem(completionKey);
+    setPracticeComplete(false);
+    setSaved(false);
+    setCompletedActiveSeconds(null);
+  }
+
   return (
     <section className="lesson-reflection" aria-labelledby="lesson-reflection-title" data-lesson-completion-gate={lessonNumber}>
       <div className="reflection-heading">
@@ -69,7 +89,7 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
         Чтобы урок считался завершённым, нужно выполнить всю обязательную практику и затем своими словами объяснить главный вывод темы.
       </div>
 
-      <ExtendedPracticeLab lessonNumber={lessonNumber} onComplete={() => setPracticeComplete(true)} onRestart={() => {setPracticeComplete(false);setSaved(false)}} />
+      <ExtendedPracticeLab lessonNumber={lessonNumber} onComplete={() => setPracticeComplete(true)} onRestart={restartMandatoryPractice} />
 
       {!practiceComplete ? (
         <p className="reflection-practice-lock" aria-live="polite">
