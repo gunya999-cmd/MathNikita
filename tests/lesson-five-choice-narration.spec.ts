@@ -9,7 +9,7 @@ test('lesson 5 narrator reads choice options and feedback in mandatory practice'
       constructor(text=''){this.text=text}
     }
     const synthesis={
-      getVoices:()=>[voice],speak:(utterance:MockUtterance)=>log.push(utterance.text),cancel:()=>undefined,pause:()=>undefined,resume:()=>undefined,
+      getVoices:()=>[voice],speak:(utterance:MockUtterance)=>{log.push(utterance.text);window.setTimeout(()=>utterance.onend?.(),0)},cancel:()=>undefined,pause:()=>undefined,resume:()=>undefined,
       addEventListener:()=>undefined,removeEventListener:()=>undefined,get speaking(){return false},get pending(){return false},get paused(){return false},
     };
     Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,writable:true,value:MockUtterance});
@@ -33,16 +33,15 @@ test('lesson 5 narrator reads choice options and feedback in mandatory practice'
 
   const narrator=page.locator('.voice-narrator > button').first();
   await narrator.click();
+  await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '))).toContain('500 000 000 плюс 40 000 000 плюс 7 000 плюс 20');
   let spoken=await page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '));
   expect(spoken).toContain('Какое разложение верно');
-  expect(spoken).toContain('500 000 000 плюс 40 000 000 плюс 7 000 плюс 20');
-  await narrator.click();
 
   await task.getByRole('button',{name:'500 000 000 + 4 000 000 + 7 000 + 20',exact:true}).click();
   await task.getByRole('button',{name:'Проверить'}).click();
   await expect(task.locator('.extended-practice-feedback.is-wrong')).toBeVisible();
   await narrator.click();
+  await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '))).toContain('Проверь значение каждой ненулевой цифры');
   spoken=await page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '));
   expect(spoken).toContain('Пока неверно');
-  expect(spoken).toContain('Проверь значение каждой ненулевой цифры');
 });
