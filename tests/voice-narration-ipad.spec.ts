@@ -48,7 +48,10 @@ async function openLesson(page:Page,lessonNumber:number){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button:not([disabled])');
   await expect(lessons).toHaveCount(21);
-  await lessons.nth(lessonNumber-1).click();
+  if(lessonNumber===21)await page.locator('.course-chapter-group').nth(1).locator('summary').click();
+  const lesson=page.getByRole('button',{name:new RegExp(`Открыть урок ${lessonNumber}:`)});
+  await expect(lesson).toBeVisible();
+  await lesson.click();
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
   await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v3')??'{}').voiceURI)).toBe('ru-enhanced');
 }
