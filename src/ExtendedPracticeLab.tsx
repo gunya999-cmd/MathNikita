@@ -35,6 +35,16 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     setResponse(draft?.response??'');setMultiResponse(draft?.multiResponse??{});setCheckState('idle');setAttempts(0);
   },[lessonNumber,practice?.tasks.length]);
 
+  useEffect(()=>{
+    const reset=(event:Event)=>{
+      const detail=(event as CustomEvent<{lessonNumber?:number}>).detail;
+      if(detail?.lessonNumber!==lessonNumber)return;
+      setCompleted(0);setResponse('');setMultiResponse({});setCheckState('idle');setAttempts(0);onRestart?.();
+    };
+    window.addEventListener('mathnikita-lesson-reset',reset);
+    return()=>window.removeEventListener('mathnikita-lesson-reset',reset);
+  },[lessonNumber,onRestart]);
+
   const finished=Boolean(practice&&completed>=practice.tasks.length);
   useEffect(()=>{if(finished)onComplete?.()},[finished,onComplete]);
   if(!practice)return null;
