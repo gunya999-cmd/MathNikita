@@ -10,6 +10,7 @@ export const STUDIO_VOICE_VERSION='ru-teacher-marin-v1';
 export const DEFAULT_VOICE_RATE=.94;
 
 const audioUrlCache=new Map<string,Promise<string>>();
+const readyAudioUrlCache=new Map<string,string>();
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 
@@ -32,11 +33,22 @@ export function saveVoiceSettings(settings:StoredVoiceSettings){
 
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
 
-function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${text}`}
+function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${studioNarrationText(text)}`}
+
+export function peekStudioAudioUrl(id:string,text:string){
+  return readyAudioUrlCache.get(cacheKey(id,text));
+}
+
+export function prefetchStudioAudioUrl(id:string,text:string){
+  if(!id||!text)return;
+  void getStudioAudioUrl(id,text).catch(()=>undefined);
+}
 
 export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
   const prepared=studioNarrationText(text);
   const key=cacheKey(id,prepared);
+  const ready=readyAudioUrlCache.get(key);
+  if(ready)return ready;
   const cached=audioUrlCache.get(key);
   if(cached)return cached;
   const request=fetch('/api/narration',{
@@ -47,8 +59,10 @@ export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
     if(!response.ok)throw new Error(`Studio narration unavailable: ${response.status}`);
     const type=response.headers.get('content-type')??'';
     if(!type.includes('audio/'))throw new Error('Studio narration returned non-audio response');
-    return URL.createObjectURL(await response.blob());
-  }).catch(error=>{audioUrlCache.delete(key);throw error});
+    const url=URL.createObjectURL(await response.blob());
+    readyAudioUrlCache.set(key,url);
+    return url;
+  }).catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error});
   audioUrlCache.set(key,request);
   return request;
 }
