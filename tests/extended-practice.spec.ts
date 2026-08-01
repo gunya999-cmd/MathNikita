@@ -2,12 +2,12 @@ import { expect,test } from '@playwright/test';
 import { extendedPracticeByLesson,extendedPracticeLessonNumbers } from '../src/data/extendedPracticeData';
 import { isExtendedPracticeAnswerCorrect,normalizePracticeAnswer } from '../src/extendedPracticeEngine';
 
-test('all seventeen lessons contain eight valid extended-practice tasks',()=>{
-  expect(extendedPracticeLessonNumbers.sort((a,b)=>a-b)).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]);
+test('all eighteen lessons contain eight valid extended-practice tasks',()=>{
+  expect(extendedPracticeLessonNumbers.sort((a,b)=>a-b)).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]);
   const allTasks=extendedPracticeLessonNumbers.flatMap(number=>extendedPracticeByLesson[number].tasks);
-  expect(allTasks).toHaveLength(136);
-  expect(new Set(allTasks.map(task=>task.id)).size).toBe(136);
-  expect(allTasks.filter(task=>task.type==='input').length).toBeGreaterThanOrEqual(70);
+  expect(allTasks).toHaveLength(144);
+  expect(new Set(allTasks.map(task=>task.id)).size).toBe(144);
+  expect(allTasks.filter(task=>task.type==='input').length).toBeGreaterThanOrEqual(75);
   for(const number of extendedPracticeLessonNumbers){
     const practice=extendedPracticeByLesson[number];
     expect(practice.tasks,`lesson ${number}`).toHaveLength(8);
@@ -32,4 +32,5 @@ test('practice checking accepts formatted numeric and unit answers',()=>{
   expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[15].tasks[0],'6')).toBe(true);
   expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[16].tasks[1],'>')).toBe(true);
   expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[17].tasks[0],'84 < 91')).toBe(true);
+  expect(isExtendedPracticeAnswerCorrect(extendedPracticeByLesson[18].tasks[7],'5 007')).toBe(true);
 });
