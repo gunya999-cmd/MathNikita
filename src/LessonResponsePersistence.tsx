@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { loadLessonTiming,resetLessonTiming,saveLessonTiming } from './lessonTiming';
 
 type SavedStage = { answer?: string; order?: string[] };
 type SavedLesson = { version: 1; stages: Record<string, SavedStage> };
@@ -30,6 +31,44 @@ function nativeSetInputValue(input: HTMLInputElement, value: string) {
 }
 
 export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Props) {
+  useEffect(()=>{
+    if(!active)return;
+    let timing=loadLessonTiming(lessonNumber);
+    timing={...timing,sessions:timing.sessions+1,updatedAt:new Date().toISOString()};
+    saveLessonTiming(lessonNumber,timing);
+    let activeSeconds=timing.activeSeconds;
+    let unsavedSeconds=0;
+    let lastTick=performance.now();
+
+    const flush=()=>{
+      saveLessonTiming(lessonNumber,{
+        version:1,
+        activeSeconds,
+        sessions:timing.sessions,
+        updatedAt:new Date().toISOString(),
+      });
+      unsavedSeconds=0;
+    };
+    const tick=()=>{
+      const now=performance.now();
+      const delta=Math.min(Math.max((now-lastTick)/1000,0),2);
+      lastTick=now;
+      if(document.visibilityState!=='visible')return;
+      activeSeconds+=delta;
+      unsavedSeconds+=delta;
+      if(unsavedSeconds>=5)flush();
+    };
+    const timer=window.setInterval(tick,1000);
+    const visibility=()=>{tick();lastTick=performance.now()};
+    document.addEventListener('visibilitychange',visibility);
+    return()=>{
+      tick();
+      flush();
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange',visibility);
+    };
+  },[lessonNumber,active]);
+
   useEffect(() => {
     if (!active || lessonNumber > 3) return;
     const root = rootRef.current;
@@ -44,6 +83,7 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
       const resetButton = target.closest<HTMLButtonElement>('.stage-counter button');
       if (resetButton?.textContent?.includes('Начать заново')) {
         localStorage.removeItem(storageKey(lessonNumber));
+        resetLessonTiming(lessonNumber);
         return;
       }
       const stage = getStage();
