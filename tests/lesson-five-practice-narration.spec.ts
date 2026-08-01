@@ -10,7 +10,7 @@ test('lesson 5 narrator reads the active mandatory-practice task',async({page})=
     }
     const synthesis={
       getVoices:()=>[voice],
-      speak:(utterance:MockUtterance)=>log.push(utterance.text),
+      speak:(utterance:MockUtterance)=>{log.push(utterance.text);window.setTimeout(()=>utterance.onend?.(),0)},
       cancel:()=>undefined,pause:()=>undefined,resume:()=>undefined,
       addEventListener:()=>undefined,removeEventListener:()=>undefined,
       get speaking(){return false},get pending(){return false},get paused(){return false},
@@ -35,8 +35,8 @@ test('lesson 5 narrator reads the active mandatory-practice task',async({page})=
 
   const narrator=page.locator('.voice-narrator > button').first();
   await narrator.click();
+  await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonFiveSpeech:string[]}).__lessonFiveSpeech.join(' '))).toContain('Следующее натуральное число');
   const spoken=await page.evaluate(()=>(window as unknown as {__lessonFiveSpeech:string[]}).__lessonFiveSpeech.join(' '));
   expect(spoken).toContain('Вспомни свойства натурального ряда');
-  expect(spoken).toContain('Следующее натуральное число');
   expect(spoken).not.toContain('Система собрана');
 });
