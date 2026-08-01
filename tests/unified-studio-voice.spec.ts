@@ -33,17 +33,22 @@ test('legacy devices migrate to one server AI voice for narrator and Pythagoras'
   });
 
   await page.goto('/');
-  await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v4')??'{}').engine)).toBe('studio');
   await page.getByRole('button',{name:/Открыть урок 5:/}).click();
   await expect(page.locator('.voice-ai-disclosure')).toHaveText('AI-голос');
   await expect(page.locator('.voice-narrator > button').first()).toContainText('Слушать · AI');
+  // v4 is intentionally written when VoiceNarrator mounts, not while the catalog is open.
+  await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v4')??'{}').engine)).toBe('studio');
+
+  // The opening narration is prefetched before the user presses Play, so WebKit can
+  // start the ready audio synchronously from the actual user gesture.
+  await expect.poll(()=>requests.some(item=>item.id==='lesson-05-opening')).toBe(true);
+  const openingRequest=requests.find(item=>item.id==='lesson-05-opening')!;
+  expect(openingRequest.version).toBe('ru-teacher-marin-v1');
+  expect(openingRequest.text).toContain('Десятичная запись');
+  expect(openingRequest.text).toMatch(/[А-Яа-яЁё]/);
 
   await page.locator('.voice-narrator > button').first().click();
-  await expect.poll(()=>requests.length).toBeGreaterThanOrEqual(1);
-  expect(requests[0].id).toBe('lesson-05-opening');
-  expect(requests[0].version).toBe('ru-teacher-marin-v1');
-  expect(requests[0].text).toContain('Десятичная запись');
-  expect(requests[0].text).toMatch(/[А-Яа-яЁё]/);
+  await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__studioAudit:{audioPlays:string[]}}).__studioAudit.audioPlays.length)).toBeGreaterThanOrEqual(1);
 
   const mentor=page.locator('.cat-mentor-speak');
   await expect(mentor).toBeVisible();
@@ -52,8 +57,8 @@ test('legacy devices migrate to one server AI voice for narrator and Pythagoras'
 
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible();
-  await page.locator('.voice-narrator > button').first().click();
   await expect.poll(()=>requests.some(item=>item.id==='lesson-05-stage-l5-story')).toBe(true);
+  await page.locator('.voice-narrator > button').first().click();
 
   const audit=await page.evaluate(()=>(window as unknown as {__studioAudit:{systemSpeech:number;audioPlays:string[]}}).__studioAudit);
   expect(audit.systemSpeech).toBe(0);
