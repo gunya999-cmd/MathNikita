@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { lessonEighteenStages } from '../src/NaturalNumberComparisonSummaryPlayer';
 
 type SpeechEntry={text:string;lang:string;voiceURI:string|null;voiceName:string|null;rate:number;pitch:number};
 
@@ -104,14 +105,15 @@ test('every ready lesson uses natural Russian narration without overlapping the 
     const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
     await expect(stage).toBeVisible();
 
-    const counterText=await page.locator('.lesson-runtime:not([hidden]) .stage-counter').textContent();
-    const total=Number(counterText?.match(/из\s+(\d+)/i)?.[1]??1);
+    const counterText=lessonNumber===18?'':await page.locator('.lesson-runtime:not([hidden]) .stage-counter').textContent();
+    const total=lessonNumber===18?lessonEighteenStages.length:Number(counterText?.match(/из\s+(\d+)/i)?.[1]??1);
     const indexes=lessonNumber===1?[0]:Array.from({length:total},(_,index)=>index);
 
     for(const stageIndex of indexes){
       if(stageIndex>0){
         await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
-        await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из`);
+        if(lessonNumber===18)await expect(stage).toHaveAttribute('data-stage-id',lessonEighteenStages[stageIndex].id);
+        else await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из`);
       }
       await clearSpeech(page);
       narrator=await playNarrator(page);
