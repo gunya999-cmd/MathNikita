@@ -6,6 +6,9 @@
   "observability": {
     "enabled": true
   },
+  "secrets": {
+    "required": ["OPENAI_API_KEY"]
+  },
   "assets": {
     "binding": "ASSETS",
     "directory": "./dist",
