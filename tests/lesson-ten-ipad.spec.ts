@@ -23,7 +23,7 @@ const answers:Record<string,Answer>={
 async function openLessonTen(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(20);
+  await expect(lessons).toHaveCount(21);
   await lessons.nth(9).click();
   await expect(page.getByRole('heading',{name:'Плоскость. Прямая. Луч'}).first()).toBeVisible();
   await page.locator('.lesson-opening-start').click();
