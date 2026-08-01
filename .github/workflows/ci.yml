@@ -43,9 +43,13 @@ jobs:
           retention-days: 7
 
   ipad-webkit:
-    name: iPad WebKit complete lesson and narration audit
+    name: iPad WebKit audit · shard ${{ matrix.shard }}/6
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,13 +61,13 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Complete every exercise and audit narration in all twenty-three lessons
-        run: npm run test:ipad -- --workers=4
+      - name: Complete shard of iPad lesson and narration audit
+        run: npm run test:ipad -- --shard=${{ matrix.shard }}/6 --workers=4
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ipad-webkit-traces-${{ github.sha }}
+          name: ipad-webkit-traces-${{ github.sha }}-shard-${{ matrix.shard }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7
