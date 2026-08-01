@@ -94,9 +94,10 @@ export function ControlWorkOnePlayer(){
   }
   function reset(){localStorage.removeItem(KEY);setResponses({});setSubmitted(false);setCompletedAt(undefined);setStageIndex(0)}
 
-  return <main className="lesson-player-page control-work-page">
+  return <main className="control-work-page">
     <section className="lesson-player-shell">
       <header className="control-work-status"><div><span>Контрольная работа № 1</span><b>{submitted?'Работа сдана':`Заполнено ${answeredCount} из ${fields.length}`}</b></div><div className="control-progress"><i style={{width:`${answeredCount/fields.length*100}%`}}/></div></header>
+      <nav className="control-page-jump" aria-label="Быстрый переход по контрольной">{lessonTwentyStages.map((item,index)=><button type="button" key={item.id} className={index===stageIndex?'active':''} onClick={()=>setStageIndex(index)}><span>{index+1}</span><b>{item.kind==='task'?`Задание ${index}`:item.kind==='intro'?'Правила':item.kind==='submit'?'Сдача':'Результат'}</b></button>)}</nav>
       <article className={`interactive-stage control-stage is-${stage.kind}`} data-stage-id={stage.id}>
         <div className="stage-copy"><span>{stage.eyebrow}</span><h2>{stage.title}</h2><p>{stage.body}</p></div>
 
