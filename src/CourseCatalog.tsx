@@ -61,7 +61,7 @@ export function CourseCatalog({selectedLesson,onOpenLesson}:Props){
     <section className="course-catalog-toolbar" aria-label="Поиск урока">
       <div>
         <b>{totalLessons} уроков в официальном плане</b>
-        <span>Полностью готов первый двадцать один интерактивный урок. Остальные сохранены в точной последовательности учебного года.</span>
+        <span>Полностью готов 21 интерактивный урок. Остальные сохранены в точной последовательности учебного года.</span>
       </div>
       <label>
         <span className="sr-only">Найти урок</span>
