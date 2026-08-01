@@ -37,8 +37,8 @@ const TUTOR_SYSTEM_PROMPT = [
 const NARRATION_MODEL='gpt-4o-mini-tts';
 const NARRATION_VOICE='marin';
 const NARRATION_VERSION='ru-teacher-marin-v1';
-const NARRATION_MAX_CHARS=1800;
-const NARRATION_ID=/^(?:lesson-\d{2}-(?:opening|reflection|stage-\d{2}|practice-[a-z0-9-]+)|mentor-[a-z0-9-]+)$/i;
+const NARRATION_MAX_CHARS=3500;
+const NARRATION_ID=/^(?:lesson-\d{2}-(?:opening|reflection|stage-[a-z0-9-]+|practice-[a-z0-9-]+)|mentor-[a-z0-9-]+)$/i;
 const NARRATION_INSTRUCTIONS=[
   'Говори только на естественном русском языке.',
   'Голос спокойного доброжелательного преподавателя математики для ребёнка 10–12 лет.',
