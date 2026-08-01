@@ -23,6 +23,7 @@ import { NaturalNumberComparisonSummaryPlayer } from './NaturalNumberComparisonS
 import { ChapterOneReviewPlayer } from './ChapterOneReviewPlayer';
 import { ControlWorkOnePlayer } from './ControlWorkOnePlayer';
 import { NaturalNumberAdditionPlayer } from './NaturalNumberAdditionPlayer';
+import { AdditionPropertiesPlayer } from './AdditionPropertiesPlayer';
 import { LessonOpening,buildGenericOpening,lessonOneOpening,lessonTwoOpening,lessonThreeOpening,lessonFourOpening,lessonFiveOpening,lessonSixOpening,lessonSevenOpening,lessonEightOpening,lessonNineOpening,lessonTenOpening,lessonElevenOpening } from './LessonOpening';
 import { lessonThirteenOpening } from './LessonThirteenOpening';
 import { lessonFourteenOpening } from './LessonFourteenOpening';
@@ -33,6 +34,7 @@ import { lessonEighteenOpening } from './LessonEighteenOpening';
 import { lessonNineteenOpening } from './LessonNineteenOpening';
 import { lessonTwentyOpening } from './LessonTwentyOpening';
 import { lessonTwentyOneOpening } from './LessonTwentyOneOpening';
+import { lessonTwentyTwoOpening } from './LessonTwentyTwoOpening';
 import { LessonReflection } from './LessonReflection';
 import { ProgressiveHintCoach,type ProgressiveHintState } from './ProgressiveHintCoach';
 import { VoiceNarrator } from './VoiceNarrator';
@@ -43,7 +45,7 @@ import { MentorResponsiveBehavior } from './MentorResponsiveBehavior';
 type CourseMode='catalog'|'opening'|'lesson';
 const emptyHintState:ProgressiveHintState={prompt:'',stageTitle:'',activityType:'',attempts:0,revealedLevel:0,fullExplanation:'',mountNode:null};
 const emptyMentorSignal:MentorSignal={kind:'idle',version:0};
-const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
+const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22];
 
 function loadSelectedLesson(){
   const saved=Number(localStorage.getItem('mathnikita-selected-lesson'));
@@ -82,6 +84,7 @@ export function LessonCourseShell(){
     selectedLesson===19?lessonNineteenOpening:
     selectedLesson===20?lessonTwentyOpening:
     selectedLesson===21?lessonTwentyOneOpening:
+    selectedLesson===22?lessonTwentyTwoOpening:
     buildGenericOpening(lesson);
   const showOpening=mode==='opening';
 
@@ -169,6 +172,7 @@ export function LessonCourseShell(){
   if(mode==='catalog')return <CourseCatalog selectedLesson={selectedLesson} onOpenLesson={openLesson}/>;
 
   const runtime=
+    selectedLesson===22?<AdditionPropertiesPlayer key="lesson-22"/>:
     selectedLesson===21?<NaturalNumberAdditionPlayer key="lesson-21"/>:
     selectedLesson===20?<ControlWorkOnePlayer key="lesson-20"/>:
     selectedLesson===19?<ChapterOneReviewPlayer key="lesson-19"/>:
