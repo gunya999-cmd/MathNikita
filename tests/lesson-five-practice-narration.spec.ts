@@ -29,8 +29,12 @@ test('lesson 5 narrator reads the active mandatory-practice task',async({page})=
   });
 
   await page.goto('/');
-  await page.getByRole('button',{name:/Открыть урок 5:/}).click();
-  await page.locator('.lesson-opening-start').click();
+  const lessonButton=page.getByRole('button',{name:/Открыть урок 5:/});
+  await expect(lessonButton).toBeVisible();
+  await lessonButton.evaluate((button:HTMLButtonElement)=>button.click());
+  const start=page.locator('.lesson-opening-start');
+  await expect(start).toBeVisible();
+  await start.evaluate((button:HTMLButtonElement)=>button.click());
   await expect(page.locator('[data-practice-task="l5-master-10"]')).toBeVisible();
 
   const narrator=page.locator('.voice-narrator > button').first();
