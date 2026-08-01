@@ -4,7 +4,7 @@ import { extendedPracticeSetResponseCount } from './data/extendedPracticeTypes';
 import { extendedPracticeStorageKey,isExtendedPracticeAnswerCorrect,loadExtendedPracticeProgress,saveExtendedPracticeProgress } from './extendedPracticeEngine';
 import './extendedPracticeLab.css';
 
-type Props={lessonNumber:number;onComplete?:()=>void};
+type Props={lessonNumber:number;onComplete?:()=>void;onRestart?:()=>void};
 type CheckState='idle'|'correct'|'wrong';
 type PracticeDraft={taskId:string;response:string;multiResponse:Record<string,string>};
 
@@ -15,12 +15,10 @@ function loadDraft(lessonNumber:number,taskId:string):PracticeDraft|null{
     return parsed?.taskId===taskId?parsed:null;
   }catch{return null}
 }
-function saveDraft(lessonNumber:number,draft:PracticeDraft){
-  localStorage.setItem(draftStorageKey(lessonNumber),JSON.stringify(draft));
-}
+function saveDraft(lessonNumber:number,draft:PracticeDraft){localStorage.setItem(draftStorageKey(lessonNumber),JSON.stringify(draft))}
 function clearDraft(lessonNumber:number){localStorage.removeItem(draftStorageKey(lessonNumber))}
 
-export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
+export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
   const practice=extendedPracticeByLesson[lessonNumber];
   const[completed,setCompleted]=useState(()=>loadExtendedPracticeProgress(lessonNumber,practice?.tasks.length??0));
   const[response,setResponse]=useState('');
@@ -34,54 +32,37 @@ export function ExtendedPracticeLab({lessonNumber,onComplete}:Props){
     setCompleted(nextCompleted);
     const nextTask=practice&&nextCompleted<practice.tasks.length?practice.tasks[nextCompleted]:null;
     const draft=nextTask?loadDraft(lessonNumber,nextTask.id):null;
-    setResponse(draft?.response??'');
-    setMultiResponse(draft?.multiResponse??{});
-    setCheckState('idle');
-    setAttempts(0);
+    setResponse(draft?.response??'');setMultiResponse(draft?.multiResponse??{});setCheckState('idle');setAttempts(0);
   },[lessonNumber,practice?.tasks.length]);
 
   const finished=Boolean(practice&&completed>=practice.tasks.length);
   useEffect(()=>{if(finished)onComplete?.()},[finished,onComplete]);
   if(!practice)return null;
 
-  function resetCurrentResponse(){
-    setResponse('');setMultiResponse({});setCheckState('idle');setAttempts(0);
-  }
-
+  function resetCurrentResponse(){setResponse('');setMultiResponse({});setCheckState('idle');setAttempts(0)}
   function hasCompleteResponse(){
     if(finished)return false;
     const task=practice.tasks[completed];
     if(task.type==='multi-input')return task.fields.every(field=>(multiResponse[field.id]??'').trim());
     return Boolean(response.trim());
   }
-
   function checkAnswer(){
     if(!hasCompleteResponse()||finished)return;
     const task=practice.tasks[completed];
     const correct=isExtendedPracticeAnswerCorrect(task,task.type==='multi-input'?multiResponse:response);
-    setCheckState(correct?'correct':'wrong');
-    if(!correct)setAttempts(value=>value+1);
+    setCheckState(correct?'correct':'wrong');if(!correct)setAttempts(value=>value+1);
   }
-
   function continuePractice(){
     if(checkState!=='correct')return;
-    const next=completed+1;
-    clearDraft(lessonNumber);
-    saveExtendedPracticeProgress(lessonNumber,next);
-    setCompleted(next);resetCurrentResponse();
+    const next=completed+1;clearDraft(lessonNumber);saveExtendedPracticeProgress(lessonNumber,next);setCompleted(next);resetCurrentResponse();
   }
-
   function restartPractice(){
-    clearDraft(lessonNumber);
-    saveExtendedPracticeProgress(lessonNumber,0);
-    setCompleted(0);resetCurrentResponse();
+    clearDraft(lessonNumber);saveExtendedPracticeProgress(lessonNumber,0);setCompleted(0);resetCurrentResponse();onRestart?.();
   }
 
   if(finished)return <section className="extended-practice is-finished" aria-labelledby={`extended-practice-title-${lessonNumber}`}><div className="extended-practice-finish-mark" aria-hidden="true">✓</div><div><span>Обязательная практика завершена</span><h2 id={`extended-practice-title-${lessonNumber}`}>{practice.title}</h2><p>Решены все {practice.tasks.length} заданий и заполнены {responseCount} проверяемых ответов. Теперь можно завершить урок собственным объяснением.</p></div><button type="button" className="extended-practice-restart" onClick={restartPractice}>Пройти ещё раз</button></section>;
 
-  const task=practice.tasks[completed];
-  const percent=Math.round(completed/practice.tasks.length*100);
-  const canCheck=hasCompleteResponse();
+  const task=practice.tasks[completed];const percent=Math.round(completed/practice.tasks.length*100);const canCheck=hasCompleteResponse();
   return <section className="extended-practice" aria-labelledby={`extended-practice-title-${lessonNumber}`} data-practice-task={task.id} data-practice-response-count={responseCount}>
     <header className="extended-practice-header"><div><span>Обязательная практика · {practice.tasks.length} заданий · {responseCount} проверяемых ответов</span><h2 id={`extended-practice-title-${lessonNumber}`}>{practice.title}</h2><p>{practice.subtitle}</p></div><strong>{completed+1} / {practice.tasks.length}</strong></header>
     <div className="extended-practice-progress" aria-label={`Выполнено ${completed} из ${practice.tasks.length}`}><i style={{width:`${percent}%`}}/></div>
