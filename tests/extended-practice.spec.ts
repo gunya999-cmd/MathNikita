@@ -3,15 +3,15 @@ import { extendedPracticeByLesson,extendedPracticeLessonNumbers } from '../src/d
 import { extendedPracticeSetResponseCount } from '../src/data/extendedPracticeTypes';
 import { isExtendedPracticeAnswerCorrect,normalizePracticeAnswer } from '../src/extendedPracticeEngine';
 
-test('all twenty-three lessons contain valid mandatory practice',()=>{
+test('all twenty-three lessons meet the mandatory mastery workload floor',()=>{
   expect(extendedPracticeLessonNumbers.sort((a,b)=>a-b)).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]);
   const allTasks=extendedPracticeLessonNumbers.flatMap(number=>extendedPracticeByLesson[number].tasks);
-  expect(allTasks).toHaveLength(196);
-  expect(new Set(allTasks.map(task=>task.id)).size).toBe(196);
+  expect(allTasks).toHaveLength(416);
+  expect(new Set(allTasks.map(task=>task.id)).size).toBe(416);
   for(const number of extendedPracticeLessonNumbers){
     const practice=extendedPracticeByLesson[number];
-    expect(practice.tasks.length,`lesson ${number}`).toBeGreaterThanOrEqual(8);
-    expect(extendedPracticeSetResponseCount(practice),`lesson ${number} checked responses`).toBeGreaterThanOrEqual(8);
+    expect(practice.tasks.length,`lesson ${number} task count`).toBeGreaterThanOrEqual(18);
+    expect(extendedPracticeSetResponseCount(practice),`lesson ${number} checked responses`).toBeGreaterThanOrEqual(48);
     expect(practice.estimatedMinutes).toBeGreaterThan(0);
     for(const task of practice.tasks){
       expect(task.prompt.trim()).not.toBe('');
@@ -36,6 +36,18 @@ test('lesson 4 has a full mastery workload rather than a time label',()=>{
   expect(practice.tasks).toHaveLength(20);
   expect(extendedPracticeSetResponseCount(practice)).toBe(50);
   expect(practice.tasks.filter(task=>task.type==='multi-input')).toHaveLength(10);
+});
+
+test('generated mastery tasks are topic-specific across the course',()=>{
+  expect(extendedPracticeByLesson[1].tasks.at(-1)?.prompt).toContain('Натуральный ряд');
+  expect(extendedPracticeByLesson[3].tasks.at(-1)?.prompt).toContain('Паспорт многозначного числа');
+  expect(extendedPracticeByLesson[7].tasks.at(-1)?.prompt).toContain('Точка C лежит между A и B');
+  expect(extendedPracticeByLesson[8].tasks.at(-1)?.prompt).toContain('Ломаная состоит из звеньев');
+  expect(extendedPracticeByLesson[11].tasks.at(-1)?.prompt).toContain('Рассмотри луч');
+  expect(extendedPracticeByLesson[14].tasks.at(-1)?.prompt).toContain('координатном луче');
+  expect(extendedPracticeByLesson[17].tasks.at(-1)?.prompt).toContain('Сравни');
+  expect(extendedPracticeByLesson[19].tasks.at(-1)?.prompt).toContain('Смешанная проверка главы');
+  expect(extendedPracticeByLesson[22].tasks.at(-1)?.prompt).toContain('Найди удобные пары');
 });
 
 test('practice checking accepts formatted, unit and multi-step answers',()=>{
