@@ -1,5 +1,7 @@
 import type { ExtendedPracticeTask } from './data/extendedPracticeData';
 
+export type ExtendedPracticeResponse = string | Record<string,string>;
+
 export function extendedPracticeStorageKey(lessonNumber:number){
   return `mathnikita:extended-practice:${lessonNumber}:v1`;
 }
@@ -24,7 +26,15 @@ export function saveExtendedPracticeProgress(lessonNumber:number,completed:numbe
   window.localStorage.setItem(extendedPracticeStorageKey(lessonNumber),String(completed));
 }
 
-export function isExtendedPracticeAnswerCorrect(task:ExtendedPracticeTask,response:string){
+export function isExtendedPracticeAnswerCorrect(task:ExtendedPracticeTask,response:ExtendedPracticeResponse){
+  if(task.type==='multi-input'){
+    if(typeof response==='string')return false;
+    return task.fields.every(field=>{
+      const normalized=normalizePracticeAnswer(response[field.id]??'');
+      return field.answers.some(answer=>normalized===normalizePracticeAnswer(answer));
+    });
+  }
+  if(typeof response!=='string')return false;
   const normalized=normalizePracticeAnswer(response);
   if(task.type==='choice')return normalized===normalizePracticeAnswer(task.answer);
   return task.answers.some(answer=>normalized===normalizePracticeAnswer(answer));
