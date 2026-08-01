@@ -83,7 +83,8 @@ export function CourseCatalog({selectedLesson,onOpenLesson}:Props){
               const selected=lesson.number===selectedLesson;
               const rich=richLessonByNumber.get(lesson.number);
               const description=ready?(readyDescriptions[lesson.number]??rich?.goal??planLabel(lesson)):planLabel(lesson);
-              return <button key={lesson.number} type="button" className={`${ready?'is-interactive':'is-locked'} ${selected?'is-selected':''} is-${lesson.lessonType}`} onClick={()=>ready&&onOpenLesson(lesson.number)} disabled={!ready} aria-label={ready?`Открыть урок ${lesson.number}: ${lesson.title}`:`Урок ${lesson.number} в разработке`}>
+              const readyClass=ready?(lesson.lessonType==='control'||lesson.lessonType==='final'?'is-control-ready':'is-interactive'):'is-locked';
+              return <button key={lesson.number} type="button" className={`${readyClass} ${selected?'is-selected':''} is-${lesson.lessonType}`} onClick={()=>ready&&onOpenLesson(lesson.number)} disabled={!ready} aria-label={ready?`Открыть урок ${lesson.number}: ${lesson.title}`:`Урок ${lesson.number} в разработке`}>
                 <span>{lesson.number}</span>
                 <div><small>{ready?'Готов к прохождению':planLabel(lesson)}</small><b>{lesson.title}</b><p>{description}</p></div>
                 <i aria-hidden="true">{ready?'→':lesson.lessonType==='control'||lesson.lessonType==='final'?'✓':'🔒'}</i>
