@@ -83,6 +83,32 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
     };
   },[rootRef,lessonNumber,active]);
 
+  useEffect(()=>{
+    if(!active||lessonNumber!==5)return;
+    const root=rootRef.current;
+    if(!root)return;
+    const normalizeLegacyLessonFive=()=>{
+      const runtime=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');
+      if(!runtime)return;
+      const duration=runtime.querySelector<HTMLElement>('.lesson-duration');
+      if(duration&&duration.textContent!=='Фактическое время измеряется')duration.textContent='Фактическое время измеряется';
+      const summary=runtime.querySelector<HTMLElement>('.summary-card');
+      if(!summary)return;
+      const blocks=Array.from(summary.querySelectorAll<HTMLElement>(':scope > div'));
+      const status=blocks[2];
+      const statusValue=status?.querySelector<HTMLElement>('b');
+      const statusNote=status?.querySelector<HTMLElement>('small');
+      if(statusValue&&statusValue.textContent==='Завершён')statusValue.textContent='Основная часть ✓';
+      if(statusValue?.textContent==='Основная часть ✓'&&statusNote&&statusNote.textContent!=='обязательная практика впереди')statusNote.textContent='обязательная практика впереди';
+      const progressLabel=runtime.querySelector<HTMLElement>('.lesson-controls > span');
+      if(progressLabel?.textContent?.trim()==='100% урока')progressLabel.textContent='Основная часть пройдена';
+    };
+    normalizeLegacyLessonFive();
+    const observer=new MutationObserver(normalizeLegacyLessonFive);
+    observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','data-stage-id']});
+    return()=>observer.disconnect();
+  },[rootRef,lessonNumber,active]);
+
   useEffect(() => {
     if (!active || lessonNumber > 3) return;
     const root = rootRef.current;
