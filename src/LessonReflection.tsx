@@ -69,7 +69,7 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
         Чтобы урок считался завершённым, нужно выполнить всю обязательную практику и затем своими словами объяснить главный вывод темы.
       </div>
 
-      <ExtendedPracticeLab lessonNumber={lessonNumber} onComplete={() => setPracticeComplete(true)} />
+      <ExtendedPracticeLab lessonNumber={lessonNumber} onComplete={() => setPracticeComplete(true)} onRestart={() => {setPracticeComplete(false);setSaved(false)}} />
 
       {!practiceComplete ? (
         <p className="reflection-practice-lock" aria-live="polite">
