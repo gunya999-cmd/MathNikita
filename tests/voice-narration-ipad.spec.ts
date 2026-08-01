@@ -1,5 +1,31 @@
 import { expect, test, type Page } from '@playwright/test';
-import { lessonEighteenStages } from '../src/NaturalNumberComparisonSummaryPlayer';
+
+const lessonEighteenStageIds=[
+  'l18-mission',
+  'l18-diagnostic',
+  'l18-system',
+  'l18-practice1',
+  'l18-practice2',
+  'l18-signs-model',
+  'l18-practice3',
+  'l18-double-model',
+  'l18-practice4',
+  'l18-boundaries',
+  'l18-practice5',
+  'l18-practice6',
+  'l18-ray-model',
+  'l18-units-model',
+  'l18-transfer',
+  'l18-error-check',
+  'l18-quiz1',
+  'l18-quiz2',
+  'l18-quiz3',
+  'l18-quiz4',
+  'l18-quiz5',
+  'l18-challenge',
+  'l18-reflection',
+  'l18-summary',
+] as const;
 
 type SpeechEntry={text:string;lang:string;voiceURI:string|null;voiceName:string|null;rate:number;pitch:number};
 
@@ -106,13 +132,13 @@ test('every ready lesson uses natural Russian narration without overlapping the 
     await expect(stage).toBeVisible();
 
     const counterText=lessonNumber===18?'':await page.locator('.lesson-runtime:not([hidden]) .stage-counter').textContent();
-    const total=lessonNumber===18?lessonEighteenStages.length:Number(counterText?.match(/из\s+(\d+)/i)?.[1]??1);
+    const total=lessonNumber===18?lessonEighteenStageIds.length:Number(counterText?.match(/из\s+(\d+)/i)?.[1]??1);
     const indexes=lessonNumber===1?[0]:Array.from({length:total},(_,index)=>index);
 
     for(const stageIndex of indexes){
       if(stageIndex>0){
         await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
-        if(lessonNumber===18)await expect(stage).toHaveAttribute('data-stage-id',lessonEighteenStages[stageIndex].id);
+        if(lessonNumber===18)await expect(stage).toHaveAttribute('data-stage-id',lessonEighteenStageIds[stageIndex]);
         else await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из`);
       }
       await clearSpeech(page);
