@@ -16,7 +16,7 @@ test('lesson 5 is not complete before mandatory mastery practice and reflection'
       },
       completedAt:new Date().toISOString(),
     }));
-    localStorage.setItem('mathnikita:extended-practice:5:v1','19');
+    localStorage.setItem('mathnikita:extended-practice:5:v2','19');
     localStorage.removeItem('mathnikita:reflection:5');
     localStorage.removeItem('mathnikita:lesson-complete:5');
   });
