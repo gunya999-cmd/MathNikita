@@ -79,6 +79,7 @@ export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Pro
       lastTick=performance.now();
       timing={version:1,activeSeconds:0,sessions:1,updatedAt:new Date().toISOString()};
       saveLessonTiming(lessonNumber,timing);
+      window.dispatchEvent(new CustomEvent('mathnikita-lesson-reset',{detail:{lessonNumber}}));
     };
     const timer=window.setInterval(tick,1000);
     const visibility=()=>{tick();lastTick=performance.now()};
