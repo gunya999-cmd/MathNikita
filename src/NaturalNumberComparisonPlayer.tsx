@@ -44,7 +44,7 @@ function load():Saved{try{const parsed=JSON.parse(localStorage.getItem(KEY)??'nu
 
 function ComparisonVisual({kind}:{kind:Visual}){
   if(kind==='digits')return <div className="comparison-visual"><div className="comparison-caption"><b>84 215</b><span>5 цифр</span><strong>&gt;</strong><b>9 999</b><span>4 цифры</span></div></div>;
-  if(kind==='lexicographic')return <div className="comparison-visual"><div className="digit-rows"><div><span>5</span><span>6</span><span>4</span><mark>3</mark><span>2</span><span>1</span></div><div><span>5</span><span>6</span><span>4</span><mark>3</mark><span>7</span><span>0</span></div></div><p>Первая разница слева: 2 &lt; 7</p></div>;
+  if(kind==='lexicographic')return <div className="comparison-visual"><div className="digit-rows"><div><span>5</span><span>6</span><span>4</span><span>3</span><mark>2</mark><span>1</span></div><div><span>5</span><span>6</span><span>4</span><span>3</span><mark>7</mark><span>0</span></div></div><p>Первая разница слева: 2 &lt; 7</p></div>;
   if(kind==='signs')return <div className="comparison-visual sign-visual"><div><b>17</b><strong>&lt;</strong><b>25</b></div><span>острый конец смотрит на меньшее число</span></div>;
   if(kind==='double')return <div className="comparison-visual"><div className="double-strip"><b>120</b><span>121</span><span>122</span><span>123</span><span>124</span><b>125</b></div><p>120 &lt; x &lt; 125</p></div>;
   if(kind==='zero')return <div className="comparison-visual"><div className="comparison-caption"><b>0</b><strong>&lt;</strong><b>1</b><strong>&lt;</strong><b>58</b><strong>&lt;</strong><b>1 000 000</b></div></div>;
