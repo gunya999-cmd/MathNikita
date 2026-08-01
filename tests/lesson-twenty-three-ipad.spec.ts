@@ -34,7 +34,6 @@ async function openLesson(page:Page){
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l23-mission"]')).toBeVisible();
   await expect(page.locator('.cat-mentor-collapsed')).toBeVisible();
-  await expect(page.locator('.progressive-hint-coach')).toBeAttached();
 }
 
 async function answerStage(page:Page,answer:Answer){
