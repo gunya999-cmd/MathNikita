@@ -6,8 +6,8 @@ import { isExtendedPracticeAnswerCorrect,normalizePracticeAnswer } from '../src/
 test('all twenty-three lessons meet the mandatory mastery workload floor',()=>{
   expect(extendedPracticeLessonNumbers.sort((a,b)=>a-b)).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]);
   const allTasks=extendedPracticeLessonNumbers.flatMap(number=>extendedPracticeByLesson[number].tasks);
-  expect(allTasks).toHaveLength(418);
-  expect(new Set(allTasks.map(task=>task.id)).size).toBe(418);
+  expect(allTasks).toHaveLength(420);
+  expect(new Set(allTasks.map(task=>task.id)).size).toBe(420);
   for(const number of extendedPracticeLessonNumbers){
     const practice=extendedPracticeByLesson[number];
     expect(practice.tasks.length,`lesson ${number} task count`).toBeGreaterThanOrEqual(18);
@@ -48,6 +48,14 @@ test('lesson 5 has a varied full-paragraph mastery workload',()=>{
   expect(prompts).toContain('четырёхзначные числа');
   expect(prompts).toContain('по разрядам и количеству полных единиц');
   expect(prompts).toContain('разрядную границу');
+});
+
+test('lesson 6 has the same 20-task and 50-response mastery floor',()=>{
+  const practice=extendedPracticeByLesson[6];
+  expect(practice.tasks).toHaveLength(20);
+  expect(extendedPracticeSetResponseCount(practice)).toBe(50);
+  expect(practice.tasks.at(-2)?.id).toBe('l6-source-47');
+  expect(practice.tasks.at(-1)?.id).toBe('l6-unit-change');
 });
 
 test('generated mastery tasks are topic-specific across the course',()=>{
