@@ -10,6 +10,7 @@ import './extendedPracticeLab.css';
 type Props={lessonNumber:number;onComplete?:()=>void;onRestart?:()=>void};
 type CheckState='idle'|'correct'|'wrong';
 type PracticeDraft={taskId:string;response:string;multiResponse:Record<string,string>};
+type AudioRequestDetail={source?:string};
 
 function draftStorageKey(lessonNumber:number){return `${extendedPracticeStorageKey(lessonNumber)}:draft`}
 function loadDraft(lessonNumber:number,taskId:string):PracticeDraft|null{
@@ -68,6 +69,10 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     const reset=(event:Event)=>{const detail=(event as CustomEvent<{lessonNumber?:number}>).detail;if(detail?.lessonNumber!==lessonNumber)return;setCompleted(0);setResponse('');setMultiResponse({});setCheckState('idle');setAttempts(0);lastSpokenTaskRef.current='';stopPracticeVoice();onRestart?.()};
     window.addEventListener('mathnikita-lesson-reset',reset);return()=>window.removeEventListener('mathnikita-lesson-reset',reset);
   },[lessonNumber,onRestart]);
+  useEffect(()=>{
+    const stopHandler=()=>stopPracticeVoice();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='practice-narrator')stopPracticeVoice()};
+    window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)};
+  },[]);
 
   useEffect(()=>{if(finished)onComplete?.()},[finished,onComplete]);
   useEffect(()=>{
