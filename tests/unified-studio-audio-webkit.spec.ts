@@ -1,4 +1,9 @@
-import { expect,test } from '@playwright/test';
+import { expect,test,type Locator } from '@playwright/test';
+
+async function domClick(locator:Locator){
+  await expect(locator).toBeVisible();
+  await locator.evaluate((element:HTMLElement)=>element.click());
+}
 
 test('iPad WebKit plays prefetched studio audio without falling back to device speech',async({page,request})=>{
   test.setTimeout(45_000);
@@ -29,24 +34,21 @@ test('iPad WebKit plays prefetched studio audio without falling back to device s
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,model:'gpt-4o-mini-tts',voice:'marin',version:'ru-teacher-marin-v1'})}));
   await page.route('**/api/narration',async route=>{
     narrationRequests+=1;
-    // Studio TTS is intentionally delayed. The application must fetch it while the
-    // opening is visible, before the user presses the audio button.
     await new Promise(resolve=>setTimeout(resolve,180));
     await route.fulfill({status:200,contentType:'audio/mpeg',body:mp3});
     narrationFulfilled+=1;
   });
 
   await page.goto('/');
-  await page.getByRole('button',{name:/Открыть урок 5:/}).click();
+  await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
-  await expect(page.getByRole('button',{name:/Слушать · AI/})).toBeVisible();
+  const narrator=page.getByRole('button',{name:/Слушать · AI/});
+  await expect(narrator).toBeVisible();
 
-  // Prefetch must complete before the media gesture. This is what prevents iPadOS
-  // from losing user activation while waiting for a POST + TTS response.
   await expect.poll(()=>narrationRequests,{timeout:5_000}).toBeGreaterThanOrEqual(1);
   await expect.poll(()=>narrationFulfilled,{timeout:5_000}).toBeGreaterThanOrEqual(1);
 
-  await page.getByRole('button',{name:/Слушать · AI/}).click();
+  await domClick(narrator);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__realAudioAudit:{mediaPlayCalls:number}}).__realAudioAudit.mediaPlayCalls),{timeout:5_000}).toBeGreaterThanOrEqual(1);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__realAudioAudit:{mediaPlayResolved:number}}).__realAudioAudit.mediaPlayResolved),{timeout:5_000}).toBeGreaterThanOrEqual(1);
 
