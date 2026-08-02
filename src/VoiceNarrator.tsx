@@ -8,8 +8,8 @@ type AudioRequestDetail={source?:'narrator'|'mentor'|string};
 type StudioStatus='checking'|'ready'|'unavailable';
 
 function visiblePractice(root:HTMLElement){return root.querySelector<HTMLElement>('.lesson-reflection .extended-practice[data-practice-task]')}
-function visibleFinalReflection(root:HTMLElement){const finalStep=root.querySelector<HTMLElement>('.lesson-reflection .reflection-final-step');return finalStep&&!finalStep.hidden&&finalStep.offsetParent!==null?finalStep:null}
-function collectVisibleText(scope:HTMLElement,selectors:string[]){const parts=selectors.flatMap(selector=>Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter(node=>node.offsetParent!==null).map(node=>node.textContent?.trim()??'').filter(Boolean));return Array.from(new Set(parts)).join('. ')}
+function visibleFinalReflection(root:HTMLElement){const finalStep=root.querySelector<HTMLElement>('.lesson-reflection .reflection-final-step');return finalStep&&!finalStep.hidden&&!finalStep.closest('[hidden]')?finalStep:null}
+function collectVisibleText(scope:HTMLElement,selectors:string[]){const parts=selectors.flatMap(selector=>Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter(node=>!node.closest('[hidden]')).map(node=>node.textContent?.trim()??'').filter(Boolean));return Array.from(new Set(parts)).join('. ')}
 function safeNarrationToken(value:string){return value.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,96)}
 function canCreateAudioElement(){return typeof document!=='undefined'&&typeof document.createElement==='function'}
 function createNarrationAudio(source:string):HTMLAudioElement|null{
@@ -29,7 +29,13 @@ function getNarrationText(root:HTMLElement|null,mode:VoiceNarratorProps['mode'])
 }
 
 function getNarrationId(root:HTMLElement|null,mode:VoiceNarratorProps['mode']){
-  if(!root)return'';const lessonLabel=root.querySelector<HTMLElement>('.lesson-mode-toolbar > div > span')?.textContent??'';const lessonMatch=lessonLabel.match(/Урок\s+(\d+)/i);if(!lessonMatch)return'';const lessonNumber=String(Number(lessonMatch[1])).padStart(2,'0');
+  if(!root)return'';
+  const lessonLabel=root.querySelector<HTMLElement>('.lesson-mode-toolbar > div > span')?.textContent??'';
+  const lessonMatch=lessonLabel.match(/Урок\s+(\d+)/i);
+  const storedLesson=typeof localStorage!=='undefined'?Number(localStorage.getItem('mathnikita-selected-lesson')):0;
+  const resolvedLesson=lessonMatch?Number(lessonMatch[1]):storedLesson;
+  if(!Number.isFinite(resolvedLesson)||resolvedLesson<1)return'';
+  const lessonNumber=String(resolvedLesson).padStart(2,'0');
   if(mode==='opening')return`lesson-${lessonNumber}-opening`;
   const practice=visiblePractice(root);const practiceId=safeNarrationToken(practice?.dataset.practiceTask??'');if(practiceId)return`lesson-${lessonNumber}-practice-${practiceId}`;
   if(visibleFinalReflection(root))return`lesson-${lessonNumber}-reflection`;
@@ -54,19 +60,28 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
   useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
   useEffect(()=>{stop();const root=rootRef.current;if(!root)return;let currentId=getNarrationId(root,mode);const observer=new MutationObserver(()=>{const nextId=getNarrationId(root,mode);if(nextId&&nextId!==currentId){currentId=nextId;stop()}});observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();stop()}},[mode,rootRef]);
   useEffect(()=>{
-    if(engine!=='studio'||studioStatus!=='ready'||!audioSupported)return;
-    const root=rootRef.current;if(!root)return;
-    const warm=()=>{const id=getNarrationId(root,mode);const text=getNarrationText(root,mode);if(id&&text)prefetchStudioAudioUrl(id,text)};
+    if(engine!=='studio'||studioStatus!=='ready')return;
+    let retryTimer:number|null=null;
+    let retries=0;
+    const warm=()=>{
+      const root=rootRef.current;
+      const id=getNarrationId(root,mode);
+      const text=getNarrationText(root,mode);
+      if(id&&text){prefetchStudioAudioUrl(id,text);retries=0;return}
+      if(retries<6){retries+=1;retryTimer=window.setTimeout(warm,60*retries)}
+    };
+    const scheduleWarm=()=>{if(retryTimer!==null)window.clearTimeout(retryTimer);retryTimer=window.setTimeout(warm,0)};
     warm();
-    const observer=new MutationObserver(()=>window.setTimeout(warm,0));
+    const root=rootRef.current;
+    if(!root){retryTimer=window.setTimeout(warm,80);return()=>{if(retryTimer!==null)window.clearTimeout(retryTimer)}}
+    const observer=new MutationObserver(scheduleWarm);
     observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});
-    return()=>observer.disconnect();
-  },[engine,studioStatus,audioSupported,mode,rootRef]);
+    return()=>{observer.disconnect();if(retryTimer!==null)window.clearTimeout(retryTimer)};
+  },[engine,studioStatus,mode,rootRef]);
 
   function startSystemSpeech(text:string,session:number){if(!systemSupported||!text){setSpeaking(false);return}window.speechSynthesis.cancel();const chunks=splitForSpeech(studioNarrationText(text));const selectedVoice=selectBestRussianVoice(voices,voiceURI);setSpeaking(true);let index=0;const playNext=()=>{if(sessionRef.current!==session||index>=chunks.length){setSpeaking(false);return}const utterance=new SpeechSynthesisUtterance(chunks[index]);utterance.lang='ru-RU';utterance.voice=selectedVoice??null;utterance.rate=Math.min(Math.max(rate,.88),1.04);utterance.pitch=1;utterance.volume=1;utterance.onend=()=>{index+=1;window.setTimeout(playNext,130)};utterance.onerror=()=>setSpeaking(false);window.speechSynthesis.speak(utterance)};playNext()}
 
   function playStudioSource(source:string,text:string,session:number){
-    if(!audioSupported){startSystemSpeech(text,session);return}
     const audio=createNarrationAudio(source);if(!audio){startSystemSpeech(text,session);return}
     audio.preload='auto';audio.playbackRate=rate;audioRef.current=audio;setSpeaking(true);
     const fallback=()=>{if(sessionRef.current!==session)return;audioRef.current=null;startSystemSpeech(text,session)};
@@ -75,7 +90,7 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
   }
 
   async function startStudioSpeech(text:string,narrationId:string,session:number){
-    if(!audioSupported||!narrationId){startSystemSpeech(text,session);return}
+    if(!narrationId){startSystemSpeech(text,session);return}
     setSpeaking(true);
     try{const source=await getStudioAudioUrl(narrationId,text);if(sessionRef.current===session)playStudioSource(source,text,session)}
     catch{if(sessionRef.current===session)startSystemSpeech(text,session)}
@@ -95,12 +110,13 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
     startSystemSpeech(text,session);
   }
 
-  if(!audioSupported&&!systemSupported)return null;const voiceOptions=rankRussianVoices(voices);const selectedVoice=selectBestRussianVoice(voiceOptions,voiceURI);
+  const voiceOptions=rankRussianVoices(voices);const selectedVoice=selectBestRussianVoice(voiceOptions,voiceURI);
   const systemVoiceMessage=!selectedVoice?'На устройстве не найден русский голос. Системная озвучка будет только аварийным резервом.':isNaturalRussianVoice(selectedVoice)?`Резервный системный голос: ${selectedVoice.name}.`:`Резервный базовый голос: ${selectedVoice.name}.`;
   const studioMessage=studioStatus==='ready'?`Единый AI-голос ${STUDIO_VOICE_LABEL} готов. На ноутбуке и iPad используется один и тот же голос.`:studioStatus==='checking'?'Проверяем единый AI-голос…':`Серверный AI-голос сейчас недоступен. При воспроизведении приложение автоматически использует системный русский голос.`;
+  const playbackUnavailable=!audioSupported&&!systemSupported;
 
   return <div className="voice-narrator">
-    <button type="button" className={speaking?'is-speaking':''} onClick={speak} aria-pressed={speaking}><span aria-hidden="true">{speaking?'■':'▶'}</span>{speaking?'Остановить':engine==='studio'?'Слушать · AI':'Слушать'}</button>
+    <button type="button" className={speaking?'is-speaking':''} onClick={speak} aria-pressed={speaking} disabled={playbackUnavailable}><span aria-hidden="true">{speaking?'■':'▶'}</span>{speaking?'Остановить':engine==='studio'?'Слушать · AI':'Слушать'}</button>
     <span className="voice-ai-disclosure" title="Озвучка создаётся искусственным интеллектом">AI-голос</span>
     <button type="button" className="voice-settings-button" onClick={()=>setSettingsOpen(open=>!open)} aria-expanded={settingsOpen} aria-label="Настройки голоса">⚙</button>
     {settingsOpen?<div className="voice-settings-panel">
