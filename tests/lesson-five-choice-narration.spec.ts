@@ -1,4 +1,9 @@
-import { expect,test } from '@playwright/test';
+import { expect,test,type Locator } from '@playwright/test';
+
+async function domClick(locator:Locator){
+  await expect(locator).toBeVisible();
+  await locator.evaluate((element:HTMLElement)=>element.click());
+}
 
 test('lesson 5 narrator reads choice options and feedback in mandatory practice',async({page})=>{
   await page.addInitScript(()=>{
@@ -26,25 +31,21 @@ test('lesson 5 narrator reads choice options and feedback in mandatory practice'
   });
 
   await page.goto('/');
-  const lessonButton=page.getByRole('button',{name:/Открыть урок 5:/});
-  await expect(lessonButton).toBeVisible();
-  await lessonButton.evaluate((button:HTMLButtonElement)=>button.click());
-  const start=page.locator('.lesson-opening-start');
-  await expect(start).toBeVisible();
-  await start.evaluate((button:HTMLButtonElement)=>button.click());
+  await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
+  await domClick(page.locator('.lesson-opening-start'));
   const task=page.locator('[data-practice-task="l5-p1"]');
   await expect(task).toBeVisible();
 
   const narrator=page.locator('.voice-narrator > button').first();
-  await narrator.click();
+  await domClick(narrator);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '))).toContain('500 000 000 плюс 40 000 000 плюс 7 000 плюс 20');
   let spoken=await page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '));
   expect(spoken).toContain('Какое разложение верно');
 
-  await task.getByRole('button',{name:'500 000 000 + 4 000 000 + 7 000 + 20',exact:true}).click();
-  await task.getByRole('button',{name:'Проверить'}).click();
+  await domClick(task.getByRole('button',{name:'500 000 000 + 4 000 000 + 7 000 + 20',exact:true}));
+  await domClick(task.getByRole('button',{name:'Проверить'}));
   await expect(task.locator('.extended-practice-feedback.is-wrong')).toBeVisible();
-  await narrator.click();
+  await domClick(narrator);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '))).toContain('Проверь значение каждой ненулевой цифры');
   spoken=await page.evaluate(()=>(window as unknown as {__speech:string[]}).__speech.join(' '));
   expect(spoken).toContain('Пока неверно');
