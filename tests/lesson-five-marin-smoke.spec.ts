@@ -6,12 +6,14 @@ async function domClick(locator:Locator){await expect(locator).toBeVisible({time
 async function startLessonFromDom(page:Page){const clicked=await page.evaluate(()=>{const button=document.querySelector<HTMLButtonElement>('.lesson-opening-start');if(!button)return false;button.click();return true});expect(clicked).toBe(true)}
 async function installStudioMocks(page:Page){
   await page.addInitScript(()=>{
-    const audit={systemSpeech:0};
+    const audit={systemSpeech:0,audioPlays:0};
     const voice={name:'Milena Enhanced',lang:'ru-RU',voiceURI:'ru-enhanced',localService:true,default:true};
     class MockUtterance{lang='';voice:typeof voice|null=null;rate=1;pitch=1;volume=1;onend:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(public text=''){} }
     const synthesis={getVoices:()=>[voice],speak:()=>{audit.systemSpeech+=1},cancel:()=>undefined,pause:()=>undefined,resume:()=>undefined,addEventListener:()=>undefined,removeEventListener:()=>undefined,get speaking(){return false},get pending(){return false},get paused(){return false}};
+    class MockAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){audit.audioPlays+=1;window.setTimeout(()=>this.onended?.(),8);return Promise.resolve()}}
     Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,writable:true,value:MockUtterance});
     Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synthesis});
+    Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:MockAudio});
     (window as unknown as {__lessonFiveVoiceAudit:typeof audit}).__lessonFiveVoiceAudit=audit;
     localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',voiceURI:'ru-enhanced',rate:.94}));
     localStorage.setItem('mathnikita-mentor-auto-guide','false');
@@ -27,6 +29,23 @@ async function routeStudioStatus(page:Page){await page.route('**/api/narration-s
   await expect.poll(()=>requests.some(item=>item.id==='lesson-05-opening'),{timeout:5_000}).toBe(true);const opening=requests.find(item=>item.id==='lesson-05-opening')!;expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');expect(opening.text).toContain('Десятичная запись');
   await startLessonFromDom(page);await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});await expect.poll(()=>requests.some(item=>item.id==='lesson-05-stage-l5-story'),{timeout:5_000}).toBe(true);
   const stage=requests.find(item=>item.id==='lesson-05-stage-l5-story')!;expect(stage.version).toBe('ru-teacher-gemini-sulafat-v2');expect(stage.text).toMatch(/[А-Яа-яЁё]/);
+  const audit=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{systemSpeech:number}}).__lessonFiveVoiceAudit);expect(audit.systemSpeech).toBe(0);
+});
+
+test('lesson 5 CatMentor preloads manual Sulafat actions so button clicks do not wait for TTS',async({page})=>{
+  test.setTimeout(35_000);const requests:NarrationRequest[]=[];await installStudioMocks(page);await routeStudioStatus(page);
+  await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await new Promise(resolve=>setTimeout(resolve,80));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-mock-audio'})});
+  await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));await startLessonFromDom(page);await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});
+  const collapsed=page.locator('.cat-mentor-collapsed');if(await collapsed.isVisible().catch(()=>false))await domClick(collapsed);
+  const ids=['mentor-l5-intro-hint','mentor-l5-intro-different','mentor-l5-intro-example','mentor-l5-intro-why'];
+  for(const id of ids)await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:5_000}).toBe(1);
+  const actions=[[/Подсказка/,'mentor-l5-intro-hint'],[/Объясни иначе/,'mentor-l5-intro-different'],[/Дай пример/,'mentor-l5-intro-example'],[/Почему так\?/,'mentor-l5-intro-why']] as const;
+  for(const [label,id] of actions){
+    const playsBefore=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{audioPlays:number}}).__lessonFiveVoiceAudit.audioPlays);const callsBefore=requests.filter(item=>item.id===id).length;
+    await domClick(page.locator('.cat-mentor-actions').getByRole('button',{name:label}));
+    await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{audioPlays:number}}).__lessonFiveVoiceAudit.audioPlays),{timeout:500}).toBeGreaterThan(playsBefore);
+    await page.waitForTimeout(120);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
+  }
   const audit=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{systemSpeech:number}}).__lessonFiveVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
