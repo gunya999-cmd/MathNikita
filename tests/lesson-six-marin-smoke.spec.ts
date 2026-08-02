@@ -17,12 +17,12 @@ async function installStudioMocks(page:Page){
   });
 }
 
-test('lesson 6 opening and first stage prefetch Marin on iPad WebKit',async({page})=>{
+test('lesson 6 opening and first stage prefetch unified AI voice on iPad WebKit',async({page})=>{
   test.setTimeout(35_000);
   const requests:NarrationRequest[]=[];
   await installStudioMocks(page);
-  await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,model:'gpt-4o-mini-tts',voice:'marin',version:'ru-teacher-marin-v1'})}));
-  await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await route.fulfill({status:200,contentType:'audio/mpeg',body:'ID3-mock-audio'})});
+  await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'gemini',model:'gemini-2.5-flash-preview-tts',voice:'Sulafat',version:'ru-teacher-gemini-sulafat-v2'})}));
+  await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-mock-audio'})});
 
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
   await domClick(page.getByRole('button',{name:/Открыть урок 6:/}));
@@ -30,7 +30,7 @@ test('lesson 6 opening and first stage prefetch Marin on iPad WebKit',async({pag
   await expect(narrator).toContainText('Слушать · AI',{timeout:5_000});
   await expect.poll(()=>requests.some(item=>item.id==='lesson-06-opening'),{timeout:5_000}).toBe(true);
   const opening=requests.find(item=>item.id==='lesson-06-opening')!;
-  expect(opening.version).toBe('ru-teacher-marin-v1');
+  expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');
   expect(opening.text).toContain('Отрезок');
   expect(opening.text).toContain('Длина');
 
@@ -38,7 +38,7 @@ test('lesson 6 opening and first stage prefetch Marin on iPad WebKit',async({pag
   await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible({timeout:5_000});
   await expect.poll(()=>requests.some(item=>item.id==='lesson-06-stage-l6-story'),{timeout:5_000}).toBe(true);
   const stage=requests.find(item=>item.id==='lesson-06-stage-l6-story')!;
-  expect(stage.version).toBe('ru-teacher-marin-v1');
+  expect(stage.version).toBe('ru-teacher-gemini-sulafat-v2');
   expect(stage.text).toMatch(/[А-Яа-яЁё]/);
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixMarinAudit:{systemSpeech:number}}).__lessonSixMarinAudit);
   expect(audit.systemSpeech).toBe(0);
