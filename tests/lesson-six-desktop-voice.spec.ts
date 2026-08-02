@@ -1,6 +1,7 @@
 import { expect,test,type Locator,type Page } from '@playwright/test';
 import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { practiceNarrationText } from '../src/practiceNarration';
+import { studioNarrationText } from '../src/studioVoice';
 
 type NarrationRequest={id:string;text:string;version:string};
 
@@ -104,7 +105,7 @@ test('lesson 6 desktop narrates all 6 practice stages from a warmed Sulafat clip
   for(const stage of mainPracticeStages){
     requests.length=0;await setMainStage(page,stage.index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const scope=page.locator(`[data-stage-id="${stage.id}"]`);await expect(scope).toBeVisible({timeout:6_000});const id=`lesson-06-stage-${stage.id}`;
-    await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text.length).toBeGreaterThan(25);expect(narration.text).toContain(await scope.locator('.activity-area h3').innerText());
+    await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text.length).toBeGreaterThan(25);expect(narration.text).toContain(studioNarrationText(await scope.locator('.activity-area h3').innerText()));
     await page.waitForTimeout(100);const playsBefore=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays);const callsBefore=requests.filter(item=>item.id===id).length;
     await domClick(page.locator('.voice-narrator > button').first());await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:700}).toBeGreaterThan(playsBefore);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
@@ -116,7 +117,7 @@ test('lesson 6 desktop auto-narrates all 20 mandatory practice tasks with one sh
   for(let index=0;index<practice.tasks.length;index+=1){
     const taskData=practice.tasks[index];requests.length=0;await setMandatoryPracticeIndex(page,index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const task=page.locator(`[data-practice-task="${taskData.id}"]`);await expect(task).toBeVisible({timeout:7_000});const id=`lesson-06-practice-${taskData.id}`;
-    await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text).toBe(practiceNarrationText(taskData,index,practice.tasks.length));
+    await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text).toBe(studioNarrationText(practiceNarrationText(taskData,index,practice.tasks.length)));
     await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:1_500}).toBeGreaterThan(0);
     await page.waitForTimeout(40);const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays);
     await domClick(task.locator('.extended-practice-voice button'));await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:700}).toBeGreaterThan(playsBefore);await page.waitForTimeout(30);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
