@@ -42,8 +42,10 @@ test('iPad WebKit plays prefetched studio audio without falling back to device s
   await page.goto('/');
   await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
-  const narrator=page.getByRole('button',{name:/Слушать · AI/});
+  const narrator=page.locator('.voice-narrator > button').first();
   await expect(narrator).toBeVisible();
+  await expect(narrator).toContainText('Слушать · AI');
+  await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v4')??'{}').engine)).toBe('studio');
 
   await expect.poll(()=>narrationRequests,{timeout:5_000}).toBeGreaterThanOrEqual(1);
   await expect.poll(()=>narrationFulfilled,{timeout:5_000}).toBeGreaterThanOrEqual(1);
