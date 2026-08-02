@@ -13,6 +13,9 @@ const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
+function persistVoiceSettings(settings:StoredVoiceSettings){
+  try{localStorage.setItem(VOICE_SETTINGS_KEY,JSON.stringify({...settings,rate:clampRate(settings.rate)}))}catch{/* storage can be unavailable in restricted browser contexts */}
+}
 
 export function loadVoiceSettings():StoredVoiceSettings{
   try{
@@ -21,14 +24,17 @@ export function loadVoiceSettings():StoredVoiceSettings{
       return{engine:current.engine,voiceURI:current.voiceURI,rate:clampRate(Number(current.rate)||DEFAULT_VOICE_RATE)};
     }
   }catch{/* ignore malformed current settings */}
+  let migrated:StoredVoiceSettings={engine:'studio',rate:DEFAULT_VOICE_RATE};
   try{
     const legacy=JSON.parse(localStorage.getItem(LEGACY_VOICE_SETTINGS_KEY)??'null') as {voiceURI?:string;rate?:number}|null;
-    return{engine:'studio',voiceURI:legacy?.voiceURI,rate:clampRate(Number(legacy?.rate)||DEFAULT_VOICE_RATE)};
-  }catch{return{engine:'studio',rate:DEFAULT_VOICE_RATE}}
+    migrated={engine:'studio',voiceURI:legacy?.voiceURI,rate:clampRate(Number(legacy?.rate)||DEFAULT_VOICE_RATE)};
+  }catch{/* keep studio defaults */}
+  persistVoiceSettings(migrated);
+  return migrated;
 }
 
 export function saveVoiceSettings(settings:StoredVoiceSettings){
-  localStorage.setItem(VOICE_SETTINGS_KEY,JSON.stringify({...settings,rate:clampRate(settings.rate)}));
+  persistVoiceSettings(settings);
 }
 
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
