@@ -39,10 +39,10 @@ test('lesson 5 CatMentor preloads manual Sulafat actions so button clicks do not
   const collapsed=page.locator('.cat-mentor-collapsed');if(await collapsed.isVisible().catch(()=>false))await domClick(collapsed);
   const ids=['mentor-l5-intro-hint','mentor-l5-intro-different','mentor-l5-intro-example','mentor-l5-intro-why'];
   for(const id of ids)await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:5_000}).toBe(1);
-  const actions=[['Подсказка','mentor-l5-intro-hint'],['Объясни иначе','mentor-l5-intro-different'],['Дай пример','mentor-l5-intro-example'],['Почему так?','mentor-l5-intro-why']] as const;
+  const actions=[[/Подсказка/,'mentor-l5-intro-hint'],[/Объясни иначе/,'mentor-l5-intro-different'],[/Дай пример/,'mentor-l5-intro-example'],[/Почему так\?/,'mentor-l5-intro-why']] as const;
   for(const [label,id] of actions){
     const playsBefore=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{audioPlays:number}}).__lessonFiveVoiceAudit.audioPlays);const callsBefore=requests.filter(item=>item.id===id).length;
-    await domClick(page.locator('.cat-mentor-actions').getByRole('button',{name:label,exact:true}));
+    await domClick(page.locator('.cat-mentor-actions').getByRole('button',{name:label}));
     await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{audioPlays:number}}).__lessonFiveVoiceAudit.audioPlays),{timeout:500}).toBeGreaterThan(playsBefore);
     await page.waitForTimeout(120);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
