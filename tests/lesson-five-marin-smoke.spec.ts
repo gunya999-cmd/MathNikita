@@ -7,6 +7,11 @@ async function domClick(locator:Locator){
   await locator.evaluate((element:HTMLElement)=>element.click());
 }
 
+async function dispatchClick(locator:Locator){
+  await expect(locator).toBeVisible({timeout:5_000});
+  await locator.dispatchEvent('click');
+}
+
 async function installStudioMocks(page:Page){
   await page.addInitScript(()=>{
     const audit={systemSpeech:0,audioPlays:0};
@@ -50,7 +55,7 @@ test('lesson 5 opening and first stage use Marin on iPad WebKit',async({page})=>
   expect(opening.text).toContain('Десятичная запись');
 
   console.log('[lesson5-marin] play opening');
-  await domClick(narrator);
+  await dispatchClick(narrator);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonFiveMarinAudit:{audioPlays:number}}).__lessonFiveMarinAudit.audioPlays),{timeout:5_000}).toBeGreaterThan(0);
 
   console.log('[lesson5-marin] first stage');
