@@ -156,7 +156,7 @@ test('lesson 6 completes every main stage and reaches only the completion gate o
   await expect(summary).toContainText('Основная часть ✓');
   await expect(summary).not.toContainText('Завершён');
   await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
-  await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice-header')).toContainText('20 заданий · 50 проверяемых ответов');
   await expect(page.locator('.lesson-page-navigator-toggle')).toContainText('Страница 24/24');
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-complete:6'))).toBeNull();
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
@@ -184,7 +184,7 @@ test('lesson 6 keeps an answer after direct page navigation',async({page})=>{
   console.log('[l6-state] persistence: green');
 });
 
-test('lesson 6 v2 ignores stale v1 main and practice completion',async({page})=>{
+test('lesson 6 v3 ignores stale v1 main and practice completion',async({page})=>{
   test.setTimeout(45_000);
   await page.addInitScript(()=>{
     localStorage.setItem('mathnikita-lesson-6-progress-v1',JSON.stringify({version:1,stageIndex:22,responses:{},orders:{},checked:{},results:{}}));
@@ -196,11 +196,30 @@ test('lesson 6 v2 ignores stale v1 main and practice completion',async({page})=>
   console.log('[l6-migration] opening revised lesson');
   await openLessonSix(page);
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita-lesson-6-progress-v2'))).not.toBeNull();
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:extended-practice:6:v1'))).toBeNull();
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:extended-practice:6:v2'))).toBeNull();
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:extended-practice:6:v3'))).toBeNull();
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-complete:6'))).toBeNull();
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:reflection:6'))).toBeNull();
   const timing=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita:lesson-timing:6:v1')??'null') as {activeSeconds?:number}|null);
   expect(timing?.activeSeconds??0).toBeLessThan(10);
   await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible({timeout:4_000});
   console.log('[l6-migration] stale state cleared: green');
+});
+
+test('lesson 6 v3 preserves all 18 completed v2 tasks but relocks final completion',async({page})=>{
+  test.setTimeout(45_000);
+  await page.addInitScript(()=>{
+    localStorage.setItem('mathnikita:lesson-6-revision-v2-migrated','1');
+    localStorage.setItem('mathnikita:extended-practice:6:v2','18');
+    localStorage.setItem('mathnikita:lesson-complete:6',JSON.stringify({completedAt:'2026-08-01T12:00:00.000Z',activeSeconds:900}));
+    localStorage.setItem('mathnikita:reflection:6','старый итоговый ответ');
+  });
+  await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(22,{timeout:5_000});
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:extended-practice:6:v3'))).toBe('18');
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:extended-practice:6:v2'))).toBeNull();
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-complete:6'))).toBeNull();
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:reflection:6'))).toBeNull();
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-6-practice-v3-migrated'))).toBe('1');
 });

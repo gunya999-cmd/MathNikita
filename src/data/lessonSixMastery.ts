@@ -1,4 +1,4 @@
-import { multiInputTask as multi, type ExtendedPracticeField, type ExtendedPracticeTask } from './extendedPracticeTypes';
+import { choiceTask as choice, inputTask as input, multiInputTask as multi, type ExtendedPracticeField, type ExtendedPracticeTask } from './extendedPracticeTypes';
 
 const field=(id:string,label:string,answers:string[]):ExtendedPracticeField=>({id,label,answers});
 const yes=['да'];
@@ -123,5 +123,20 @@ export const lessonSixMastery:ExtendedPracticeTask[]=[
     ],
     'Сначала переведи сантиметры и миллиметры в одну единицу, затем сложи части.',
     'CB = 45 мм, AB = 26 + 45 = 71 мм = 7 см 1 мм. Расстояние между A и B равно длине AB.',
+  ),
+  input(
+    'l6-source-47',
+    'По упражнению № 47 нужно построить отрезок MN длиной 6 см 3 мм. Если точку M совместить с нулевой отметкой линейки, на какой отметке в миллиметрах нужно поставить точку N?',
+    ['63'],
+    'Переведи 6 см 3 мм в миллиметры: в одном сантиметре 10 мм.',
+    '6 см 3 мм = 60 мм + 3 мм = 63 мм. Значит, при начале в нуле второй конец ставим на отметке 63 мм.',
+  ),
+  choice(
+    'l6-unit-change',
+    'Один и тот же отрезок измерили сначала в сантиметрах, а затем в миллиметрах: получилось 7 см и 70 мм. Что изменилось при смене единицы измерения?',
+    ['Сам отрезок','Только числовое значение длины','Количество концов отрезка','Положение концов отрезка'],
+    'Только числовое значение длины',
+    'Вспомни: измерение сравнивает один и тот же отрезок с выбранным единичным отрезком.',
+    'Сам отрезок не изменился. Изменилась единица измерения, поэтому изменилось числовое значение: 7 см = 70 мм.',
   ),
 ];
