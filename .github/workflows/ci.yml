@@ -42,9 +42,9 @@ jobs:
           retention-days: 7
 
   ipad-webkit-lesson5-regression:
-    name: iPad WebKit regression · lesson 5 Marin
+    name: iPad WebKit regression · lesson 5 Sulafat
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 7
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -56,7 +56,9 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Verify lesson 5 Marin smoke
+      - name: Verify Sulafat Worker failover
+        run: npx playwright test tests/worker-narration-failover.spec.ts --workers=1
+      - name: Verify lesson 5 Sulafat smoke
         run: npx playwright test tests/lesson-five-marin-smoke.spec.ts --workers=1
       - name: Upload failure traces
         if: failure()
@@ -94,7 +96,7 @@ jobs:
           retention-days: 7
 
   ipad-webkit-lesson6-readiness:
-    name: iPad WebKit · lesson 6 mastery, state and Marin
+    name: iPad WebKit · lesson 6 mastery, state and Sulafat
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
@@ -112,7 +114,7 @@ jobs:
         run: npx playwright test tests/lesson-six-ipad.spec.ts -g "keeps an answer|v2 ignores" --workers=1
       - name: Verify lesson 6 workload and completion gate
         run: npx playwright test tests/lesson-six-mastery.spec.ts --workers=1
-      - name: Verify lesson 6 Marin smoke
+      - name: Verify lesson 6 Sulafat smoke
         run: npx playwright test tests/lesson-six-marin-smoke.spec.ts --workers=1
       - name: Upload failure traces
         if: failure()
