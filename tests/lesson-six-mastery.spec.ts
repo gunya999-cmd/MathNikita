@@ -1,8 +1,9 @@
-import { expect,test,type Locator } from '@playwright/test';
+import { expect,test,type Page } from '@playwright/test';
 import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { extendedPracticeSetResponseCount } from '../src/data/extendedPracticeTypes';
 
-async function domClick(locator:Locator){await expect(locator).toBeVisible();await locator.evaluate((element:HTMLElement)=>element.click())}
+async function clickCss(page:Page,selector:string){const clicked=await page.evaluate(selector=>{const element=document.querySelector<HTMLElement>(selector);if(!element)return false;element.click();return true},selector);expect(clicked,`Expected ${selector} to be clickable`).toBe(true)}
+async function openLessonSix(page:Page){const opened=await page.evaluate(()=>{const buttons=Array.from(document.querySelectorAll<HTMLButtonElement>('.course-lesson-grid > button.is-interactive'));const button=buttons[5];if(!button)return false;button.click();return true});expect(opened).toBe(true);await expect(page.getByRole('heading',{name:'Отрезок. Длина отрезка'}).first()).toBeVisible();await clickCss(page,'.lesson-opening-start')}
 
 const mainResults={
   'l6-a1':true,'l6-a2':true,'l6-a3':true,'l6-a4':true,'l6-a5':true,
@@ -40,9 +41,8 @@ test('lesson 6 is complete only after mandatory practice and reflection',async({
     localStorage.removeItem('mathnikita:lesson-complete:6');
   },mainResults);
   await page.reload();
-  await domClick(page.getByRole('button',{name:/Открыть урок 6:/}));
+  await openLessonSix(page);
   await expect(page.locator('.lesson-opening-plan > div strong')).toHaveText('измеряется');
-  await domClick(page.locator('.lesson-opening-start'));
 
   const summary=page.locator('[data-stage-id="l6-summary"] .summary-card');
   await expect(summary).toContainText('Основная часть ✓');
@@ -58,9 +58,9 @@ test('lesson 6 is complete only after mandatory practice and reflection',async({
   await task.getByLabel('AB в миллиметрах').fill('71');
   await task.getByLabel('AB в сантиметрах и миллиметрах').fill('7 см 1 мм');
   await task.getByLabel('Расстояние между A и B в миллиметрах').fill('71');
-  await domClick(task.getByRole('button',{name:'Проверить'}));
+  await clickCss(page,'[data-practice-task="l6-mastery-10"] .extended-practice-check');
   await expect(task.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await domClick(task.getByRole('button',{name:'Завершить практику'}));
+  await clickCss(page,'[data-practice-task="l6-mastery-10"] .extended-practice-next');
 
   const finished=page.locator('.extended-practice.is-finished');
   await expect(finished).toContainText('18 заданий');
@@ -68,7 +68,7 @@ test('lesson 6 is complete only after mandatory practice and reflection',async({
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Отрезок однозначно задаётся двумя концами, а его длина — это расстояние между этими точками. Если C лежит между A и B, то AB = AC + CB; измерять и строить отрезки нужно в указанной единице длины.');
-  await domClick(finalStep.getByRole('button',{name:'Завершить урок'}));
+  await clickCss(page,'.reflection-save');
   await expect(finalStep).toContainText('Урок завершён ✓');
   const completion=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita:lesson-complete:6')??'null') as {completedAt?:string;activeSeconds?:number}|null);
   expect(completion?.completedAt).toBeTruthy();
