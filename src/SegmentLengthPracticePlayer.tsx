@@ -46,8 +46,8 @@ function load():Saved{
   }catch{return empty}
 }
 
-function chainModel(points:string[],caption:string){return <div className="l7-chain-model">{points.flatMap((point,index)=>index===points.length-1?[<span key={`${point}-${index}`}>{point}</span>]:[<span key={`${point}-${index}`}>{point}</span>,<i key={`line-${index}`}/ >])}<strong>{caption}</strong></div>}
-function rulerModel(max:number){return <div className="l6-ruler"><div>{Array.from({length:max+1},(_,index)=><span key={index}><i/><b>{index}</b></span>)}</div><em>длина = конечная отметка − начальная отметка</em></div>}
+function chainModel(points:string[],caption:string){return <div className={`l7-chain-model ${points.length===3?'three':''}`.trim()}>{points.flatMap((point,index)=>index===points.length-1?[<span key={`${point}-${index}`}>{point}</span>]:[<span key={`${point}-${index}`}>{point}</span>,<i key={`line-${index}`}/>])}<strong>{caption}</strong></div>}
+function rulerModel(max:number){return <div className="l6-ruler"><div style={{gridTemplateColumns:`repeat(${max+1},minmax(26px,1fr))`}}>{Array.from({length:max+1},(_,index)=><span key={index}><i/><b>{index}</b></span>)}</div><em>длина = конечная отметка − начальная отметка</em></div>}
 
 export function SegmentLengthPracticePlayer(){
   const saved=useMemo(load,[]);const[stageIndex,setStageIndex]=useState(saved.stageIndex);const[responses,setResponses]=useState(saved.responses);const[orders,setOrders]=useState(saved.orders);const[checked,setChecked]=useState(saved.checked);const[results,setResults]=useState(saved.results);
