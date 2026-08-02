@@ -7,6 +7,7 @@ type CheckState='idle'|'correct'|'wrong';
 type MentorAction='status'|'different'|'example'|'hint'|'why';
 type Props={lessonNumber:number;task:ExtendedPracticeTask;checkState:CheckState;attempts:number};
 type MentorSpeakDetail={taskId?:string;state?:CheckState;attempts?:number};
+type AudioRequestDetail={source?:string};
 
 function safeToken(value:string){return value.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)}
 function responseGuide(task:ExtendedPracticeTask){
@@ -64,6 +65,10 @@ export function PracticePythagoras({lessonNumber,task,checkState,attempts}:Props
     const handler=(event:Event)=>{const detail=(event as CustomEvent<MentorSpeakDetail>).detail;if(detail?.taskId!==task.id||detail.state!=='wrong')return;const nextAttempts=Math.max(1,Number(detail.attempts)||1);setAction('status');speak(messageFor(task,'wrong',nextAttempts,'status'),'status')};
     window.addEventListener('mathnikita-practice-mentor-speak',handler);return()=>window.removeEventListener('mathnikita-practice-mentor-speak',handler);
   },[task.id]);
+  useEffect(()=>{
+    const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='practice-mentor')stop()};
+    window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)};
+  },[]);
   useEffect(()=>()=>stop(),[]);
 
   return <aside className={`practice-pythagoras is-${checkState}`} aria-label="Пифагор — наставник обязательной практики">
