@@ -29,7 +29,7 @@ test('student and parent dashboards show the same seeded learning history',async
   await expect(page.getByText('Учебный импульс')).toBeVisible();
   await expect(page.getByText('34 верно · 6 ошибок')).toBeVisible();
   await expect(page.getByText('Недавние уроки')).toBeVisible();
-  await expect(page.getByText('№6')).toBeVisible();
+  await expect(page.getByText('№6').first()).toBeVisible();
   await page.getByRole('button',{name:'Родителям'}).click();
   await expect(page.getByRole('heading',{name:'Полная аналитика обучения'})).toBeVisible();
   await expect(page.getByText('34 верно · 6 ошибок')).toBeVisible();
