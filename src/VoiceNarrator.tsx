@@ -11,6 +11,14 @@ function visiblePractice(root:HTMLElement){return root.querySelector<HTMLElement
 function visibleFinalReflection(root:HTMLElement){const finalStep=root.querySelector<HTMLElement>('.lesson-reflection .reflection-final-step');return finalStep&&!finalStep.hidden&&finalStep.offsetParent!==null?finalStep:null}
 function collectVisibleText(scope:HTMLElement,selectors:string[]){const parts=selectors.flatMap(selector=>Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter(node=>node.offsetParent!==null).map(node=>node.textContent?.trim()??'').filter(Boolean));return Array.from(new Set(parts)).join('. ')}
 function safeNarrationToken(value:string){return value.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,96)}
+function canCreateAudioElement(){return typeof document!=='undefined'&&typeof document.createElement==='function'}
+function createNarrationAudio(source:string):HTMLAudioElement|null{
+  try{
+    if(typeof Audio!=='undefined')return new Audio(source);
+    if(!canCreateAudioElement())return null;
+    const audio=document.createElement('audio');audio.src=source;return audio;
+  }catch{return null}
+}
 
 function getNarrationText(root:HTMLElement|null,mode:VoiceNarratorProps['mode']){
   if(!root)return'';
@@ -33,7 +41,7 @@ function getNarrationId(root:HTMLElement|null,mode:VoiceNarratorProps['mode']){
 function splitForSpeech(text:string){const sentences=text.match(/[^.!?…]+[.!?…]?/g)??[text];const chunks:string[]=[];let current='';for(const sentence of sentences){const next=`${current} ${sentence}`.trim();if(next.length>180&&current){chunks.push(current);current=sentence.trim()}else current=next}if(current)chunks.push(current);return chunks}
 
 export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
-  const systemSupported=typeof window!=='undefined'&&'speechSynthesis'in window;const audioSupported=typeof window!=='undefined'&&typeof Audio!=='undefined';
+  const systemSupported=typeof window!=='undefined'&&'speechSynthesis'in window;const audioSupported=canCreateAudioElement();
   const[voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);const[speaking,setSpeaking]=useState(false);const[settingsOpen,setSettingsOpen]=useState(false);const initialSettings=useMemo(loadVoiceSettings,[]);
   const[engine,setEngine]=useState<VoiceEngine>(initialSettings.engine);const[voiceURI,setVoiceURI]=useState(initialSettings.voiceURI??'');const[rate,setRate]=useState(initialSettings.rate??DEFAULT_VOICE_RATE);const[studioStatus,setStudioStatus]=useState<StudioStatus>('checking');
   const sessionRef=useRef(0);const audioRef=useRef<HTMLAudioElement|null>(null);
@@ -59,7 +67,8 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
 
   function playStudioSource(source:string,text:string,session:number){
     if(!audioSupported){startSystemSpeech(text,session);return}
-    const audio=new Audio(source);audio.preload='auto';audio.playbackRate=rate;audioRef.current=audio;setSpeaking(true);
+    const audio=createNarrationAudio(source);if(!audio){startSystemSpeech(text,session);return}
+    audio.preload='auto';audio.playbackRate=rate;audioRef.current=audio;setSpeaking(true);
     const fallback=()=>{if(sessionRef.current!==session)return;audioRef.current=null;startSystemSpeech(text,session)};
     audio.onended=()=>{if(sessionRef.current===session)setSpeaking(false);audioRef.current=null};audio.onerror=fallback;
     void audio.play().catch(fallback);
