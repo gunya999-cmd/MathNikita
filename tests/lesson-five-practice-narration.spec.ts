@@ -1,4 +1,9 @@
-import { expect,test } from '@playwright/test';
+import { expect,test,type Locator } from '@playwright/test';
+
+async function domClick(locator:Locator){
+  await expect(locator).toBeVisible();
+  await locator.evaluate((element:HTMLElement)=>element.click());
+}
 
 test('lesson 5 narrator reads the active mandatory-practice task',async({page})=>{
   await page.addInitScript(()=>{
@@ -29,16 +34,12 @@ test('lesson 5 narrator reads the active mandatory-practice task',async({page})=
   });
 
   await page.goto('/');
-  const lessonButton=page.getByRole('button',{name:/Открыть урок 5:/});
-  await expect(lessonButton).toBeVisible();
-  await lessonButton.evaluate((button:HTMLButtonElement)=>button.click());
-  const start=page.locator('.lesson-opening-start');
-  await expect(start).toBeVisible();
-  await start.evaluate((button:HTMLButtonElement)=>button.click());
+  await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
+  await domClick(page.locator('.lesson-opening-start'));
   await expect(page.locator('[data-practice-task="l5-master-10"]')).toBeVisible();
 
   const narrator=page.locator('.voice-narrator > button').first();
-  await narrator.click();
+  await domClick(narrator);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonFiveSpeech:string[]}).__lessonFiveSpeech.join(' '))).toContain('Следующее натуральное число');
   const spoken=await page.evaluate(()=>(window as unknown as {__lessonFiveSpeech:string[]}).__lessonFiveSpeech.join(' '));
   expect(spoken).toContain('Вспомни свойства натурального ряда');
