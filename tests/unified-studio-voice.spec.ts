@@ -31,10 +31,10 @@ async function installAudioAudit(page:Page){
 test('legacy devices migrate to one server AI voice for narrator and Pythagoras',async({page})=>{
   const requests:NarrationRequest[]=[];
   await installAudioAudit(page);
-  await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,model:'gpt-4o-mini-tts',voice:'marin',version:'ru-teacher-marin-v1'})}));
+  await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'gemini',model:'gemini-2.5-flash-preview-tts',voice:'Sulafat',version:'ru-teacher-gemini-sulafat-v2'})}));
   await page.route('**/api/narration',async route=>{
     requests.push(route.request().postDataJSON() as NarrationRequest);
-    await route.fulfill({status:200,contentType:'audio/mpeg',body:'ID3-mock-audio'});
+    await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-mock-audio'});
   });
 
   await page.goto('/');
@@ -45,7 +45,7 @@ test('legacy devices migrate to one server AI voice for narrator and Pythagoras'
 
   await expect.poll(()=>requests.some(item=>item.id==='lesson-05-opening')).toBe(true);
   const openingRequest=requests.find(item=>item.id==='lesson-05-opening')!;
-  expect(openingRequest.version).toBe('ru-teacher-marin-v1');
+  expect(openingRequest.version).toBe('ru-teacher-gemini-sulafat-v2');
   expect(openingRequest.text).toContain('Десятичная запись');
   expect(openingRequest.text).toMatch(/[А-Яа-яЁё]/);
 

@@ -7,7 +7,7 @@
     "enabled": true
   },
   "secrets": {
-    "required": ["OPENAI_API_KEY"]
+    "required": ["GEMINI_API_KEY"]
   },
   "assets": {
     "binding": "ASSETS",

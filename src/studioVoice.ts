@@ -5,8 +5,8 @@ export type StoredVoiceSettings={engine:VoiceEngine;voiceURI?:string;rate:number
 
 export const VOICE_SETTINGS_KEY='mathnikita-voice-settings-v4';
 export const LEGACY_VOICE_SETTINGS_KEY='mathnikita-voice-settings-v3';
-export const STUDIO_VOICE_LABEL='Marin';
-export const STUDIO_VOICE_VERSION='ru-teacher-marin-v1';
+export const STUDIO_VOICE_LABEL='Sulafat';
+export const STUDIO_VOICE_VERSION='ru-teacher-gemini-sulafat-v2';
 export const DEFAULT_VOICE_RATE=.94;
 
 const audioUrlCache=new Map<string,Promise<string>>();
