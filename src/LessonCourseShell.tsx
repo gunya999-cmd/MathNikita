@@ -90,6 +90,7 @@ export function LessonCourseShell(){
     selectedLesson===23?lessonTwentyThreeOpening:
     buildGenericOpening(lesson);
   const showOpening=mode==='opening';
+  const openingNarrationText=[opening.title,opening.intro,opening.question,...opening.goals].filter(Boolean).join('. ');
 
   function clearHints(){setHintState(emptyHintState)}
   function resetMentor(){setMentorSignal(previous=>({kind:'idle',version:previous.version+1}))}
@@ -205,7 +206,7 @@ export function LessonCourseShell(){
     <div className="lesson-mode-toolbar">
       <button type="button" onClick={returnToCatalog}>← Все уроки</button>
       <div><span>Урок {selectedLesson} из {totalLessons}</span><b>{officialLesson?.title??lesson.title}</b></div>
-      <VoiceNarrator rootRef={shellRef} mode={showOpening?'opening':'lesson'}/>
+      <VoiceNarrator rootRef={shellRef} mode={showOpening?'opening':'lesson'} lessonNumber={selectedLesson} openingText={openingNarrationText}/>
       {mode==='lesson'?<button type="button" onClick={()=>setMode('opening')}>Вступление</button>:<span/>}
     </div>
     <div className={`mentor-learning-layout ${isControlWork?'control-layout':''}`}>
