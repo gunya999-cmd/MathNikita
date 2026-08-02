@@ -51,5 +51,7 @@ test('lesson 5 voice settings can always be dismissed',async({page})=>{
   const gear=page.locator('.voice-settings-button');const dialog=page.getByRole('dialog',{name:'Настройки голоса'});
   await domClick(gear);await expect(dialog).toBeVisible();await domClick(page.locator('.voice-settings-close'));await expect(dialog).toBeHidden();
   await domClick(gear);await expect(dialog).toBeVisible();await page.keyboard.press('Escape');await expect(dialog).toBeHidden();
-  await domClick(gear);await expect(dialog).toBeVisible();await page.locator('.lesson-opening-copy h1').click({force:true});await expect(dialog).toBeHidden();
+  await domClick(gear);await expect(dialog).toBeVisible();
+  await page.locator('.lesson-opening-copy h1').evaluate(element=>element.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'})));
+  await expect(dialog).toBeHidden();
 });
