@@ -8,7 +8,7 @@ type Props = {
 
 export function MentorResponsiveBehavior({ rootRef, lessonNumber, mode }: Props) {
   useEffect(()=>{
-    if(![4,5].includes(lessonNumber)||mode!=='opening')return;
+    if(![4,5,6].includes(lessonNumber)||mode!=='opening')return;
     const root=rootRef.current;
     if(!root)return;
     const normalizeDuration=()=>{
