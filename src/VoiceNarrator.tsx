@@ -3,7 +3,7 @@ import { isNaturalRussianVoice,isRussianVoice,rankRussianVoices,selectBestRussia
 import { DEFAULT_VOICE_RATE,getStudioAudioUrl,loadVoiceSettings,peekStudioAudioUrl,prefetchStudioAudioUrl,saveVoiceSettings,STUDIO_VOICE_LABEL,studioNarrationText,type VoiceEngine } from './studioVoice';
 import './voiceNarrator.css';
 
-type VoiceNarratorProps={rootRef:RefObject<HTMLElement|null>;mode:'opening'|'lesson'};
+type VoiceNarratorProps={rootRef:RefObject<HTMLElement|null>;mode:'opening'|'lesson';lessonNumber:number;openingText:string};
 type AudioRequestDetail={source?:'narrator'|'mentor'|string};
 type StudioStatus='checking'|'ready'|'unavailable';
 
@@ -20,37 +20,43 @@ function createNarrationAudio(source:string):HTMLAudioElement|null{
   }catch{return null}
 }
 
-function getNarrationText(root:HTMLElement|null,mode:VoiceNarratorProps['mode']){
-  if(!root)return'';
+function getNarrationText(root:HTMLElement|null,mode:VoiceNarratorProps['mode'],openingText:string){
   if(mode==='opening'){
+    const explicit=openingText.trim();
+    if(explicit)return explicit;
+    if(!root)return'';
     const scope=root.querySelector<HTMLElement>('.opening-screen:not([hidden])')??root.querySelector<HTMLElement>('.lesson-opening');
     if(!scope)return'';
     return collectVisibleText(scope,['.lesson-opening-copy h1','.lesson-opening-copy p','.lesson-opening-question b','.lesson-opening-plan li span'])||scope.textContent?.trim()||'';
   }
+  if(!root)return'';
   const practice=visiblePractice(root);if(practice)return collectVisibleText(practice,['h3','.extended-practice-instruction','.extended-practice-input span','.extended-practice-options button','.extended-practice-feedback b','.extended-practice-feedback span']);
   const finalReflection=visibleFinalReflection(root);if(finalReflection)return collectVisibleText(finalReflection,['.reflection-heading h2','.reflection-heading p','blockquote','.reflection-answer > span']);
   const scope=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');return scope?collectVisibleText(scope,['.interactive-stage .stage-copy h2','.interactive-stage .stage-copy p','.interactive-stage .theory-note span','.interactive-stage .activity-area h3','.lesson-block h2','.lesson-block .block-text','.lesson-block .lesson-items li']):'';
 }
 
-function getNarrationId(root:HTMLElement|null,mode:VoiceNarratorProps['mode']){
-  if(!root)return'';
-  const lessonLabel=root.querySelector<HTMLElement>('.lesson-mode-toolbar > div > span')?.textContent??'';
-  const lessonMatch=lessonLabel.match(/Урок\s+(\d+)/i);
-  const storedLesson=typeof localStorage!=='undefined'?Number(localStorage.getItem('mathnikita-selected-lesson')):0;
-  const resolvedLesson=lessonMatch?Number(lessonMatch[1]):storedLesson;
+function getNarrationId(root:HTMLElement|null,mode:VoiceNarratorProps['mode'],lessonNumber:number){
+  let resolvedLesson=Number.isFinite(lessonNumber)&&lessonNumber>0?lessonNumber:0;
+  if(!resolvedLesson&&root){
+    const lessonLabel=root.querySelector<HTMLElement>('.lesson-mode-toolbar > div > span')?.textContent??'';
+    const lessonMatch=lessonLabel.match(/Урок\s+(\d+)/i);
+    const storedLesson=typeof localStorage!=='undefined'?Number(localStorage.getItem('mathnikita-selected-lesson')):0;
+    resolvedLesson=lessonMatch?Number(lessonMatch[1]):storedLesson;
+  }
   if(!Number.isFinite(resolvedLesson)||resolvedLesson<1)return'';
-  const lessonNumber=String(resolvedLesson).padStart(2,'0');
-  if(mode==='opening')return`lesson-${lessonNumber}-opening`;
-  const practice=visiblePractice(root);const practiceId=safeNarrationToken(practice?.dataset.practiceTask??'');if(practiceId)return`lesson-${lessonNumber}-practice-${practiceId}`;
-  if(visibleFinalReflection(root))return`lesson-${lessonNumber}-reflection`;
-  const activeStage=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');const stageId=safeNarrationToken(activeStage?.dataset.stageId??'');if(stageId)return`lesson-${lessonNumber}-stage-${stageId}`;
-  const stageLabel=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .stage-counter')?.textContent??'';const stageMatch=stageLabel.match(/Этап\s+(\d+)/i);if(stageMatch)return`lesson-${lessonNumber}-stage-${String(Number(stageMatch[1])).padStart(2,'0')}`;
+  const lessonId=String(resolvedLesson).padStart(2,'0');
+  if(mode==='opening')return`lesson-${lessonId}-opening`;
+  if(!root)return'';
+  const practice=visiblePractice(root);const practiceId=safeNarrationToken(practice?.dataset.practiceTask??'');if(practiceId)return`lesson-${lessonId}-practice-${practiceId}`;
+  if(visibleFinalReflection(root))return`lesson-${lessonId}-reflection`;
+  const activeStage=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');const stageId=safeNarrationToken(activeStage?.dataset.stageId??'');if(stageId)return`lesson-${lessonId}-stage-${stageId}`;
+  const stageLabel=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .stage-counter')?.textContent??'';const stageMatch=stageLabel.match(/Этап\s+(\d+)/i);if(stageMatch)return`lesson-${lessonId}-stage-${String(Number(stageMatch[1])).padStart(2,'0')}`;
   return'';
 }
 
 function splitForSpeech(text:string){const sentences=text.match(/[^.!?…]+[.!?…]?/g)??[text];const chunks:string[]=[];let current='';for(const sentence of sentences){const next=`${current} ${sentence}`.trim();if(next.length>180&&current){chunks.push(current);current=sentence.trim()}else current=next}if(current)chunks.push(current);return chunks}
 
-export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
+export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarratorProps){
   const systemSupported=typeof window!=='undefined'&&'speechSynthesis'in window;const audioSupported=canCreateAudioElement();
   const[voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);const[speaking,setSpeaking]=useState(false);const[settingsOpen,setSettingsOpen]=useState(false);const initialSettings=useMemo(loadVoiceSettings,[]);
   const[engine,setEngine]=useState<VoiceEngine>(initialSettings.engine);const[voiceURI,setVoiceURI]=useState(initialSettings.voiceURI??'');const[rate,setRate]=useState(initialSettings.rate??DEFAULT_VOICE_RATE);const[studioStatus,setStudioStatus]=useState<StudioStatus>('checking');
@@ -62,15 +68,21 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
   useEffect(()=>{let active=true;fetch('/api/narration-status',{cache:'no-store'}).then(async response=>response.ok?response.json():Promise.reject()).then((data:{studioConfigured?:boolean})=>{if(active)setStudioStatus(data.studioConfigured?'ready':'unavailable')}).catch(()=>{if(active)setStudioStatus('unavailable')});return()=>{active=false}},[]);
   useEffect(()=>{saveVoiceSettings({engine,voiceURI,rate})},[engine,voiceURI,rate]);
   useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
-  useEffect(()=>{stop();const root=rootRef.current;if(!root)return;let currentId=getNarrationId(root,mode);const observer=new MutationObserver(()=>{const nextId=getNarrationId(root,mode);if(nextId&&nextId!==currentId){currentId=nextId;stop()}});observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();stop()}},[mode,rootRef]);
+  useEffect(()=>{stop();const root=rootRef.current;if(!root||mode==='opening')return;let currentId=getNarrationId(root,mode,lessonNumber);const observer=new MutationObserver(()=>{const nextId=getNarrationId(root,mode,lessonNumber);if(nextId&&nextId!==currentId){currentId=nextId;stop()}});observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();stop()}},[mode,rootRef,lessonNumber]);
   useEffect(()=>{
     if(engine!=='studio')return;
+    if(mode==='opening'){
+      const id=getNarrationId(null,mode,lessonNumber);
+      const text=getNarrationText(null,mode,openingText);
+      if(id&&text)prefetchStudioAudioUrl(id,text);
+      return;
+    }
     let retryTimer:number|null=null;
     let retries=0;
     const warm=()=>{
       const root=rootRef.current;
-      const id=getNarrationId(root,mode);
-      const text=getNarrationText(root,mode);
+      const id=getNarrationId(root,mode,lessonNumber);
+      const text=getNarrationText(root,mode,openingText);
       if(id&&text){prefetchStudioAudioUrl(id,text);retries=0;return}
       if(retries<6){retries+=1;retryTimer=window.setTimeout(warm,60*retries)}
     };
@@ -81,7 +93,7 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
     const observer=new MutationObserver(scheduleWarm);
     observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});
     return()=>{observer.disconnect();if(retryTimer!==null)window.clearTimeout(retryTimer)};
-  },[engine,mode,rootRef]);
+  },[engine,mode,rootRef,lessonNumber,openingText]);
 
   function startSystemSpeech(text:string,session:number){if(!systemSupported||!text){setSpeaking(false);return}window.speechSynthesis.cancel();const chunks=splitForSpeech(studioNarrationText(text));const selectedVoice=selectBestRussianVoice(voices,voiceURI);setSpeaking(true);let index=0;const playNext=()=>{if(sessionRef.current!==session||index>=chunks.length){setSpeaking(false);return}const utterance=new SpeechSynthesisUtterance(chunks[index]);utterance.lang='ru-RU';utterance.voice=selectedVoice??null;utterance.rate=Math.min(Math.max(rate,.88),1.04);utterance.pitch=1;utterance.volume=1;utterance.onend=()=>{index+=1;window.setTimeout(playNext,130)};utterance.onerror=()=>setSpeaking(false);window.speechSynthesis.speak(utterance)};playNext()}
 
@@ -102,10 +114,10 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
 
   function speak(){
     if(speaking){stop();return}
-    const text=getNarrationText(rootRef.current,mode);if(!text)return;
+    const text=getNarrationText(rootRef.current,mode,openingText);if(!text)return;
     stop();const session=sessionRef.current+1;sessionRef.current=session;
     window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator'}}));
-    const narrationId=getNarrationId(rootRef.current,mode);
+    const narrationId=getNarrationId(rootRef.current,mode,lessonNumber);
     if(engine==='studio'){
       const readySource=peekStudioAudioUrl(narrationId,text);
       if(readySource){playStudioSource(readySource,text,session);return}
