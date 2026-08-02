@@ -2,16 +2,15 @@ import { useMemo, useState } from 'react';
 import { skillLabels, type CourseTask } from './data/course';
 import { totalLessons, yearPlan } from './data/yearPlan';
 import { LessonCourseShell } from './LessonCourseShell';
+import { LearnerDashboard } from './LearnerDashboard';
 import './focusLearning.css';
 import {
   advanceAfterCorrect,
-  averageMastery,
   currentLesson,
   getCurrentTask,
   loadLearnerState,
   recordAttempt,
   saveLearnerState,
-  weakSkills,
   type LearnerState,
 } from './learningEngine';
 
@@ -54,8 +53,6 @@ export function App() {
 
   const task = getCurrentTask(state);
   const lesson = currentLesson(state);
-  const weak = useMemo(() => weakSkills(state), [state]);
-  const mastery = averageMastery(state);
   const isDiagnostic = !state.diagnosticDone;
   const choices = isDiagnostic ? answerChoices(task) : null;
   const completedLessons = Math.min(state.completedSessions, totalLessons);
@@ -89,11 +86,6 @@ export function App() {
     if (finishingDiagnostic) setRouteBuilt(true);
   }
 
-  function resetCourse() {
-    localStorage.removeItem('math-course-state-v3');
-    window.location.reload();
-  }
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -102,7 +94,7 @@ export function App() {
           <button className={screen === 'course' ? 'active' : ''} onClick={() => setScreen('course')}>Уроки</button>
           <button className={screen === 'learn' ? 'active' : ''} onClick={() => setScreen('learn')}>Диагностика</button>
           <button className={screen === 'map' ? 'active' : ''} onClick={() => setScreen('map')}>Карта знаний</button>
-          <button className={screen === 'progress' ? 'active' : ''} onClick={() => setScreen('progress')}>Прогресс</button>
+          <button className={screen === 'progress' ? 'active' : ''} onClick={() => setScreen('progress')}>Кабинет</button>
           <button className={screen === 'parent' ? 'active' : ''} onClick={() => setScreen('parent')}>Родителям</button>
         </nav>
         <div className="xp-pill">⭐ <b>{state.xp}</b> XP</div>
@@ -132,9 +124,8 @@ export function App() {
 
       {screen === 'map' && <main className="dashboard"><header><span>Карта знаний</span><h1>Курс математики 5 класса</h1><p>175 уроков по I варианту планирования Мерзляка.</p></header><div className="world-grid">{islands.map(([icon,title,count],i)=><article key={title}><i>{icon}</i><h3>{title}</h3><p>{count} уроков</p><b>{i===0?'20 уроков готовы':i===1?'3 урока готовы':'В разработке'}</b></article>)}</div></main>}
 
-      {screen === 'progress' && <main className="dashboard"><header><span>Личный кабинет</span><h1>Прогресс ученика</h1><p>Темп, сильные стороны и темы для повторения.</p></header><div className="score-row"><article><span>Год</span><b>{yearProgress}%</b><small>{completedLessons} из {totalLessons}</small></article><article><span>Освоение</span><b>{mastery}%</b><small>Средний уровень навыков</small></article><article><span>Текущий урок</span><b>{currentYearLesson}</b><small>{yearPlan[currentYearLesson - 1]?.title}</small></article></div><div className="skills-grid">{Object.entries(state.skills).map(([id,skill])=><article key={id}><div><b>{skillLabels[id as keyof typeof skillLabels]}</b><strong>{skill.mastery}%</strong></div><div className="bar"><i style={{width:`${skill.mastery}%`}}/></div><small>{skill.needsReview?'Нужно повторить':'Продвигаемся хорошо'}</small></article>)}</div></main>}
-
-      {screen === 'parent' && <main className="dashboard"><header><span>Для родителей</span><h1>Учебный маршрут</h1><p>Курс идёт по школьной программе, повторение добавляется автоматически.</p></header><div className="parent-grid"><article><h3>Готовый контент</h3><p>Полностью готовы 23 интерактивных урока. В каталоге уже отражён точный годовой план из 175 уроков.</p></article><article><h3>Пробелы</h3><p>{weak.length?`Обнаружено навыков для повторения: ${weak.length}`:'Выраженных пробелов нет.'}</p></article><article><h3>Олимпиадная линия</h3><p>В каждом готовом уроке есть отдельная нестандартная задача.</p></article><article><h3>Управление</h3><button className="danger-button" onClick={resetCourse}>Сбросить прогресс</button></article></div></main>}
+      {screen === 'progress' && <LearnerDashboard mode="student" state={state}/>}      
+      {screen === 'parent' && <LearnerDashboard mode="parent" state={state}/>}      
 
       {routeBuilt && <div className="route-modal"><div><span>🎉</span><h2>Маршрут построен!</h2><p>Начинаем с урока №1.</p><button onClick={() => { setRouteBuilt(false); setScreen('course'); }}>Открыть первый урок</button></div></div>}
     </div>
