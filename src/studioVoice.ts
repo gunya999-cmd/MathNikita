@@ -11,6 +11,7 @@ export const DEFAULT_VOICE_RATE=.94;
 
 const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
+const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 function persistVoiceSettings(settings:StoredVoiceSettings){
@@ -33,21 +34,29 @@ export function loadVoiceSettings():StoredVoiceSettings{
   return migrated;
 }
 
-export function saveVoiceSettings(settings:StoredVoiceSettings){
-  persistVoiceSettings(settings);
-}
-
+export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSettings(settings)}
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
-
 function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${studioNarrationText(text)}`}
+export function peekStudioAudioUrl(id:string,text:string){return readyAudioUrlCache.get(cacheKey(id,text))}
+export function prefetchStudioAudioUrl(id:string,text:string){if(!id||!text)return;void getStudioAudioUrl(id,text).catch(()=>undefined)}
 
-export function peekStudioAudioUrl(id:string,text:string){
-  return readyAudioUrlCache.get(cacheKey(id,text));
-}
-
-export function prefetchStudioAudioUrl(id:string,text:string){
-  if(!id||!text)return;
-  void getStudioAudioUrl(id,text).catch(()=>undefined);
+function wait(ms:number){return new Promise(resolve=>window.setTimeout(resolve,ms))}
+async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<Blob>{
+  const response=await fetch('/api/narration',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({id,text:prepared,version:STUDIO_VOICE_VERSION}),
+  });
+  if(!response.ok){
+    if(attempt<2&&RETRYABLE_STATUS.has(response.status)){
+      await wait(220*(attempt+1));
+      return requestStudioAudio(id,prepared,attempt+1);
+    }
+    throw new Error(`Studio narration unavailable: ${response.status}`);
+  }
+  const type=response.headers.get('content-type')??'';
+  if(!type.includes('audio/'))throw new Error('Studio narration returned non-audio response');
+  return response.blob();
 }
 
 export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
@@ -57,18 +66,9 @@ export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
   if(ready)return ready;
   const cached=audioUrlCache.get(key);
   if(cached)return cached;
-  const request=fetch('/api/narration',{
-    method:'POST',
-    headers:{'content-type':'application/json'},
-    body:JSON.stringify({id,text:prepared,version:STUDIO_VOICE_VERSION}),
-  }).then(async response=>{
-    if(!response.ok)throw new Error(`Studio narration unavailable: ${response.status}`);
-    const type=response.headers.get('content-type')??'';
-    if(!type.includes('audio/'))throw new Error('Studio narration returned non-audio response');
-    const url=URL.createObjectURL(await response.blob());
-    readyAudioUrlCache.set(key,url);
-    return url;
-  }).catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error});
+  const request=requestStudioAudio(id,prepared)
+    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url})
+    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error});
   audioUrlCache.set(key,request);
   return request;
 }
