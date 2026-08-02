@@ -42,9 +42,9 @@ jobs:
           retention-days: 7
 
   desktop-chromium-lesson6-voice:
-    name: Desktop Chromium · lesson 6 Sulafat and Pythagoras
+    name: Desktop Chromium · lesson 6, analytics and dashboards
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -58,11 +58,13 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify lesson 6 desktop voice parity
         run: npx playwright test tests/lesson-six-desktop-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Verify learner and parent dashboards
+        run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: lesson6-desktop-chromium-traces-${{ github.sha }}
+          name: desktop-chromium-traces-${{ github.sha }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7
