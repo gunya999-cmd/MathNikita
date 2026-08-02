@@ -69,6 +69,13 @@ async function clickNext(page:Page){
   expect(clicked,'Expected active lesson next button').toBe(true);
 }
 
+async function waitForMeasuredDuration(page:Page){
+  await expect.poll(
+    ()=>page.evaluate(()=>document.querySelector<HTMLElement>('[data-opening-duration] strong')?.textContent?.trim()??''),
+    {timeout:5_000},
+  ).toBe('измеряется');
+}
+
 async function openLessonSix(page:Page){
   console.log('[l6-ipad] open: goto');
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
@@ -84,13 +91,13 @@ async function openLessonSix(page:Page){
   });
   expect(opened).toBe(true);
   await expect(page.getByRole('heading',{name:'Отрезок. Длина отрезка'}).first()).toBeVisible({timeout:5_000});
-  await expect(page.locator('.lesson-opening-plan > div strong')).toHaveText('измеряется',{timeout:5_000});
+  await waitForMeasuredDuration(page);
 
   console.log('[l6-ipad] open: start lesson');
   await clickCss(page,'.lesson-opening-start');
   await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible({timeout:5_000});
   await expect(page.locator('.cat-mentor-collapsed')).toBeVisible({timeout:5_000});
-  await expect(page.locator('.lesson-duration')).toHaveText('Время измеряется',{timeout:5_000});
+  await expect.poll(()=>page.evaluate(()=>document.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .lesson-duration')?.textContent?.trim()??''),{timeout:5_000}).toBe('Время измеряется');
   console.log('[l6-ipad] open: ready');
 }
 
