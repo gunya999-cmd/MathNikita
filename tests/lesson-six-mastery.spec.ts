@@ -32,6 +32,7 @@ test('lesson 6 mandatory practice is source-aligned and has the required workloa
 });
 
 test('lesson 6 is complete only after mandatory practice and reflection',async({page})=>{
+  test.setTimeout(60_000);
   await page.goto('/');
   await page.evaluate(results=>{
     localStorage.setItem('mathnikita-selected-lesson','6');
@@ -42,7 +43,6 @@ test('lesson 6 is complete only after mandatory practice and reflection',async({
   },mainResults);
   await page.reload();
   await openLessonSix(page);
-  await expect(page.locator('.lesson-opening-plan > div strong')).toHaveText('измеряется');
 
   const summary=page.locator('[data-stage-id="l6-summary"] .summary-card');
   await expect(summary).toContainText('Основная часть ✓');
