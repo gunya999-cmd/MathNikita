@@ -41,10 +41,10 @@ test('lesson 5 auto-narrates mandatory practice and Pythagoras voices contextual
   await expect.poll(()=>requests.some(item=>item.id==='lesson-05-practice-l5-master-9'),{timeout:5_000}).toBe(true);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__practiceVoiceAudit:{audioPlays:number}}).__practiceVoiceAudit.audioPlays),{timeout:5_000}).toBeGreaterThan(0);
 
-  await task9.getByLabel('Сколько километров вертолёт пролетает за 1 час?').fill('180');
-  await task9.getByLabel('Сколько километров он пролетит за 6 часов?').fill('1080');
-  await task9.getByLabel('Сколько километров он пролетит за 10 часов?').fill('1800');
-  await task9.getByLabel('За сколько часов он пролетит 1 440 км?').fill('8');
+  await task9.getByLabel('Сколько километров вертолёт пролетает за 1 час?',{exact:true}).fill('180');
+  await task9.getByLabel('Сколько километров он пролетит за 6 часов?',{exact:true}).fill('1080');
+  await task9.getByLabel('Сколько километров он пролетит за 10 часов?',{exact:true}).fill('1800');
+  await task9.getByLabel('За сколько часов он пролетит 1 440 км?',{exact:true}).fill('8');
   await domClick(task9.getByRole('button',{name:'Проверить'}));await expect(task9.locator('.extended-practice-feedback.is-correct')).toBeVisible();
   const playsBeforeNext=await page.evaluate(()=>(window as unknown as {__practiceVoiceAudit:{audioPlays:number}}).__practiceVoiceAudit.audioPlays);
   await domClick(task9.getByRole('button',{name:'Следующее задание →'}));
@@ -53,7 +53,10 @@ test('lesson 5 auto-narrates mandatory practice and Pythagoras voices contextual
   await expect.poll(()=>requests.some(item=>item.id==='lesson-05-practice-l5-master-10'),{timeout:5_000}).toBe(true);
   await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__practiceVoiceAudit:{audioPlays:number}}).__practiceVoiceAudit.audioPlays),{timeout:5_000}).toBeGreaterThan(playsBeforeNext);
 
-  await task10.getByLabel('Следующее натуральное число').fill('0');await task10.getByLabel('На сколько следующее натуральное число больше предыдущего?').fill('0');await task10.getByLabel('Самое маленькое натуральное число').fill('0');await task10.getByLabel('Существует ли наибольшее натуральное число?').fill('да');
+  await task10.getByLabel('Следующее натуральное число',{exact:true}).fill('0');
+  await task10.getByLabel('На сколько следующее натуральное число больше предыдущего?',{exact:true}).fill('0');
+  await task10.getByLabel('Самое маленькое натуральное число',{exact:true}).fill('0');
+  await task10.getByLabel('Существует ли наибольшее натуральное число?',{exact:true}).fill('да');
   const playsBeforeWrong=await page.evaluate(()=>(window as unknown as {__practiceVoiceAudit:{audioPlays:number}}).__practiceVoiceAudit.audioPlays);
   await domClick(task10.getByRole('button',{name:'Проверить'}));await expect(task10.locator('.extended-practice-feedback.is-wrong')).toBeVisible();
   const hint=(await task10.locator('.extended-practice-feedback.is-wrong span').textContent())?.trim()??'';expect(hint.length).toBeGreaterThan(20);
