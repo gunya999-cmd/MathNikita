@@ -2,6 +2,7 @@ import type { ExtendedPracticeSet } from './extendedPracticeTypes';
 import { buildMasteryPractice } from './masteryPracticeGenerator';
 import { lessonFiveMastery } from './lessonFiveMastery';
 import { lessonSixMastery } from './lessonSixMastery';
+import { migrateLessonSixRevision } from '../lessonSixRevisionMigration';
 import { extendedPracticeLesson1 } from './extendedPracticeLesson1';
 import { extendedPracticeLesson2 } from './extendedPracticeLesson2';
 import { extendedPracticeLesson3a } from './extendedPracticeLesson3a';
@@ -27,6 +28,8 @@ import { extendedPracticeLesson20 } from './extendedPracticeLesson20';
 import { extendedPracticeLesson21 } from './extendedPracticeLesson21';
 import { extendedPracticeLesson22 } from './extendedPracticeLesson22';
 import { extendedPracticeLesson23 } from './extendedPracticeLesson23';
+
+migrateLessonSixRevision();
 
 const lesson3: ExtendedPracticeSet = {
   title:'Тренировочная мастерская: десятичная запись',
