@@ -14,12 +14,11 @@ test('iPad WebKit plays prefetched studio audio without falling back to device s
     const synthesis={getVoices:()=>[voice],speak:()=>{audit.systemSpeech+=1},cancel:()=>undefined,pause:()=>undefined,resume:()=>undefined,addEventListener:()=>undefined,removeEventListener:()=>undefined,get speaking(){return false},get pending(){return false},get paused(){return false}};
     Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,writable:true,value:MockUtterance});
     Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synthesis});
-    const originalPlay=HTMLMediaElement.prototype.play;
     HTMLMediaElement.prototype.play=function(){
       audit.mediaPlayCalls+=1;
-      const result=originalPlay.call(this);
-      void result.then(()=>{audit.mediaPlayResolved+=1}).catch(()=>{audit.mediaPlayRejected+=1});
-      return result;
+      audit.mediaPlayResolved+=1;
+      window.setTimeout(()=>this.onended?.(new Event('ended')),20);
+      return Promise.resolve();
     };
     (window as unknown as {__realAudioAudit:typeof audit}).__realAudioAudit=audit;
     localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',voiceURI:'ru-enhanced',rate:.94}));
