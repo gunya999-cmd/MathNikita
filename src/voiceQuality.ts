@@ -90,6 +90,8 @@ export function prepareRussianSpeechText(value: string) {
     const spokenRight = /^[A-Za-z]$/.test(right) ? speakLatinToken(right) : right;
     return `${left} умножить на ${spokenRight}`;
   });
+  text = text.replace(/([\d)])\s*[×*·]\s*(?=[\d(])/g, '$1 умножить на ');
+  text = text.replace(/([\d)])\s*:\s*(?=[\d(])/g, '$1 разделить на ');
   text = text.replace(/(\d)([a-z])\b/g, (_, number: string, letter: string) => `${number} умножить на ${speakLatinToken(letter)}`);
   text = text.replace(/\b([A-Z]{1,4})\b/g, token => speakLatinToken(token));
   text = text.replace(/\b([a-z])\b/g, token => speakLatinToken(token));

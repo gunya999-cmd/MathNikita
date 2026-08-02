@@ -1,0 +1,51 @@
+@media (max-width: 960px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    padding: 12px 18px;
+  }
+
+  .topbar .brand {
+    min-width: 0;
+  }
+
+  .topbar .brand div {
+    min-width: 0;
+  }
+
+  .topbar .brand small {
+    overflow-wrap: anywhere;
+  }
+
+  .topbar nav {
+    grid-column: 1 / -1;
+    min-width: 0;
+    max-width: 100%;
+    justify-content: flex-start;
+    gap: 4px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .topbar nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topbar nav button {
+    flex: 0 0 auto;
+    padding: 9px 11px;
+    white-space: nowrap;
+  }
+
+  .topbar .xp-pill {
+    justify-self: end;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar .xp-pill {
+    display: none;
+  }
+}

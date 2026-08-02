@@ -1,4 +1,6 @@
 import { useEffect, type RefObject } from 'react';
+import { extendedPracticeStorageKey } from './extendedPracticeEngine';
+import { loadLessonTiming,resetLessonTiming,saveLessonTiming } from './lessonTiming';
 
 type SavedStage = { answer?: string; order?: string[] };
 type SavedLesson = { version: 1; stages: Record<string, SavedStage> };
@@ -22,6 +24,14 @@ function save(lessonNumber: number, stageId: string, next: SavedStage) {
   localStorage.setItem(storageKey(lessonNumber), JSON.stringify(lesson));
 }
 
+function clearLessonCompletionState(lessonNumber:number){
+  const practiceKey=extendedPracticeStorageKey(lessonNumber);
+  localStorage.removeItem(practiceKey);
+  localStorage.removeItem(`${practiceKey}:draft`);
+  localStorage.removeItem(`mathnikita:reflection:${lessonNumber}`);
+  localStorage.removeItem(`mathnikita:lesson-complete:${lessonNumber}`);
+}
+
 function nativeSetInputValue(input: HTMLInputElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
   setter?.call(input, value);
@@ -30,6 +40,86 @@ function nativeSetInputValue(input: HTMLInputElement, value: string) {
 }
 
 export function LessonResponsePersistence({ rootRef, lessonNumber, active }: Props) {
+  useEffect(()=>{
+    if(!active)return;
+    const root=rootRef.current;
+    let timing=loadLessonTiming(lessonNumber);
+    timing={...timing,sessions:timing.sessions+1,updatedAt:new Date().toISOString()};
+    saveLessonTiming(lessonNumber,timing);
+    let activeSeconds=timing.activeSeconds;
+    let unsavedSeconds=0;
+    let lastTick=performance.now();
+
+    const flush=()=>{
+      saveLessonTiming(lessonNumber,{
+        version:1,
+        activeSeconds,
+        sessions:timing.sessions,
+        updatedAt:new Date().toISOString(),
+      });
+      unsavedSeconds=0;
+    };
+    const tick=()=>{
+      const now=performance.now();
+      const delta=Math.min(Math.max((now-lastTick)/1000,0),2);
+      lastTick=now;
+      if(document.visibilityState!=='visible')return;
+      activeSeconds+=delta;
+      unsavedSeconds+=delta;
+      if(unsavedSeconds>=5)flush();
+    };
+    const handleRestart=(event:Event)=>{
+      const target=event.target as HTMLElement;
+      const resetButton=target.closest<HTMLButtonElement>('.stage-counter button');
+      if(!resetButton?.textContent?.includes('Начать заново'))return;
+      clearLessonCompletionState(lessonNumber);
+      resetLessonTiming(lessonNumber);
+      activeSeconds=0;
+      unsavedSeconds=0;
+      lastTick=performance.now();
+      timing={version:1,activeSeconds:0,sessions:1,updatedAt:new Date().toISOString()};
+      saveLessonTiming(lessonNumber,timing);
+      window.dispatchEvent(new CustomEvent('mathnikita-lesson-reset',{detail:{lessonNumber}}));
+    };
+    const timer=window.setInterval(tick,1000);
+    const visibility=()=>{tick();lastTick=performance.now()};
+    document.addEventListener('visibilitychange',visibility);
+    root?.addEventListener('click',handleRestart,true);
+    return()=>{
+      tick();
+      flush();
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange',visibility);
+      root?.removeEventListener('click',handleRestart,true);
+    };
+  },[rootRef,lessonNumber,active]);
+
+  useEffect(()=>{
+    if(!active||lessonNumber!==5)return;
+    const root=rootRef.current;
+    if(!root)return;
+    const normalizeLegacyLessonFive=()=>{
+      const runtime=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');
+      if(!runtime)return;
+      const duration=runtime.querySelector<HTMLElement>('.lesson-duration');
+      if(duration&&duration.textContent!=='Фактическое время измеряется')duration.textContent='Фактическое время измеряется';
+      const summary=runtime.querySelector<HTMLElement>('.summary-card');
+      if(!summary)return;
+      const blocks=Array.from(summary.querySelectorAll<HTMLElement>(':scope > div'));
+      const status=blocks[2];
+      const statusValue=status?.querySelector<HTMLElement>('b');
+      const statusNote=status?.querySelector<HTMLElement>('small');
+      if(statusValue&&statusValue.textContent==='Завершён')statusValue.textContent='Основная часть ✓';
+      if(statusValue?.textContent==='Основная часть ✓'&&statusNote&&statusNote.textContent!=='обязательная практика впереди')statusNote.textContent='обязательная практика впереди';
+      const progressLabel=runtime.querySelector<HTMLElement>('.lesson-controls > span');
+      if(progressLabel?.textContent?.trim()==='100% урока')progressLabel.textContent='Основная часть пройдена';
+    };
+    normalizeLegacyLessonFive();
+    const observer=new MutationObserver(normalizeLegacyLessonFive);
+    observer.observe(root,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['hidden','data-stage-id']});
+    return()=>observer.disconnect();
+  },[rootRef,lessonNumber,active]);
+
   useEffect(() => {
     if (!active || lessonNumber > 3) return;
     const root = rootRef.current;

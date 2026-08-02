@@ -1,4 +1,6 @@
 import type { ExtendedPracticeSet } from './extendedPracticeTypes';
+import { buildMasteryPractice } from './masteryPracticeGenerator';
+import { lessonFiveMastery } from './lessonFiveMastery';
 import { extendedPracticeLesson1 } from './extendedPracticeLesson1';
 import { extendedPracticeLesson2 } from './extendedPracticeLesson2';
 import { extendedPracticeLesson3a } from './extendedPracticeLesson3a';
@@ -16,6 +18,14 @@ import { extendedPracticeLesson12 } from './extendedPracticeLesson12';
 import { extendedPracticeLesson13 } from './extendedPracticeLesson13';
 import { extendedPracticeLesson14 } from './extendedPracticeLesson14';
 import { extendedPracticeLesson15 } from './extendedPracticeLesson15';
+import { extendedPracticeLesson16 } from './extendedPracticeLesson16';
+import { extendedPracticeLesson17 } from './extendedPracticeLesson17';
+import { extendedPracticeLesson18 } from './extendedPracticeLesson18';
+import { extendedPracticeLesson19 } from './extendedPracticeLesson19';
+import { extendedPracticeLesson20 } from './extendedPracticeLesson20';
+import { extendedPracticeLesson21 } from './extendedPracticeLesson21';
+import { extendedPracticeLesson22 } from './extendedPracticeLesson22';
+import { extendedPracticeLesson23 } from './extendedPracticeLesson23';
 
 const lesson3: ExtendedPracticeSet = {
   title:'Тренировочная мастерская: десятичная запись',
@@ -31,7 +41,7 @@ const lesson6: ExtendedPracticeSet = {
   tasks:[...extendedPracticeLesson6a, ...extendedPracticeLesson6b],
 };
 
-export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = {
+const basePracticeByLesson: Record<number, ExtendedPracticeSet> = {
   1:extendedPracticeLesson1,
   2:extendedPracticeLesson2,
   3:lesson3,
@@ -47,7 +57,23 @@ export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = {
   13:extendedPracticeLesson13,
   14:extendedPracticeLesson14,
   15:extendedPracticeLesson15,
+  16:extendedPracticeLesson16,
+  17:extendedPracticeLesson17,
+  18:extendedPracticeLesson18,
+  19:extendedPracticeLesson19,
+  20:extendedPracticeLesson20,
+  21:extendedPracticeLesson21,
+  22:extendedPracticeLesson22,
+  23:extendedPracticeLesson23,
 };
+
+export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = Object.fromEntries(
+  Object.entries(basePracticeByLesson).map(([key,practice])=>{
+    const lessonNumber=Number(key);
+    const masteryTasks=lessonNumber===5?lessonFiveMastery:buildMasteryPractice(lessonNumber);
+    return [lessonNumber,{...practice,tasks:[...practice.tasks,...masteryTasks]}];
+  }),
+);
 
 export const extendedPracticeLessonNumbers = Object.keys(extendedPracticeByLesson).map(Number);
 export type { ExtendedPracticeSet, ExtendedPracticeTask } from './extendedPracticeTypes';

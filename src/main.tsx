@@ -7,6 +7,7 @@ import './adaptive.css';
 import './map.css';
 import './designRefresh.css';
 import './designRefreshPatch.css';
+import './topbarResponsive.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

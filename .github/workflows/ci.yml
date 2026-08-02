@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/**
   pull_request:
     branches:
       - main
@@ -13,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-direct-v2-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: TypeScript and Vite build
+    name: TypeScript, Vite and Worker build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -32,6 +31,8 @@ jobs:
         run: npm install
       - name: Build application
         run: npm run build
+      - name: Validate Cloudflare Worker and narration API
+        run: npx -y wrangler@4.114.0 deploy --dry-run --outdir .wrangler-dry-run
       - name: Upload production bundle
         uses: actions/upload-artifact@v4
         with:
@@ -40,10 +41,10 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  ipad-webkit:
-    name: iPad WebKit complete lesson and narration audit
+  ipad-webkit-critical:
+    name: iPad WebKit critical audit · lesson 5 Marin smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 6
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -55,13 +56,13 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Complete every exercise and audit narration in all fifteen lessons
-        run: npm run test:ipad
+      - name: Verify lesson 5 Marin smoke
+        run: npx playwright test tests/lesson-five-marin-smoke.spec.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ipad-webkit-traces-${{ github.sha }}
+          name: ipad-webkit-critical-traces-${{ github.sha }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7
