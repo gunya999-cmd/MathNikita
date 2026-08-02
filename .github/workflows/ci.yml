@@ -44,7 +44,7 @@ jobs:
   ipad-webkit-lesson5-regression:
     name: iPad WebKit regression · lesson 5 Sulafat
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,6 +60,8 @@ jobs:
         run: npx playwright test tests/worker-narration-failover.spec.ts --workers=1
       - name: Verify lesson 5 Sulafat smoke
         run: npx playwright test tests/lesson-five-marin-smoke.spec.ts --workers=1
+      - name: Verify lesson 5 practice voice and Pythagoras
+        run: npx playwright test tests/lesson-five-practice-voice.spec.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
