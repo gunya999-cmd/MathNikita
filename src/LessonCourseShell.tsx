@@ -42,6 +42,7 @@ import { ProgressiveHintCoach,type ProgressiveHintState } from './ProgressiveHin
 import { VoiceNarrator } from './VoiceNarrator';
 import { CatMentor,type MentorSignal } from './CatMentor';
 import { LessonResponsePersistence } from './LessonResponsePersistence';
+import { LessonAnalyticsTracker } from './LessonAnalyticsTracker';
 import { MentorResponsiveBehavior } from './MentorResponsiveBehavior';
 
 type CourseMode='catalog'|'opening'|'lesson';
@@ -201,6 +202,7 @@ export function LessonCourseShell(){
     <LessonPlayer key="lesson-1"/>;
 
   return <div ref={shellRef} className={`lesson-course-shell ${showOpening?'is-opening':'is-learning'} ${isControlWork?'is-control-work':''}`} onClickCapture={handleCourseClick} onKeyDownCapture={handleCourseKeyDown}>
+    <LessonAnalyticsTracker rootRef={shellRef} lessonNumber={selectedLesson} active={mode==='lesson'}/>
     {!isControlWork?<LessonResponsePersistence rootRef={shellRef} lessonNumber={selectedLesson} active={mode==='lesson'}/>:null}
     {!isControlWork?<MentorResponsiveBehavior rootRef={shellRef} lessonNumber={selectedLesson} mode={showOpening?'opening':'lesson'}/>:null}
     <div className="lesson-mode-toolbar">
