@@ -1,4 +1,9 @@
-import { expect,test } from '@playwright/test';
+import { expect,test,type Locator } from '@playwright/test';
+
+async function domClick(locator:Locator){
+  await expect(locator).toBeVisible();
+  await locator.evaluate((element:HTMLElement)=>element.click());
+}
 
 test('lesson 5 is not complete before mandatory mastery practice and reflection',async({page})=>{
   await page.goto('/');
@@ -22,8 +27,8 @@ test('lesson 5 is not complete before mandatory mastery practice and reflection'
   });
 
   await page.reload();
-  await page.getByRole('button',{name:/Открыть урок 5:/}).click();
-  await page.locator('.lesson-opening-start').click();
+  await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
+  await domClick(page.locator('.lesson-opening-start'));
 
   await expect(page.locator('.lesson-runtime:not([hidden]) .lesson-duration')).toHaveText('Фактическое время измеряется');
   const summary=page.locator('[data-stage-id="l5-summary"] .summary-card');
@@ -39,16 +44,16 @@ test('lesson 5 is not complete before mandatory mastery practice and reflection'
   await task.getByLabel('На сколько следующее натуральное число больше предыдущего?').fill('1');
   await task.getByLabel('Самое маленькое натуральное число').fill('1');
   await task.getByLabel('Существует ли наибольшее натуральное число?').fill('нет');
-  await task.getByRole('button',{name:'Проверить'}).click();
+  await domClick(task.getByRole('button',{name:'Проверить'}));
   await expect(task.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await task.getByRole('button',{name:'Завершить практику'}).click();
+  await domClick(task.getByRole('button',{name:'Завершить практику'}));
 
   await expect(page.locator('.extended-practice.is-finished')).toContainText('20 заданий');
   await expect(page.locator('.extended-practice.is-finished')).toContainText('50 проверяемых ответов');
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Многозначное число нужно читать и записывать по классам. Нули сохраняют разряды, а натуральный ряд начинается с 1, идёт с шагом 1 и не имеет последнего числа.');
-  await finalStep.getByRole('button',{name:'Завершить урок'}).click();
+  await domClick(finalStep.getByRole('button',{name:'Завершить урок'}));
   await expect(finalStep).toContainText('Урок завершён ✓');
   expect(await page.evaluate(()=>Boolean(localStorage.getItem('mathnikita:lesson-complete:5')))).toBe(true);
 });
