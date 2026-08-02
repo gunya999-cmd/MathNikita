@@ -41,6 +41,12 @@ export function peekStudioAudioUrl(id:string,text:string){return readyAudioUrlCa
 export function prefetchStudioAudioUrl(id:string,text:string){if(!id||!text)return;void getStudioAudioUrl(id,text).catch(()=>undefined)}
 
 function wait(ms:number){return new Promise(resolve=>window.setTimeout(resolve,ms))}
+function retryDelayMs(response:Response,attempt:number){
+  const retryAfter=Number(response.headers.get('retry-after'));
+  if(Number.isFinite(retryAfter)&&retryAfter>0)return Math.min(Math.max(retryAfter*1000,1000),12_000);
+  if(response.status===429)return 1600*(attempt+1);
+  return 600*(attempt+1);
+}
 async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<Blob>{
   const response=await fetch('/api/narration',{
     method:'POST',
@@ -49,7 +55,7 @@ async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<B
   });
   if(!response.ok){
     if(attempt<2&&RETRYABLE_STATUS.has(response.status)){
-      await wait(220*(attempt+1));
+      await wait(retryDelayMs(response,attempt));
       return requestStudioAudio(id,prepared,attempt+1);
     }
     throw new Error(`Studio narration unavailable: ${response.status}`);
