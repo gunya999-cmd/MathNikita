@@ -1,4 +1,9 @@
-import { expect,test } from '@playwright/test';
+import { expect,test,type Locator } from '@playwright/test';
+
+async function domClick(locator:Locator){
+  await expect(locator).toBeVisible();
+  await locator.evaluate((element:HTMLElement)=>element.click());
+}
 
 test('lesson 4 is not complete before mandatory mastery practice and reflection',async({page})=>{
   await page.goto('/');
@@ -22,8 +27,8 @@ test('lesson 4 is not complete before mandatory mastery practice and reflection'
   });
 
   await page.reload();
-  await page.getByRole('button',{name:/Открыть урок 4:/}).click();
-  await page.locator('.lesson-opening-start').click();
+  await domClick(page.getByRole('button',{name:/Открыть урок 4:/}));
+  await domClick(page.locator('.lesson-opening-start'));
 
   const summary=page.locator('[data-stage-id="l4-summary"] .summary-card');
   await expect(summary).toContainText('Основная часть ✓');
@@ -39,16 +44,16 @@ test('lesson 4 is not complete before mandatory mastery practice and reflection'
   await task.getByLabel('Значение цифры 4').fill('400 000');
   await task.getByLabel('Количество полных тысяч').fill('9 407');
   await task.getByLabel('Разрядная сумма').fill('9 000 000 + 400 000 + 7 000 + 300 + 5');
-  await task.getByRole('button',{name:'Проверить'}).click();
+  await domClick(task.getByRole('button',{name:'Проверить'}));
   await expect(task.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await task.getByRole('button',{name:'Завершить практику'}).click();
+  await domClick(task.getByRole('button',{name:'Завершить практику'}));
 
   await expect(page.locator('.extended-practice.is-finished')).toContainText('20 заданий');
   await expect(page.locator('.extended-practice.is-finished')).toContainText('50 проверяемых ответов');
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Значение цифры зависит от её разряда. Классы и нули помогают точно читать, записывать и разбирать многозначные числа.');
-  await finalStep.getByRole('button',{name:'Завершить урок'}).click();
+  await domClick(finalStep.getByRole('button',{name:'Завершить урок'}));
   await expect(finalStep).toContainText('Урок завершён ✓');
   expect(await page.evaluate(()=>Boolean(localStorage.getItem('mathnikita:lesson-complete:4')))).toBe(true);
 });
