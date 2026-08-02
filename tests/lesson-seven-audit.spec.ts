@@ -78,16 +78,14 @@ test('lesson 7 exposes AI narration in main lesson, practice and Pythagoras',asy
   await narrator.click();
   await expect.poll(()=>requests.value).toBeGreaterThan(beforeMain);
 
+  const beforePractice=requests.value;
   await jump(page,22,'l7-summary');
   await expect(page.locator('.extended-practice-voice button')).toBeVisible();
+  await expect.poll(()=>requests.value).toBeGreaterThan(beforePractice);
   await expect(page.locator('.practice-pythagoras-actions button')).toHaveCount(4);
   await expect(page.locator('.practice-pythagoras')).toContainText('тот же AI-голос Sulafat');
 
-  const beforePractice=requests.value;
-  await page.locator('.extended-practice-voice button').click();
-  await expect.poll(()=>requests.value).toBeGreaterThan(beforePractice);
-
   const beforeMentor=requests.value;
-  await page.getByRole('button',{name:'✦ Подсказка'}).click();
+  await page.getByRole('button',{name:/Подсказка/}).last().click();
   await expect.poll(()=>requests.value).toBeGreaterThan(beforeMentor);
 });
