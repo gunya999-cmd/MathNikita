@@ -42,9 +42,9 @@ jobs:
           retention-days: 7
 
   ipad-webkit-critical:
-    name: iPad WebKit critical audit · lesson 5 + Marin
+    name: iPad WebKit critical audit · lesson 5 Marin flow
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -56,8 +56,8 @@ jobs:
         run: npm install
       - name: Install WebKit browser
         run: npx playwright install --with-deps webkit
-      - name: Complete critical iPad lesson and narration audit
-        run: npm run test:ipad -- --shard=15/24 --workers=1
+      - name: Verify lesson 5 Marin flow
+        run: npx playwright test tests/unified-studio-voice.spec.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
