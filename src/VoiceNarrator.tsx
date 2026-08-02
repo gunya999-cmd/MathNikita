@@ -22,7 +22,11 @@ function createNarrationAudio(source:string):HTMLAudioElement|null{
 
 function getNarrationText(root:HTMLElement|null,mode:VoiceNarratorProps['mode']){
   if(!root)return'';
-  if(mode==='opening'){const scope=root.querySelector<HTMLElement>('.opening-screen:not([hidden])');return scope?collectVisibleText(scope,['.lesson-opening-copy h1','.lesson-opening-copy p','.lesson-opening-question b','.lesson-opening-plan li span']):''}
+  if(mode==='opening'){
+    const scope=root.querySelector<HTMLElement>('.opening-screen:not([hidden])')??root.querySelector<HTMLElement>('.lesson-opening');
+    if(!scope)return'';
+    return collectVisibleText(scope,['.lesson-opening-copy h1','.lesson-opening-copy p','.lesson-opening-question b','.lesson-opening-plan li span'])||scope.textContent?.trim()||'';
+  }
   const practice=visiblePractice(root);if(practice)return collectVisibleText(practice,['h3','.extended-practice-instruction','.extended-practice-input span','.extended-practice-options button','.extended-practice-feedback b','.extended-practice-feedback span']);
   const finalReflection=visibleFinalReflection(root);if(finalReflection)return collectVisibleText(finalReflection,['.reflection-heading h2','.reflection-heading p','blockquote','.reflection-answer > span']);
   const scope=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');return scope?collectVisibleText(scope,['.interactive-stage .stage-copy h2','.interactive-stage .stage-copy p','.interactive-stage .theory-note span','.interactive-stage .activity-area h3','.lesson-block h2','.lesson-block .block-text','.lesson-block .lesson-items li']):'';
@@ -60,7 +64,7 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
   useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
   useEffect(()=>{stop();const root=rootRef.current;if(!root)return;let currentId=getNarrationId(root,mode);const observer=new MutationObserver(()=>{const nextId=getNarrationId(root,mode);if(nextId&&nextId!==currentId){currentId=nextId;stop()}});observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();stop()}},[mode,rootRef]);
   useEffect(()=>{
-    if(engine!=='studio'||studioStatus!=='ready')return;
+    if(engine!=='studio')return;
     let retryTimer:number|null=null;
     let retries=0;
     const warm=()=>{
@@ -77,7 +81,7 @@ export function VoiceNarrator({rootRef,mode}:VoiceNarratorProps){
     const observer=new MutationObserver(scheduleWarm);
     observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});
     return()=>{observer.disconnect();if(retryTimer!==null)window.clearTimeout(retryTimer)};
-  },[engine,studioStatus,mode,rootRef]);
+  },[engine,mode,rootRef]);
 
   function startSystemSpeech(text:string,session:number){if(!systemSupported||!text){setSpeaking(false);return}window.speechSynthesis.cancel();const chunks=splitForSpeech(studioNarrationText(text));const selectedVoice=selectBestRussianVoice(voices,voiceURI);setSpeaking(true);let index=0;const playNext=()=>{if(sessionRef.current!==session||index>=chunks.length){setSpeaking(false);return}const utterance=new SpeechSynthesisUtterance(chunks[index]);utterance.lang='ru-RU';utterance.voice=selectedVoice??null;utterance.rate=Math.min(Math.max(rate,.88),1.04);utterance.pitch=1;utterance.volume=1;utterance.onend=()=>{index+=1;window.setTimeout(playNext,130)};utterance.onerror=()=>setSpeaking(false);window.speechSynthesis.speak(utterance)};playNext()}
 
