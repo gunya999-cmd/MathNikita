@@ -136,12 +136,12 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     <span className="voice-ai-disclosure" title="Озвучка создаётся искусственным интеллектом">AI-голос</span>
     <button type="button" className="voice-settings-button" onClick={()=>setSettingsOpen(open=>!open)} aria-expanded={settingsOpen} aria-label="Настройки голоса">⚙</button>
     {settingsOpen?<div className="voice-settings-panel">
-      <label><span>Режим озвучки</span><select value={engine} onChange={event=>setEngine(event.target.value as VoiceEngine)}><option value="studio">Единый AI-голос Marin · рекомендуется</option><option value="system">Системный голос устройства · резерв</option></select></label>
-      {engine==='studio'?<div className="voice-fixed-profile"><b>{STUDIO_VOICE_LABEL}</b><span>спокойный русский преподаватель · один голос на всех устройствах</span></div>:null}
+      <label><span>Режим озвучки</span><select value={engine} onChange={event=>setEngine(event.target.value as VoiceEngine)}><option value="studio">Единый AI-голос {STUDIO_VOICE_LABEL} · рекомендуется</option><option value="system">Системный голос устройства · резерв</option></select></label>
+      {engine==='studio'?<div className="voice-fixed-profile"><b>{STUDIO_VOICE_LABEL}</b><span>тёплый русский преподаватель · один голос на всех устройствах</span></div>:null}
       {engine==='system'&&voiceOptions.length?<label><span>Русский голос устройства</span><select value={selectedVoice?.voiceURI??''} onChange={event=>setVoiceURI(event.target.value)}>{voiceOptions.map((voice,index)=><option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{index===0?' · рекомендуется':''}{voice.localService?' · на устройстве':''}</option>)}</select></label>:null}
       <label><span>Скорость: {rate.toFixed(2)}×</span><input type="range" min="0.88" max="1.04" step="0.02" value={rate} onChange={event=>setRate(Number(event.target.value))}/></label>
       <small className={engine==='studio'?studioStatus==='ready'?'voice-engine-ready':'voice-engine-pending':isRussianVoice(selectedVoice??{name:'',lang:'',voiceURI:'',localService:false})?'voice-engine-ready':'voice-engine-pending'}>{engine==='studio'?studioMessage:systemVoiceMessage}</small>
-      <small className="voice-ai-note">Голос Marin — AI-сгенерированная озвучка, а не запись человека.</small>
+      <small className="voice-ai-note">Голос {STUDIO_VOICE_LABEL} — AI-сгенерированная озвучка, а не запись человека.</small>
     </div>:null}
   </div>;
 }
