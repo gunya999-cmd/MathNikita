@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const lessonEighteenStageIds=[
   'l18-mission','l18-diagnostic','l18-system','l18-practice1','l18-practice2','l18-signs-model','l18-practice3','l18-double-model','l18-practice4','l18-boundaries','l18-practice5','l18-practice6','l18-ray-model','l18-units-model','l18-transfer','l18-error-check','l18-quiz1','l18-quiz2','l18-quiz3','l18-quiz4','l18-quiz5','l18-challenge','l18-reflection','l18-summary',
@@ -6,6 +6,11 @@ const lessonEighteenStageIds=[
 const lessonTwentyStageIds=['l20-rules','l20-task1','l20-task2','l20-task3','l20-task4','l20-task5','l20-task6','l20-task7','l20-task8','l20-submit','l20-summary'] as const;
 
 type SpeechEntry={text:string;lang:string;voiceURI:string|null;voiceName:string|null;rate:number;pitch:number};
+
+async function domClick(locator:Locator){
+  await expect(locator).toBeVisible();
+  await locator.evaluate((element:HTMLElement)=>element.click());
+}
 
 async function installSpeechAudit(page:Page){
   await page.addInitScript(()=>{
@@ -51,19 +56,18 @@ async function openLesson(page:Page,lessonNumber:number){
   if(lessonNumber>=21){
     const chapterTwo=page.locator('.course-chapter-group').nth(1);
     const isOpen=await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open);
-    if(!isOpen)await chapterTwo.locator('summary').click();
+    if(!isOpen)await domClick(chapterTwo.locator('summary'));
   }
   const lesson=page.getByRole('button',{name:new RegExp(`Открыть урок ${lessonNumber}:`)});
-  await expect(lesson).toBeVisible();
-  await lesson.click();
+  await domClick(lesson);
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
   await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v4')??'{}').voiceURI)).toBe('ru-enhanced');
 }
-async function playNarrator(page:Page){const narrator=page.locator('.voice-narrator > button').first();await narrator.click();await expect(narrator).toContainText('Остановить');return narrator}
+async function playNarrator(page:Page){const narrator=page.locator('.voice-narrator > button').first();await domClick(narrator);await expect(narrator).toContainText('Остановить');return narrator}
 async function auditMentorExclusion(page:Page){
-  const narrator=page.locator('.voice-narrator > button').first();const collapsed=page.locator('.cat-mentor-collapsed');if(await collapsed.isVisible())await collapsed.click();const mentor=page.locator('.cat-mentor-speak');await expect(mentor).toBeVisible();
-  await clearSpeech(page);await narrator.click();await assertNaturalRussianSpeech(page);await mentor.click();await assertNaturalRussianSpeech(page,1);await expect(narrator).toContainText('Слушать');await expect(mentor).toHaveAttribute('aria-label','Остановить реплику');
-  await narrator.click();await assertNaturalRussianSpeech(page,2);await expect(mentor).toHaveAttribute('aria-label','Озвучить реплику');await expect(narrator).toContainText('Остановить');await narrator.click();
+  const narrator=page.locator('.voice-narrator > button').first();const collapsed=page.locator('.cat-mentor-collapsed');if(await collapsed.isVisible())await domClick(collapsed);const mentor=page.locator('.cat-mentor-speak');await expect(mentor).toBeVisible();
+  await clearSpeech(page);await domClick(narrator);await assertNaturalRussianSpeech(page);await domClick(mentor);await assertNaturalRussianSpeech(page,1);await expect(narrator).toContainText('Слушать');await expect(mentor).toHaveAttribute('aria-label','Остановить реплику');
+  await domClick(narrator);await assertNaturalRussianSpeech(page,2);await expect(mentor).toHaveAttribute('aria-label','Озвучить реплику');await expect(narrator).toContainText('Остановить');await domClick(narrator);
 }
 
 for(let lessonNumber=1;lessonNumber<=23;lessonNumber+=1){
@@ -74,9 +78,9 @@ for(let lessonNumber=1;lessonNumber<=23;lessonNumber+=1){
     await clearSpeech(page);
     let narrator=await playNarrator(page);
     await assertNaturalRussianSpeech(page);
-    await narrator.click();
+    await domClick(narrator);
 
-    await page.locator('.lesson-opening-start').click();
+    await domClick(page.locator('.lesson-opening-start'));
     const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
     await expect(stage).toBeVisible();
     const specialIds=lessonNumber===18?lessonEighteenStageIds:lessonNumber===20?lessonTwentyStageIds:null;
@@ -93,7 +97,7 @@ for(let lessonNumber=1;lessonNumber<=23;lessonNumber+=1){
       await clearSpeech(page);
       narrator=await playNarrator(page);
       await assertNaturalRussianSpeech(page);
-      await narrator.click();
+      await domClick(narrator);
     }
 
     await page.evaluate(({lessonNumber})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex:0}})),{lessonNumber});
