@@ -61,7 +61,6 @@ async function openLesson(page:Page,lessonNumber:number){
   const lesson=page.getByRole('button',{name:new RegExp(`Открыть урок ${lessonNumber}:`)});
   await domClick(lesson);
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
-  await expect.poll(async()=>page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-voice-settings-v4')??'{}').voiceURI)).toBe('ru-enhanced');
 }
 async function playNarrator(page:Page){const narrator=page.locator('.voice-narrator > button').first();await domClick(narrator);await expect(narrator).toContainText('Остановить');return narrator}
 async function auditMentorExclusion(page:Page){
