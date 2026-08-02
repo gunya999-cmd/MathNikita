@@ -1,5 +1,7 @@
 import { expect,test,type Page } from '@playwright/test';
 
+type NarrationCapture={ids:string[]};
+
 async function openLessonSeven(page:Page){
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/Открыть урок 7:/}).click();
@@ -12,10 +14,13 @@ async function jump(page:Page,stageIndex:number,stageId:string){
   await expect(page.locator(`[data-stage-id="${stageId}"]`)).toBeVisible();
 }
 
-function mockNarration(page:Page,counter:{value:number}){
+function mockNarration(page:Page,capture:NarrationCapture){
   return Promise.all([
     page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,voice:'Sulafat'})})),
-    page.route('**/api/narration',route=>{counter.value+=1;return route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-lesson-seven-mock'})}),
+    page.route('**/api/narration',route=>{
+      try{const body=route.request().postDataJSON() as {id?:string};if(body.id)capture.ids.push(body.id)}catch{/* keep test focused on narration availability */}
+      return route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-lesson-seven-mock'});
+    }),
   ]);
 }
 
@@ -68,24 +73,21 @@ test('lesson 7 summary is not a false completion and restart clears completion',
 });
 
 test('lesson 7 exposes AI narration in main lesson, practice and Pythagoras',async({page})=>{
-  const requests={value:0};
-  await mockNarration(page,requests);
+  const capture:NarrationCapture={ids:[]};
+  await mockNarration(page,capture);
   await openLessonSeven(page);
 
-  const narrator=page.locator('.voice-narrator').getByRole('button',{name:/Слушать|Повторить/}).first();
-  await expect(narrator).toBeVisible();
-  const beforeMain=requests.value;
-  await narrator.click();
-  await expect.poll(()=>requests.value).toBeGreaterThan(beforeMain);
+  await expect(page.locator('.voice-narrator').getByRole('button',{name:/Слушать|Повторить/}).first()).toBeVisible();
+  await expect(page.locator('.voice-ai-disclosure')).toContainText('AI-голос');
+  await expect.poll(()=>capture.ids.includes('lesson-07-stage-l7-story')).toBeTruthy();
 
-  const beforePractice=requests.value;
   await jump(page,22,'l7-summary');
   await expect(page.locator('.extended-practice-voice button')).toBeVisible();
-  await expect.poll(()=>requests.value).toBeGreaterThan(beforePractice);
+  await expect.poll(()=>capture.ids.some(id=>id.startsWith('lesson-07-practice-'))).toBeTruthy();
   await expect(page.locator('.practice-pythagoras-actions button')).toHaveCount(4);
   await expect(page.locator('.practice-pythagoras')).toContainText('тот же AI-голос Sulafat');
+  await expect.poll(()=>capture.ids.some(id=>id.startsWith('mentor-practice-7-')&&id.endsWith('-hint'))).toBeTruthy();
 
-  const beforeMentor=requests.value;
   await page.getByRole('button',{name:/Подсказка/}).last().click();
-  await expect.poll(()=>requests.value).toBeGreaterThan(beforeMentor);
+  await expect(page.locator('.practice-pythagoras-message')).not.toBeEmpty();
 });
