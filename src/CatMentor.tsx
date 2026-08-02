@@ -56,7 +56,7 @@ export function CatMentor({rootRef,lessonNumber,mode,signal}:Props){
   useEffect(()=>{
     if(scene.key==='empty'||loadVoiceSettings().engine!=='studio')return;
     let cancelled=false;let cursor=0;
-    const warm=async()=>{while(!cancelled){const next=mentorWarmupOrder[cursor++];if(!next)return;try{await getStudioAudioUrl(audioId(next),script[next])}catch{/* button can retry on demand */}};
+    const warm=async()=>{while(!cancelled){const next=mentorWarmupOrder[cursor++];if(!next)return;try{await getStudioAudioUrl(audioId(next),script[next])}catch{/* button can retry on demand */}}};
     void Promise.all([warm(),warm()]);
     return()=>{cancelled=true};
   },[scene.key,key,script]);
