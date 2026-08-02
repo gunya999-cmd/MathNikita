@@ -36,8 +36,13 @@ test('lesson 5 never substitutes system speech when Sulafat fails',async({page})
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
   const narrator=page.locator('.voice-narrator > button').first();await domClick(narrator);await expect(narrator).toContainText('Повторить · AI',{timeout:5_000});
   let systemSpeech=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{systemSpeech:number}}).__lessonFiveVoiceAudit.systemSpeech);expect(systemSpeech).toBe(0);
-  const mentor=page.locator('.cat-mentor-speak');await domClick(mentor);await expect.poll(()=>page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{systemSpeech:number}}).__lessonFiveVoiceAudit.systemSpeech),{timeout:5_000}).toBe(0);
+
+  await startLessonFromDom(page);await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});
+  const collapsed=page.locator('.cat-mentor-collapsed');
+  if(await collapsed.isVisible().catch(()=>false))await domClick(collapsed);
+  const mentor=page.locator('.cat-mentor-speak');await domClick(mentor);
   await expect(page.locator('.cat-mentor-voice-row small')).toContainText('Sulafat временно недоступен',{timeout:5_000});
+  systemSpeech=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{systemSpeech:number}}).__lessonFiveVoiceAudit.systemSpeech);expect(systemSpeech).toBe(0);
 });
 
 test('lesson 5 voice settings can always be dismissed',async({page})=>{
@@ -46,5 +51,5 @@ test('lesson 5 voice settings can always be dismissed',async({page})=>{
   const gear=page.locator('.voice-settings-button');const dialog=page.getByRole('dialog',{name:'Настройки голоса'});
   await domClick(gear);await expect(dialog).toBeVisible();await domClick(page.locator('.voice-settings-close'));await expect(dialog).toBeHidden();
   await domClick(gear);await expect(dialog).toBeVisible();await page.keyboard.press('Escape');await expect(dialog).toBeHidden();
-  await domClick(gear);await expect(dialog).toBeVisible();await domClick(page.locator('.lesson-opening-copy h1'));await expect(dialog).toBeHidden();
+  await domClick(gear);await expect(dialog).toBeVisible();await page.locator('.lesson-opening-copy h1').click({force:true});await expect(dialog).toBeHidden();
 });
