@@ -36,6 +36,8 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
     const reset=(event:Event)=>{
       const detail=(event as CustomEvent<{lessonNumber?:number}>).detail;
       if(detail?.lessonNumber!==lessonNumber)return;
+      window.localStorage.removeItem(storageKey);
+      window.localStorage.removeItem(completionKey);
       setResponse('');
       setSaved(false);
       setPracticeComplete(false);
@@ -43,7 +45,7 @@ export function LessonReflection({ lessonNumber, lessonTitle, openingQuestion, g
     };
     window.addEventListener('mathnikita-lesson-reset',reset);
     return()=>window.removeEventListener('mathnikita-lesson-reset',reset);
-  },[lessonNumber]);
+  },[lessonNumber,storageKey,completionKey]);
 
   const criteria = useMemo(() => {
     if (lessonNumber === 1) {
