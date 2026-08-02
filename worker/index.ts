@@ -2,7 +2,8 @@ type TutorRequest={message?:string;profile?:unknown;diagnosticSummary?:unknown};
 type NarrationRequest={id?:string;text?:string;version?:string};
 type Env={ASSETS:Fetcher;OPENAI_API_KEY?:string;GEMINI_API_KEY?:string};
 type AiResult={ok:boolean;provider?:'gemini'|'openai';answer?:string;status?:number;error?:string};
-type NarrationAudio={ok:true;provider:'gemini'|'openai';body:ArrayBuffer;contentType:string}|{ok:false;provider:'gemini'|'openai';status?:number;error:string};
+type NarrationProvider='gemini-flash'|'gemini-pro';
+type NarrationAudio={ok:true;provider:NarrationProvider;body:ArrayBuffer;contentType:string}|{ok:false;provider:NarrationProvider;status?:number;error:string;retryAfterMs?:number};
 
 const TUTOR_SYSTEM_PROMPT=[
   'Ты AI-репетитор по математике для школьника.',
@@ -15,12 +16,12 @@ const TUTOR_SYSTEM_PROMPT=[
 ].join(' ');
 
 const GEMINI_TTS_MODEL='gemini-2.5-flash-preview-tts';
+const GEMINI_TTS_FALLBACK_MODEL='gemini-2.5-pro-preview-tts';
 const GEMINI_TTS_VOICE='Sulafat';
-const OPENAI_TTS_MODEL='gpt-4o-mini-tts';
-const OPENAI_TTS_VOICE='marin';
 const NARRATION_VERSION='ru-teacher-gemini-sulafat-v2';
 const NARRATION_MAX_CHARS=3500;
 const NARRATION_ID=/^(?:lesson-\d{2}-(?:opening|reflection|stage-[a-z0-9-]+|practice-[a-z0-9-]+)|mentor-[a-z0-9-]+)$/i;
+const GEMINI_FALLBACK_STATUSES=new Set([408,425,429,500,502,503,504]);
 const NARRATION_STYLE=[
   'Синтезируй только приведённый ниже текст. Не произноси эти инструкции вслух.',
   'Говори по-русски как живой, спокойный и доброжелательный преподаватель математики для ребёнка 10–12 лет.',
@@ -96,43 +97,38 @@ function pcm16MonoToWav(pcm:Uint8Array,sampleRate=24000){
   writeAscii(view,0,'RIFF');view.setUint32(4,36+pcm.byteLength,true);writeAscii(view,8,'WAVE');writeAscii(view,12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,channels,true);view.setUint32(24,sampleRate,true);view.setUint32(28,byteRate,true);view.setUint16(32,channels*bytesPerSample,true);view.setUint16(34,bits,true);writeAscii(view,36,'data');view.setUint32(40,pcm.byteLength,true);new Uint8Array(buffer,44).set(pcm);return buffer;
 }
 function geminiNarrationPrompt(text:string){return `${NARRATION_STYLE}\n\nТЕКСТ ДЛЯ ОЗВУЧКИ — прочитай дословно и только его:\n${text}`}
+function narrationProvider(model:string):NarrationProvider{return model===GEMINI_TTS_FALLBACK_MODEL?'gemini-pro':'gemini-flash'}
+function retryAfterFromResponse(response:Response,rawText:string){
+  const header=Number(response.headers.get('retry-after'));const headerMs=Number.isFinite(header)&&header>0?header*1000:0;
+  const match=rawText.match(/"retryDelay"\s*:\s*"([0-9.]+)s"/i);const bodyMs=match?Number(match[1])*1000:0;
+  return Math.max(headerMs,Number.isFinite(bodyMs)?bodyMs:0)||undefined;
+}
 
-async function generateGeminiNarration(env:Env,text:string):Promise<NarrationAudio>{
-  if(!env.GEMINI_API_KEY)return{ok:false,provider:'gemini',error:'missing_gemini_key'};
+async function generateGeminiNarration(env:Env,text:string,model:string):Promise<NarrationAudio>{
+  const provider=narrationProvider(model);if(!env.GEMINI_API_KEY)return{ok:false,provider,error:'missing_gemini_key'};
   try{
-    const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TTS_MODEL}:generateContent`,{
+    const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
       method:'POST',headers:{'x-goog-api-key':env.GEMINI_API_KEY,'content-type':'application/json'},
       body:JSON.stringify({contents:[{parts:[{text:geminiNarrationPrompt(text)}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:GEMINI_TTS_VOICE}}}}}),
     });
     const rawText=await response.text();
-    if(!response.ok)return{ok:false,provider:'gemini',status:response.status,error:rawText.slice(0,500)};
+    if(!response.ok)return{ok:false,provider,status:response.status,error:rawText.slice(0,500),retryAfterMs:retryAfterFromResponse(response,rawText)};
     const data=JSON.parse(rawText) as any;const inline=data?.candidates?.[0]?.content?.parts?.find((part:any)=>part?.inlineData?.data)?.inlineData;
-    if(!inline?.data)return{ok:false,provider:'gemini',status:response.status,error:'empty_gemini_audio'};
+    if(!inline?.data)return{ok:false,provider,status:response.status,error:'empty_gemini_audio'};
     const bytes=decodeBase64(String(inline.data));const mime=String(inline.mimeType??'audio/L16;codec=pcm;rate=24000');
-    if(/pcm|L16/i.test(mime)){const rate=Number(mime.match(/rate=(\d+)/i)?.[1]??24000);return{ok:true,provider:'gemini',body:pcm16MonoToWav(bytes,rate),contentType:'audio/wav'}}
-    return{ok:true,provider:'gemini',body:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),contentType:mime.split(';')[0]||'audio/wav'};
-  }catch(error){return{ok:false,provider:'gemini',error:error instanceof Error?error.message:'unknown_gemini_tts_error'}}
+    if(/pcm|L16/i.test(mime)){const rate=Number(mime.match(/rate=(\d+)/i)?.[1]??24000);return{ok:true,provider,body:pcm16MonoToWav(bytes,rate),contentType:'audio/wav'}}
+    return{ok:true,provider,body:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),contentType:mime.split(';')[0]||'audio/wav'};
+  }catch(error){return{ok:false,provider,error:error instanceof Error?error.message:'unknown_gemini_tts_error'}}
 }
 
-async function generateOpenAiNarration(env:Env,text:string):Promise<NarrationAudio>{
-  if(!env.OPENAI_API_KEY)return{ok:false,provider:'openai',error:'missing_openai_key'};
-  try{
-    const response=await fetch('https://api.openai.com/v1/audio/speech',{
-      method:'POST',headers:{authorization:`Bearer ${env.OPENAI_API_KEY}`,'content-type':'application/json'},
-      body:JSON.stringify({model:OPENAI_TTS_MODEL,voice:OPENAI_TTS_VOICE,input:text,instructions:NARRATION_STYLE,response_format:'mp3'}),
-    });
-    if(!response.ok){const error=await response.text();return{ok:false,provider:'openai',status:response.status,error:error.slice(0,500)}}
-    return{ok:true,provider:'openai',body:await response.arrayBuffer(),contentType:'audio/mpeg'};
-  }catch(error){return{ok:false,provider:'openai',error:error instanceof Error?error.message:'unknown_openai_tts_error'}}
-}
-
+function shouldTryGeminiFallback(result:NarrationAudio){return !result.ok&&(result.status===undefined||result.status===200||GEMINI_FALLBACK_STATUSES.has(result.status))}
 function narrationHeaders(provider:string,contentType:string,cacheState:'hit'|'miss'){
-  return{'content-type':contentType,'cache-control':'public, max-age=31536000, immutable','x-mathnikita-narration':NARRATION_VERSION,'x-mathnikita-provider':provider,'x-mathnikita-cache':cacheState};
+  return{'content-type':contentType,'cache-control':'public, max-age=31536000, immutable','x-mathnikita-narration':NARRATION_VERSION,'x-mathnikita-provider':provider,'x-mathnikita-voice':GEMINI_TTS_VOICE,'x-mathnikita-cache':cacheState};
 }
 
 async function handleNarration(request:Request,env:Env,ctx:ExecutionContext){
   if(request.method!=='POST')return json({error:'Method not allowed'},{status:405});
-  if(!env.GEMINI_API_KEY&&!env.OPENAI_API_KEY)return json({error:'Unified narration is not configured'},{status:503});
+  if(!env.GEMINI_API_KEY)return json({error:'Sulafat narration is not configured',provider:'gemini',voice:GEMINI_TTS_VOICE},{status:503});
   const requestUrl=new URL(request.url);const origin=request.headers.get('origin');if(origin&&origin!==requestUrl.origin)return json({error:'Cross-origin narration is not allowed'},{status:403});
   let body:NarrationRequest;try{body=await request.json() as NarrationRequest}catch{return json({error:'Invalid JSON'},{status:400})}
   const id=String(body.id??'').trim();const text=String(body.text??'').replace(/\s+/g,' ').trim();
@@ -141,8 +137,14 @@ async function handleNarration(request:Request,env:Env,ctx:ExecutionContext){
   if(body.version&&body.version!==NARRATION_VERSION)return json({error:'Unsupported narration voice version',expected:NARRATION_VERSION},{status:409});
   const digest=await sha256(`${NARRATION_VERSION}|${id}|${text}`);const cacheKey=new Request(`${requestUrl.origin}/__narration-cache/${NARRATION_VERSION}/${digest}`,{method:'GET'});const cached=await caches.default.match(cacheKey);
   if(cached){const headers=new Headers(cached.headers);headers.set('x-mathnikita-cache','hit');return new Response(cached.body,{status:200,headers})}
-  const gemini=await generateGeminiNarration(env,text);const audio=gemini.ok?gemini:await generateOpenAiNarration(env,text);
-  if(!audio.ok)return json({error:'Narration providers unavailable',gemini:{status:gemini.status,error:gemini.error},openai:{status:audio.status,error:audio.error}},{status:502});
+  const flash=await generateGeminiNarration(env,text,GEMINI_TTS_MODEL);let audio:NarrationAudio=flash;let pro:NarrationAudio|null=null;
+  if(!flash.ok&&shouldTryGeminiFallback(flash)){pro=await generateGeminiNarration(env,text,GEMINI_TTS_FALLBACK_MODEL);if(pro.ok)audio=pro;else audio=pro}
+  if(!audio.ok){
+    const errors=[flash,pro].filter(Boolean) as Extract<NarrationAudio,{ok:false}>[];const retryAfterMs=Math.max(0,...errors.map(item=>item.retryAfterMs??0));
+    const status=errors.some(item=>item.status===429)?429:errors.some(item=>item.status===503)?503:502;const headers:Record<string,string>={'cache-control':'no-store'};
+    if(retryAfterMs>0)headers['retry-after']=String(Math.max(1,Math.ceil(retryAfterMs/1000)));
+    return json({error:'Sulafat narration temporarily unavailable',voice:GEMINI_TTS_VOICE,flash:flash.ok?{ok:true}:{status:flash.status,error:flash.error},pro:pro?(pro.ok?{ok:true}:{status:pro.status,error:pro.error}):{skipped:true}},{status,headers});
+  }
   const result=new Response(audio.body,{status:200,headers:narrationHeaders(audio.provider,audio.contentType,'miss')});ctx.waitUntil(caches.default.put(cacheKey,result.clone()));return result;
 }
 
@@ -150,8 +152,7 @@ export default{
   async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
     const url=new URL(request.url);
     if(url.pathname==='/api/narration-status'){
-      const primary=env.GEMINI_API_KEY?'gemini':env.OPENAI_API_KEY?'openai':null;
-      return json({ok:true,studioConfigured:Boolean(primary),provider:primary,model:primary==='gemini'?GEMINI_TTS_MODEL:primary==='openai'?OPENAI_TTS_MODEL:null,voice:primary==='gemini'?GEMINI_TTS_VOICE:primary==='openai'?OPENAI_TTS_VOICE:null,version:NARRATION_VERSION,disclosure:'AI-generated voice'},{headers:{'cache-control':'no-store'}});
+      return json({ok:true,studioConfigured:Boolean(env.GEMINI_API_KEY),provider:env.GEMINI_API_KEY?'gemini':null,model:env.GEMINI_API_KEY?GEMINI_TTS_MODEL:null,fallbackModel:env.GEMINI_API_KEY?GEMINI_TTS_FALLBACK_MODEL:null,voice:env.GEMINI_API_KEY?GEMINI_TTS_VOICE:null,version:NARRATION_VERSION,automaticSystemFallback:false,disclosure:'AI-generated voice'},{headers:{'cache-control':'no-store'}});
     }
     if(url.pathname==='/api/narration')return handleNarration(request,env,ctx);
     if(url.pathname==='/api/tutor-status')return json({ok:true,geminiConfigured:Boolean(env.GEMINI_API_KEY),openaiConfigured:Boolean(env.OPENAI_API_KEY)});
