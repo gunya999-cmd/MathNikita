@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-direct-v2-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: ci-direct-v3-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -41,8 +41,8 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  ipad-webkit-critical:
-    name: iPad WebKit critical audit · lesson 5 Marin smoke
+  ipad-webkit-lesson5-regression:
+    name: iPad WebKit regression · lesson 5 Marin
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
@@ -62,7 +62,63 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: ipad-webkit-critical-traces-${{ github.sha }}
+          name: lesson5-webkit-traces-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad-webkit-lesson6-main:
+    name: iPad WebKit · lesson 6 full main walkthrough
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install WebKit browser
+        run: npx playwright install --with-deps webkit
+      - name: Complete all lesson 6 main stages
+        run: npx playwright test tests/lesson-six-ipad.spec.ts -g "completes every main stage" --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson6-main-webkit-traces-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad-webkit-lesson6-readiness:
+    name: iPad WebKit · lesson 6 mastery, state and Marin
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install WebKit browser
+        run: npx playwright install --with-deps webkit
+      - name: Verify lesson 6 state migration
+        run: npx playwright test tests/lesson-six-ipad.spec.ts -g "keeps an answer|v2 ignores" --workers=1
+      - name: Verify lesson 6 workload and completion gate
+        run: npx playwright test tests/lesson-six-mastery.spec.ts --workers=1
+      - name: Verify lesson 6 Marin smoke
+        run: npx playwright test tests/lesson-six-marin-smoke.spec.ts --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson6-readiness-webkit-traces-${{ github.sha }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7
