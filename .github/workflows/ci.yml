@@ -41,6 +41,32 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  desktop-chromium-lesson6-voice:
+    name: Desktop Chromium · lesson 6 Sulafat and Pythagoras
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Verify lesson 6 desktop voice parity
+        run: npx playwright test tests/lesson-six-desktop-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson6-desktop-chromium-traces-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   ipad-webkit-lesson5-regression:
     name: iPad WebKit regression · lesson 5 Sulafat
     runs-on: ubuntu-latest
