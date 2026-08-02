@@ -7,6 +7,16 @@ async function domClick(locator:Locator){
   await locator.evaluate((element:HTMLElement)=>element.click());
 }
 
+async function startLessonFromDom(page:Page){
+  const clicked=await page.evaluate(()=>{
+    const button=document.querySelector<HTMLButtonElement>('.lesson-opening-start');
+    if(!button)return false;
+    button.click();
+    return true;
+  });
+  expect(clicked).toBe(true);
+}
+
 async function installStudioMocks(page:Page){
   await page.addInitScript(()=>{
     const audit={systemSpeech:0};
@@ -43,7 +53,7 @@ test('lesson 5 opening and first stage prefetch Marin on iPad WebKit',async({pag
   expect(opening.text).toContain('Десятичная запись');
 
   console.log('[lesson5-marin] first stage prefetch');
-  await domClick(page.locator('.lesson-opening-start'));
+  await startLessonFromDom(page);
   await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});
   await expect.poll(()=>requests.some(item=>item.id==='lesson-05-stage-l5-story'),{timeout:5_000}).toBe(true);
   const stage=requests.find(item=>item.id==='lesson-05-stage-l5-story')!;
