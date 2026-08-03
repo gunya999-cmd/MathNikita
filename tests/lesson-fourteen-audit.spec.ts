@@ -14,7 +14,7 @@ const mainActivities:MainActivity[]=[
   {stageIndex:7,stageId:'l14-practice3',type:'input',answer:'7'},
   {stageIndex:8,stageId:'l14-practice4',type:'input',answer:'235,236,237,238'},
   {stageIndex:10,stageId:'l14-practice5',type:'choice',answer:'5 мм'},
-  {stageIndex:11,stageId:'l14-practice6',type:'order',answer:['Провести луч и обозначить начало O','Подписать под O число 0, а под E число 1','Выбрать удобную физическую длину единичного отрезка OE','Повторять равные единичные отрезки вправо','Отметить точки 5, 6, 7 и 10','Проверить число единичных отрезков до каждой точки']},
+  {stageIndex:11,stageId:'l14-practice6',type:'order',answer:['Провести луч и обозначить O(0)','Выбрать удобную физическую длину единичного отрезка','Отложить от O выбранный отрезок и обозначить E(1)','Повторять равные единичные отрезки вправо','Отметить точки 5, 6, 7 и 10','Проверить число единичных отрезков до каждой точки']},
   {stageIndex:13,stageId:'l14-error-check',type:'choice',answer:'Последняя подпись должна быть 24, а не 25'},
   {stageIndex:15,stageId:'l14-quiz1',type:'input',answer:'9'},
   {stageIndex:16,stageId:'l14-quiz2',type:'input',answer:'12'},
@@ -98,7 +98,7 @@ test('lesson 14 source tasks, unit-segment semantics, visuals and all main inter
 
   await jump(page,11,'l14-practice6');
   await expect(page.locator('.order-bank button').first()).toHaveText('Отметить точки 5, 6, 7 и 10');
-  await expect(page.locator('.order-bank button').first()).not.toHaveText('Провести луч и обозначить начало O');
+  await expect(page.locator('.order-bank button').first()).not.toHaveText('Провести луч и обозначить O(0)');
 
   await jump(page,12,'l14-error-lab');
   await expect(page.locator('.l14-error-model')).toContainText('16 → 25');
