@@ -18,6 +18,19 @@ export function normalizePracticeAnswer(value:string){
     .replace(/[−–—]/g,'-');
 }
 
+export function normalizeDecimalPracticeAnswer(value:string){
+  const normalized=value
+    .normalize('NFKC')
+    .toLocaleLowerCase('ru-RU')
+    .replace(/ё/g,'е')
+    .replace(/[\s\u00a0]+/g,'')
+    .replace(/,/g,'.')
+    .replace(/[−–—]/g,'-');
+  if(!/^[+-]?\d+(?:\.\d+)?$/.test(normalized))return normalized;
+  const numeric=Number(normalized);
+  return Number.isFinite(numeric)?String(numeric):normalized;
+}
+
 export function loadExtendedPracticeProgress(lessonNumber:number,taskCount:number){
   try{
     const value=Number(window.localStorage.getItem(extendedPracticeStorageKey(lessonNumber))??0);
@@ -33,8 +46,9 @@ export function isExtendedPracticeAnswerCorrect(task:ExtendedPracticeTask,respon
   if(task.type==='multi-input'){
     if(typeof response==='string')return false;
     return task.fields.every(field=>{
-      const normalized=normalizePracticeAnswer(response[field.id]??'');
-      return field.answers.some(answer=>normalized===normalizePracticeAnswer(answer));
+      const normalize=field.validation==='decimal'?normalizeDecimalPracticeAnswer:normalizePracticeAnswer;
+      const normalized=normalize(response[field.id]??'');
+      return field.answers.some(answer=>normalized===normalize(answer));
     });
   }
   if(typeof response!=='string')return false;
