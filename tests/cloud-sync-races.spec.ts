@@ -1,4 +1,4 @@
-import {expect,test,type Page} from '@playwright/test';
+import {expect,test,type Page, type Route} from '@playwright/test';
 
 function fingerprint(value:string){let hash=2166136261;for(let index=0;index<value.length;index+=1){hash^=value.charCodeAt(index);hash=Math.imul(hash,16777619)}return`${value.length}:${(hash>>>0).toString(16)}`}
 
@@ -17,18 +17,30 @@ async function seedLinkedProfile(page:Page,marker='v1',revision=1){
 async function openLinkedApp(page:Page){
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await expect(page.getByRole('button',{name:/Сменить ученика\. Сейчас Никита/})).toBeVisible();
+  await expect(page.getByLabel(/Облако: Прогресс сохранён/)).toBeVisible();
+}
+
+function applyServerChanges(entries:Record<string,string>,changes:Record<string,string|null>){
+  Object.entries(changes).forEach(([key,value])=>{if(value===null)delete entries[key];else entries[key]=value});
+}
+
+async function fulfillSync(route:Route,revision:number){
+  await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision,updatedAt:new Date().toISOString()})});
 }
 
 test('edit made while a successful push is in flight is sent in a follow-up sync',async({page})=>{
   await seedLinkedProfile(page);
-  await page.route('**/api/cloud/snapshot',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,student:{id:'race-student-123',name:'Никита',code:'MN-RACE123'},revision:1,entries:{'mathnikita:race-marker':'v1'}})}));
+  let serverRevision=1;const serverEntries:Record<string,string>={'mathnikita:race-marker':'v1'};
+  await page.route('**/api/cloud/snapshot',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,student:{id:'race-student-123',name:'Никита',code:'MN-RACE123'},revision:serverRevision,entries:serverEntries})}));
   let firstStartedResolve!:()=>void;const firstStarted=new Promise<void>(resolve=>firstStartedResolve=resolve);
   let releaseFirst!:()=>void;const firstRelease=new Promise<void>(resolve=>releaseFirst=resolve);
-  let requestCount=0;let secondChanges:Record<string,string|null>|null=null;let secondResolve!:()=>void;const secondSeen=new Promise<void>(resolve=>secondResolve=resolve);
+  let secondChanges:Record<string,string|null>|null=null;let secondResolve!:()=>void;const secondSeen=new Promise<void>(resolve=>secondResolve=resolve);
+  let firstBase=-1;let targetStarted=false;
   await page.route('**/api/cloud/sync',async route=>{
-    requestCount+=1;const body=route.request().postDataJSON() as {baseRevision:number;changes:Record<string,string|null>};
-    if(requestCount===1){expect(body.changes['mathnikita:race-marker']).toBe('v2');firstStartedResolve();await firstRelease;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision:2,updatedAt:new Date().toISOString()})});return}
-    secondChanges=body.changes;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision:3,updatedAt:new Date().toISOString()})});secondResolve();
+    const body=route.request().postDataJSON() as {baseRevision:number;changes:Record<string,string|null>};const marker=body.changes['mathnikita:race-marker'];
+    if(marker==='v2'&&!targetStarted){targetStarted=true;firstBase=body.baseRevision;firstStartedResolve();await firstRelease;applyServerChanges(serverEntries,body.changes);serverRevision=body.baseRevision+1;await fulfillSync(route,serverRevision);return}
+    if(marker==='v3'&&targetStarted){expect(body.baseRevision).toBe(firstBase+1);secondChanges=body.changes;applyServerChanges(serverEntries,body.changes);serverRevision=body.baseRevision+1;await fulfillSync(route,serverRevision);secondResolve();return}
+    applyServerChanges(serverEntries,body.changes);serverRevision=body.baseRevision+1;await fulfillSync(route,serverRevision);
   });
   await openLinkedApp(page);
   await page.evaluate(()=>{localStorage.setItem('mathnikita:race-marker','v2');window.dispatchEvent(new Event('online'))});
@@ -42,14 +54,17 @@ test('edit made while a successful push is in flight is sent in a follow-up sync
 
 test('edit made while a 409 conflict is in flight survives reconciliation',async({page})=>{
   await seedLinkedProfile(page);
-  await page.route('**/api/cloud/snapshot',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,student:{id:'race-student-123',name:'Никита',code:'MN-RACE123'},revision:1,entries:{'mathnikita:race-marker':'v1'}})}));
+  let serverRevision=1;let serverEntries:Record<string,string>={'mathnikita:race-marker':'v1'};
+  await page.route('**/api/cloud/snapshot',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,student:{id:'race-student-123',name:'Никита',code:'MN-RACE123'},revision:serverRevision,entries:serverEntries})}));
   let firstStartedResolve!:()=>void;const firstStarted=new Promise<void>(resolve=>firstStartedResolve=resolve);
   let releaseConflict!:()=>void;const conflictRelease=new Promise<void>(resolve=>releaseConflict=resolve);
-  let requestCount=0;let retryChanges:Record<string,string|null>|null=null;let retryResolve!:()=>void;const retrySeen=new Promise<void>(resolve=>retryResolve=resolve);
+  let retryChanges:Record<string,string|null>|null=null;let retryResolve!:()=>void;const retrySeen=new Promise<void>(resolve=>retryResolve=resolve);
+  let conflictRevision=-1;let targetStarted=false;
   await page.route('**/api/cloud/sync',async route=>{
-    requestCount+=1;const body=route.request().postDataJSON() as {baseRevision:number;changes:Record<string,string|null>};
-    if(requestCount===1){expect(body.changes['mathnikita:race-marker']).toBe('v2');firstStartedResolve();await conflictRelease;await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'revision_conflict',revision:2,entries:{'mathnikita:race-marker':'remote-v2','mathnikita:remote-only':'kept'}})});return}
-    retryChanges=body.changes;expect(body.baseRevision).toBe(2);await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision:3,updatedAt:new Date().toISOString()})});retryResolve();
+    const body=route.request().postDataJSON() as {baseRevision:number;changes:Record<string,string|null>};const marker=body.changes['mathnikita:race-marker'];
+    if(marker==='v2'&&!targetStarted){targetStarted=true;firstStartedResolve();await conflictRelease;conflictRevision=body.baseRevision+1;serverRevision=conflictRevision;serverEntries={...serverEntries,'mathnikita:race-marker':'remote-v2','mathnikita:remote-only':'kept'};await route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:'revision_conflict',revision:serverRevision,entries:serverEntries})});return}
+    if(targetStarted&&marker==='v3'){retryChanges=body.changes;expect(body.baseRevision).toBe(conflictRevision);applyServerChanges(serverEntries,body.changes);serverRevision=body.baseRevision+1;await fulfillSync(route,serverRevision);retryResolve();return}
+    applyServerChanges(serverEntries,body.changes);serverRevision=body.baseRevision+1;await fulfillSync(route,serverRevision);
   });
   await openLinkedApp(page);
   await page.evaluate(()=>{localStorage.setItem('mathnikita:race-marker','v2');window.dispatchEvent(new Event('online'))});
@@ -64,12 +79,24 @@ test('edit made while a 409 conflict is in flight survives reconciliation',async
 
 test('edit made while a clean remote pull is in flight is merged and then uploaded',async({page})=>{
   await seedLinkedProfile(page);
-  let pullStartedResolve!:()=>void;const pullStarted=new Promise<void>(resolve=>pullStartedResolve=resolve);
+  let serverRevision=1;let serverEntries:Record<string,string>={'mathnikita:race-marker':'v1'};
+  let holdPull=false;let pullStartedResolve!:()=>void;const pullStarted=new Promise<void>(resolve=>pullStartedResolve=resolve);
   let releasePull!:()=>void;const pullRelease=new Promise<void>(resolve=>releasePull=resolve);
-  await page.route('**/api/cloud/snapshot',async route=>{pullStartedResolve();await pullRelease;await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,student:{id:'race-student-123',name:'Никита',code:'MN-RACE123'},revision:2,entries:{'mathnikita:race-marker':'remote-v2','mathnikita:remote-only':'kept'}})})});
+  let remoteRevision=-1;
+  await page.route('**/api/cloud/snapshot',async route=>{
+    if(!holdPull){await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,student:{id:'race-student-123',name:'Никита',code:'MN-RACE123'},revision:serverRevision,entries:serverEntries})});return}
+    holdPull=false;pullStartedResolve();await pullRelease;remoteRevision=serverRevision+1;serverRevision=remoteRevision;serverEntries={...serverEntries,'mathnikita:race-marker':'remote-v2','mathnikita:remote-only':'kept'};
+    await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,student:{id:'race-student-123',name:'Никита',code:'MN-RACE123'},revision:serverRevision,entries:serverEntries})});
+  });
   let pushedChanges:Record<string,string|null>|null=null;let pushResolve!:()=>void;const pushSeen=new Promise<void>(resolve=>pushResolve=resolve);
-  await page.route('**/api/cloud/sync',async route=>{const body=route.request().postDataJSON() as {baseRevision:number;changes:Record<string,string|null>};pushedChanges=body.changes;expect(body.baseRevision).toBe(2);await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,revision:3,updatedAt:new Date().toISOString()})});pushResolve()});
+  await page.route('**/api/cloud/sync',async route=>{
+    const body=route.request().postDataJSON() as {baseRevision:number;changes:Record<string,string|null>};
+    if(remoteRevision>=0&&body.changes['mathnikita:race-marker']==='local-v2'){pushedChanges=body.changes;expect(body.baseRevision).toBe(remoteRevision);applyServerChanges(serverEntries,body.changes);serverRevision=body.baseRevision+1;await fulfillSync(route,serverRevision);pushResolve();return}
+    applyServerChanges(serverEntries,body.changes);serverRevision=body.baseRevision+1;await fulfillSync(route,serverRevision);
+  });
   await openLinkedApp(page);
+  holdPull=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await pullStarted;
   await page.evaluate(()=>localStorage.setItem('mathnikita:race-marker','local-v2'));
   releasePull();
