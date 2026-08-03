@@ -60,8 +60,8 @@ jobs:
         run: node scripts/cloud-api-smoke.mjs
       - name: Install Chromium browser
         run: npx playwright install --with-deps chromium
-      - name: Verify cloud registration and cross-device restore UI
-        run: npx playwright test tests/cloud-student-ui.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: Verify cloud UI, recovery and in-flight synchronization
+        run: npx playwright test tests/cloud-student-ui.spec.ts tests/cloud-sync-races.spec.ts --config=playwright.profile.config.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
