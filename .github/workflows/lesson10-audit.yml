@@ -1,0 +1,64 @@
+name: Lesson 10 audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/PlaneLineRayPlayer.tsx'
+      - 'src/planeLineRay.css'
+      - 'src/CatMentor.tsx'
+      - 'src/data/lessonTenMentorScripts.json'
+      - 'src/data/extendedPracticeLesson10.ts'
+      - 'src/data/lessonTenMastery.ts'
+      - 'src/data/extendedPracticeData.ts'
+      - 'src/extendedPracticeEngine.ts'
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'src/LessonReflection.tsx'
+      - 'src/PracticePythagoras.tsx'
+      - 'src/VoiceNarrator.tsx'
+      - 'tests/lesson-ten-audit.spec.ts'
+      - '.github/workflows/lesson10-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/PlaneLineRayPlayer.tsx'
+      - 'src/planeLineRay.css'
+      - 'src/data/lessonTenMentorScripts.json'
+      - 'src/data/extendedPracticeLesson10.ts'
+      - 'src/data/lessonTenMastery.ts'
+      - 'src/data/extendedPracticeData.ts'
+      - 'src/extendedPracticeEngine.ts'
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'tests/lesson-ten-audit.spec.ts'
+      - '.github/workflows/lesson10-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lesson-ten:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Run lesson 10 audit
+        run: npx playwright test tests/lesson-ten-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson10-audit-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
