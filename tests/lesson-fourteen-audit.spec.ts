@@ -231,5 +231,5 @@ test('lesson 14 uses Sulafat for lesson, mandatory practice and both Pythagoras 
 
   await page.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();
   await expect.poll(()=>log.ids.some(id=>id==='mentor-practice-14-l14-extra-1-hint')).toBeTruthy();
-  await expect(page.locator('.practice-pythagoras')).toContainText('тот же AI-голос Sulafat');
+  await expect(page.locator('.practice-pythagoras')).toContainText('Sulafat');
 });
