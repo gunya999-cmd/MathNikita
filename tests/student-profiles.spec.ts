@@ -13,6 +13,13 @@ async function switchToChooser(page:Page,name:string){
   await expect(page.getByRole('heading',{name:'Выбери свой профиль'})).toBeVisible();
 }
 
+async function loginProfile(page:Page,name:string,pin:string){
+  await page.getByRole('button',{name:new RegExp(name)}).click();
+  await page.getByLabel(`PIN для ${name}`).fill(pin);
+  await page.getByRole('button',{name:'Войти'}).click();
+  await expect(page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${name}`)})).toBeVisible();
+}
+
 test('first simple registration adopts the existing shared progress',async({page})=>{
   await page.addInitScript(()=>{
     localStorage.setItem('mathnikita:lesson-complete:6',JSON.stringify({completedAt:'2026-08-01T10:00:00.000Z',activeSeconds:1875}));
@@ -89,10 +96,7 @@ test('two students on one device keep completely separate progress and PIN acces
   expect(nikita.analytics).toContain('"correct":12');
 
   await switchToChooser(page,'Никита');
-  await page.getByRole('button',{name:/Миша/}).click();
-  await page.getByLabel('PIN для Миша').fill('2222');
-  await page.getByRole('button',{name:'Войти'}).click();
-  await expect(page.getByRole('button',{name:/Сменить ученика\. Сейчас Миша/})).toBeVisible();
+  await loginProfile(page,'Миша','2222');
   const misha=await page.evaluate(()=>({
     marker:localStorage.getItem('mathnikita:profile-test-marker'),
     l6:localStorage.getItem('mathnikita:lesson-complete:6'),
@@ -113,9 +117,25 @@ test('a new browser tab asks who is studying but preserves the current workspace
   const second=await context.newPage();
   await second.goto('/',{waitUntil:'domcontentloaded'});
   await expect(second.getByRole('heading',{name:'Выбери свой профиль'})).toBeVisible();
-  await second.getByRole('button',{name:/Лена/}).click();
-  await second.getByLabel('PIN для Лена').fill('4321');
-  await second.getByRole('button',{name:'Войти'}).click();
-  await expect(second.getByRole('button',{name:/Сменить ученика\. Сейчас Лена/})).toBeVisible();
+  await loginProfile(second,'Лена','4321');
   expect(await second.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'))).toBe('lena-latest');
+});
+
+test('logging a different student into another tab invalidates the old tab session',async({page,context})=>{
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await createProfile(page,'Никита','1111');
+  await switchToChooser(page,'Никита');
+  await page.getByRole('button',{name:/Добавить ученика/}).click();
+  await createProfile(page,'Миша','2222');
+  await switchToChooser(page,'Миша');
+  await loginProfile(page,'Никита','1111');
+
+  const second=await context.newPage();
+  await second.goto('/',{waitUntil:'domcontentloaded'});
+  await expect(second.getByRole('heading',{name:'Выбери свой профиль'})).toBeVisible();
+  await loginProfile(second,'Миша','2222');
+
+  await expect(page.getByRole('heading',{name:'Выбери свой профиль'})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Никита/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Миша/})).toBeVisible();
 });
