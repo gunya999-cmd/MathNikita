@@ -20,6 +20,13 @@ async function openLinkedApp(page:Page){
   await expect(page.getByLabel(/Облако: Прогресс сохранён/)).toBeVisible();
 }
 
+async function waitForReconcileReload(page:Page,promise:Promise<void>){
+  const reload=page.waitForEvent('load');
+  await promise;
+  await reload;
+  await expect(page.getByRole('button',{name:/Сменить ученика\. Сейчас Никита/})).toBeVisible();
+}
+
 function applyServerChanges(entries:Record<string,string>,changes:Record<string,string|null>){
   Object.entries(changes).forEach(([key,value])=>{if(value===null)delete entries[key];else entries[key]=value});
 }
@@ -70,10 +77,11 @@ test('edit made while a 409 conflict is in flight survives reconciliation',async
   await page.evaluate(()=>{localStorage.setItem('mathnikita:race-marker','v2');window.dispatchEvent(new Event('online'))});
   await firstStarted;
   await page.evaluate(()=>localStorage.setItem('mathnikita:race-marker','v3'));
+  const reloaded=waitForReconcileReload(page,retrySeen);
   releaseConflict();
-  await retrySeen;
+  await reloaded;
   expect(retryChanges?.['mathnikita:race-marker']).toBe('v3');
-  await expect.poll(()=>page.evaluate(()=>localStorage.getItem('mathnikita:race-marker'))).toBe('v3');
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:race-marker'))).toBe('v3');
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:remote-only'))).toBe('kept');
 });
 
@@ -99,9 +107,10 @@ test('edit made while a clean remote pull is in flight is merged and then upload
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await pullStarted;
   await page.evaluate(()=>localStorage.setItem('mathnikita:race-marker','local-v2'));
+  const reloaded=waitForReconcileReload(page,pushSeen);
   releasePull();
-  await pushSeen;
+  await reloaded;
   expect(pushedChanges?.['mathnikita:race-marker']).toBe('local-v2');
-  await expect.poll(()=>page.evaluate(()=>localStorage.getItem('mathnikita:race-marker'))).toBe('local-v2');
+  expect(await page.evaluate(()=>localStorage.getItem('mathnikita:race-marker'))).toBe('local-v2');
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:remote-only'))).toBe('kept');
 });
