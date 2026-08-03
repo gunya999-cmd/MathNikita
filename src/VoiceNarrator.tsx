@@ -18,6 +18,7 @@ function safeNarrationToken(value:string){return value.toLowerCase().replace(/[^
 function canCreateAudioElement(){return typeof document!=='undefined'&&typeof document.createElement==='function'}
 function createNarrationAudio(source:string):HTMLAudioElement|null{try{if(typeof Audio!=='undefined')return new Audio(source);if(!canCreateAudioElement())return null;const audio=document.createElement('audio');audio.src=source;return audio}catch{return null}}
 function lessonToken(lessonNumber:number){return String(lessonNumber).padStart(2,'0')}
+function isSummaryStage(stage:Narration|null){return Boolean(stage?.id.endsWith('-summary'))}
 
 function resolvePracticeNarration(root:HTMLElement,lessonNumber:number):Narration|null{
   const scope=visiblePractice(root);if(!scope)return null;
@@ -49,10 +50,12 @@ function getNarrationText(root:HTMLElement|null,mode:VoiceNarratorProps['mode'],
     return collectVisibleText(scope,['.lesson-opening-copy h1','.lesson-opening-copy p','.lesson-opening-question b','.lesson-opening-plan li span'])||scope.textContent?.trim()||'';
   }
   if(!root)return'';
+  const stage=resolveStageNarration(root,lessonNumber);
+  if(stage&&!isSummaryStage(stage))return stage.text;
   const sharedPractice=resolvePracticeNarration(root,lessonNumber);if(sharedPractice)return sharedPractice.text;
   const practice=visiblePractice(root);if(practice)return collectVisibleText(practice,['h3','.extended-practice-instruction','.extended-practice-input span','.extended-practice-options button']);
   const finalReflection=visibleFinalReflection(root);if(finalReflection)return collectVisibleText(finalReflection,['.reflection-heading h2','.reflection-heading p','blockquote','.reflection-answer > span']);
-  const stage=resolveStageNarration(root,lessonNumber);if(stage)return stage.text;
+  if(stage)return stage.text;
   const scope=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');return scope?collectVisibleText(scope,['.lesson-block h2','.lesson-block .block-text','.lesson-block .lesson-items li']):'';
 }
 
@@ -61,10 +64,12 @@ function getNarrationId(root:HTMLElement|null,mode:VoiceNarratorProps['mode'],le
   if(!resolvedLesson&&root){const lessonLabel=root.querySelector<HTMLElement>('.lesson-mode-toolbar > div > span')?.textContent??'';const lessonMatch=lessonLabel.match(/Урок\s+(\d+)/i);const storedLesson=typeof localStorage!=='undefined'?Number(localStorage.getItem('mathnikita-selected-lesson')):0;resolvedLesson=lessonMatch?Number(lessonMatch[1]):storedLesson}
   if(!Number.isFinite(resolvedLesson)||resolvedLesson<1)return'';
   const lessonId=lessonToken(resolvedLesson);if(mode==='opening')return`lesson-${lessonId}-opening`;if(!root)return'';
+  const stage=resolveStageNarration(root,resolvedLesson);
+  if(stage&&!isSummaryStage(stage))return stage.id;
   const sharedPractice=resolvePracticeNarration(root,resolvedLesson);if(sharedPractice)return sharedPractice.id;
   const practice=visiblePractice(root);const practiceId=safeNarrationToken(practice?.dataset.practiceTask??'');if(practiceId)return`lesson-${lessonId}-practice-${practiceId}`;
   if(visibleFinalReflection(root))return`lesson-${lessonId}-reflection`;
-  const stage=resolveStageNarration(root,resolvedLesson);if(stage)return stage.id;
+  if(stage)return stage.id;
   const stageLabel=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .stage-counter')?.textContent??'';const stageMatch=stageLabel.match(/Этап\s+(\d+)/i);if(stageMatch)return`lesson-${lessonId}-stage-${String(Number(stageMatch[1])).padStart(2,'0')}`;return'';
 }
 
