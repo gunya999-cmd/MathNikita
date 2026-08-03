@@ -12,10 +12,13 @@ test('lesson 16 mandatory task 144 identifies hundreds as the first differing pl
   const practice=page.locator('.extended-practice');
   await expect(practice).toHaveAttribute('data-practice-task','l16-extra-2');
   await expect(practice).toContainText('6 235 □ 6 196');
-  await practice.locator('.extended-practice-input input').fill('>');
-  await practice.locator('.extended-practice-check').click();
-  await expect(practice.locator('.extended-practice-feedback.is-correct')).toContainText('в разряде сотен 2 > 1');
 
   await practice.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();
   await expect(practice.locator('.practice-pythagoras-message')).toContainText('Первая разница уже в сотнях');
+
+  await practice.locator('.extended-practice-input input').fill('>');
+  await practice.locator('.extended-practice-check').click();
+  const feedback=practice.locator('.extended-practice-feedback.is-correct');
+  await expect(feedback).toContainText('в разряде сотен 2 > 1');
+  await expect(feedback).toContainText('На десятки и единицы смотреть уже не нужно');
 });
