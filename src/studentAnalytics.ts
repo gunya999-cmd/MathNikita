@@ -58,6 +58,7 @@ export type LessonAnalyticsRow={
   paragraph:string;
   completed:boolean;
   completedAt?:string;
+  lastSeenAt?:string;
   screenSeconds:number;
   focusSeconds:number;
   activeSeconds:number;
@@ -101,6 +102,9 @@ export type DashboardSnapshot={
   narrationPlays:number;
   accuracy:number|null;
   focusRate:number|null;
+  last7ScreenSeconds:number;
+  last7ActiveSeconds:number;
+  last7FocusRate:number|null;
   streakDays:number;
   studyDaysLast7:number;
   studyDaysLast14:number;
@@ -222,7 +226,7 @@ function buildLessonRows(store:AnalyticsStore){
     const correct=telemetry?.correct??0;const wrong=telemetry?.wrong??0;const attempts=correct+wrong;
     const activeSeconds=telemetry?.activeSeconds??0;const focusSeconds=telemetry?.focusSeconds??0;
     return{
-      lessonNumber:item.number,title:item.title,paragraph:item.paragraph,completed:Boolean(completedAt),completedAt,
+      lessonNumber:item.number,title:item.title,paragraph:item.paragraph,completed:Boolean(completedAt),completedAt,lastSeenAt:telemetry?.lastSeenAt,
       screenSeconds,focusSeconds,activeSeconds,sessions:Math.max(telemetry?.sessions??0,legacy.sessions??0),correct,wrong,
       firstTryCorrect:telemetry?.firstTryCorrect??0,recoveredErrors:telemetry?.recoveredErrors??0,hints:telemetry?.hints??0,
       mentorActions:telemetry?.mentorActions??0,narrationPlays:telemetry?.narrationPlays??0,practiceCorrect:telemetry?.practiceCorrect??0,practiceWrong:telemetry?.practiceWrong??0,
@@ -257,7 +261,9 @@ export function buildDashboardSnapshot():DashboardSnapshot{
   const attempts=correct+wrong;const accuracy=attempts?Math.round(correct/attempts*100):null;const focusRate=screenSeconds>0&&activeSeconds>0?Math.round(clamp(activeSeconds/screenSeconds*100)):null;
   const completionDates=completed.flatMap(item=>item.completedAt?[localDateKey(new Date(item.completedAt))]:[]);
   const telemetryStudyDates=Object.entries(store.daily).filter(([,day])=>day.activeSeconds>=ACTIVE_STUDY_DAY_SECONDS).map(([date])=>date);const studyDates=[...new Set([...completionDates,...telemetryStudyDates])];
-  const last7=trend.slice(-7);const studyDaysLast7=last7.filter(day=>day.activeMinutes>=5||day.completedLessons>0).length;const studyDaysLast14=trend.filter(day=>day.activeMinutes>=5||day.completedLessons>0).length;const streakDays=currentStreak(studyDates);
+  const last7=trend.slice(-7);const last7Keys=new Set(last7.map(day=>day.date));const last7Daily=Object.entries(store.daily).filter(([date])=>last7Keys.has(date)).map(([,day])=>day);
+  const last7ScreenSeconds=last7Daily.reduce((sum,day)=>sum+Math.max(0,day.screenSeconds),0);const last7ActiveSeconds=last7Daily.reduce((sum,day)=>sum+Math.max(0,day.activeSeconds),0);const last7FocusRate=last7ScreenSeconds>0?Math.round(clamp(last7ActiveSeconds/last7ScreenSeconds*100)):null;
+  const studyDaysLast7=last7.filter(day=>day.activeMinutes>=5||day.completedLessons>0).length;const studyDaysLast14=trend.filter(day=>day.activeMinutes>=5||day.completedLessons>0).length;const streakDays=currentStreak(studyDates);
   const rhythmScore=Math.round(clamp(studyDaysLast7/4*100));const qualityScore=accuracy??(completed.length?78:65);const persistenceScore=wrong?Math.round(clamp(50+recoveredErrors/wrong*50)):(completed.length?90:70);const focusScore=focusRate??(completed.length?78:70);const momentum=Math.round(rhythmScore*.30+qualityScore*.30+persistenceScore*.20+focusScore*.20);
   const rewards=[
     reward('first-finish','🚀','Первый финиш','Завершить первый полный урок.',completed.length>=1,completed.length*100),
@@ -271,7 +277,7 @@ export function buildDashboardSnapshot():DashboardSnapshot{
   ];
   const earnedRewards=rewards.filter(item=>item.earned).length;const mathPoints=completed.length*100+firstTryCorrect*6+recoveredErrors*10+earnedRewards*50+Math.min(streakDays*20,140);const level=Math.floor(mathPoints/500)+1;const levelBase=(level-1)*500;const levelProgress=Math.round((mathPoints-levelBase)/500*100);const nextLevelPoints=level*500;
   const recentErrors=store.events.filter(event=>event.type==='answer_wrong').slice(-10).reverse();
-  return{completedLessons:completed.length,readyLessons:lessons.length,courseProgress:Math.round(completed.length/totalLessons*100),screenSeconds,focusSeconds,activeSeconds,correct,wrong,firstTryCorrect,recoveredErrors,hints,mentorActions,narrationPlays,accuracy,focusRate,streakDays,studyDaysLast7,studyDaysLast14,rhythmScore,qualityScore,persistenceScore,focusScore,momentum,mathPoints,level,levelProgress,nextLevelPoints,lessons,recentErrors,rewards,trend};
+  return{completedLessons:completed.length,readyLessons:lessons.length,courseProgress:Math.round(completed.length/totalLessons*100),screenSeconds,focusSeconds,activeSeconds,correct,wrong,firstTryCorrect,recoveredErrors,hints,mentorActions,narrationPlays,accuracy,focusRate,last7ScreenSeconds,last7ActiveSeconds,last7FocusRate,streakDays,studyDaysLast7,studyDaysLast14,rhythmScore,qualityScore,persistenceScore,focusScore,momentum,mathPoints,level,levelProgress,nextLevelPoints,lessons,recentErrors,rewards,trend};
 }
 
 export function formatDashboardTime(seconds:number){
