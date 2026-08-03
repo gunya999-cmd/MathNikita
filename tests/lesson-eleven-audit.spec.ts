@@ -137,7 +137,12 @@ test('lesson 11 ignores stale v1 lesson and practice completion state',async({pa
   await expect(page.locator('[data-stage-id="l11-story"]')).toBeVisible();
 
   await jump(page,21,'l11-summary');
-  await expect(page.locator('.summary-card')).toContainText('Основная часть ✓');
+  const summary=page.locator('.summary-card');
+  await expect(summary).toContainText('0/5');
+  await expect(summary).toContainText('0/6');
+  await expect(summary).toContainText('Повторить');
+  await expect(summary).not.toContainText('Основная часть ✓');
+  await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
   await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');
   await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l11-p1');
 });
