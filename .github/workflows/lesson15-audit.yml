@@ -1,0 +1,74 @@
+name: Lesson 15 audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/ScaleCoordinateRaySummaryPlayer.tsx'
+      - 'src/LessonFifteenOpening.ts'
+      - 'src/coordinateRay.css'
+      - 'src/CatMentor.tsx'
+      - 'src/data/lessonFifteenMentorScripts.json'
+      - 'src/data/extendedPracticeLesson15.ts'
+      - 'src/data/lessonFifteenMastery.ts'
+      - 'src/data/extendedPracticeData.ts'
+      - 'src/extendedPracticeEngine.ts'
+      - 'src/lessonFifteenRevisionMigration.ts'
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'src/LessonReflection.tsx'
+      - 'src/PracticePythagoras.tsx'
+      - 'src/VoiceNarrator.tsx'
+      - 'src/MentorResponsiveBehavior.tsx'
+      - 'tests/lesson-fifteen-audit.spec.ts'
+      - '.github/workflows/lesson15-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/ScaleCoordinateRaySummaryPlayer.tsx'
+      - 'src/LessonFifteenOpening.ts'
+      - 'src/coordinateRay.css'
+      - 'src/CatMentor.tsx'
+      - 'src/data/lessonFifteenMentorScripts.json'
+      - 'src/data/extendedPracticeLesson15.ts'
+      - 'src/data/lessonFifteenMastery.ts'
+      - 'src/data/extendedPracticeData.ts'
+      - 'src/extendedPracticeEngine.ts'
+      - 'src/lessonFifteenRevisionMigration.ts'
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'src/LessonReflection.tsx'
+      - 'src/PracticePythagoras.tsx'
+      - 'src/VoiceNarrator.tsx'
+      - 'src/MentorResponsiveBehavior.tsx'
+      - 'tests/lesson-fifteen-audit.spec.ts'
+      - '.github/workflows/lesson15-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lesson-fifteen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Run lesson 15 audit
+        run: npx playwright test tests/lesson-fifteen-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson15-audit-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
