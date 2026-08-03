@@ -57,6 +57,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Install Chromium
+        # Voice regression accepts both playable Sulafat audio and the explicit Sulafat fallback UI.
         run: npx playwright install --with-deps chromium
       - name: Build
         run: npm run build
