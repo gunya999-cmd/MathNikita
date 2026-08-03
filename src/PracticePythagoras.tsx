@@ -5,6 +5,7 @@ import { getStudioAudioUrl,loadVoiceSettings,peekStudioAudioUrl,prefetchStudioAu
 
 type CheckState='idle'|'correct'|'wrong';
 type MentorAction='status'|'different'|'example'|'hint'|'why';
+type VoiceIssue=''|'busy'|'autoplay'|'unavailable';
 type Props={lessonNumber:number;task:ExtendedPracticeTask;checkState:CheckState;attempts:number};
 type MentorSpeakDetail={taskId?:string;state?:CheckState;attempts?:number};
 type AudioRequestDetail={source?:string};
@@ -25,15 +26,22 @@ function messageFor(task:ExtendedPracticeTask,state:CheckState,attempts:number,a
   if(action==='hint')return `Подсказка. ${task.hint}`;
   if(action==='different')return `Скажу иначе. ${task.instruction??responseGuide(task)} ${task.hint}`;
   if(action==='example')return exampleGuide(task);
-  if(action==='why')return `Здесь важно не угадать ответ, а доказать его шагами. ${responseGuide(task)} ${task.hint}`;
-  if(state==='wrong')return attempts>1?`Пока не сходится. Не спеши менять ответ наугад. ${responseGuide(task)} ${task.hint}`:`Пока неверно. Начни с одного шага: ${task.hint}`;
+  if(action==='why')return `Здесь важно не угадать ответ, а доказать его шагами. ${task.hint} ${responseGuide(task)}`;
+  if(state==='wrong')return attempts>1?`Пока не сходится. ${task.hint} Не меняй ответ наугад: ${task.instruction??responseGuide(task)}`:`Пока неверно. Начни с одного шага: ${task.hint}`;
   return 'Я рядом. Сначала попробуй решить самостоятельно. Если застрянешь, нажми «Подсказка», «Объясни иначе» или «Дай пример».';
+}
+function issueFromError(error:unknown):VoiceIssue{
+  const name=typeof error==='object'&&error&&'name'in error?String((error as {name?:unknown}).name??''):'';
+  if(name==='NotAllowedError')return'autoplay';
+  const text=String(error??'');
+  if(/\b429\b|rate limit|too many requests|\b503\b/i.test(text))return'busy';
+  return'unavailable';
 }
 
 export function PracticePythagoras({lessonNumber,task,checkState,attempts}:Props){
   const[action,setAction]=useState<MentorAction>('status');
   const[speaking,setSpeaking]=useState(false);
-  const[voiceIssue,setVoiceIssue]=useState(false);
+  const[voiceIssue,setVoiceIssue]=useState<VoiceIssue>('');
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const tokenRef=useRef(0);
   const message=useMemo(()=>messageFor(task,checkState,attempts,action),[task,checkState,attempts,action]);
@@ -45,27 +53,27 @@ export function PracticePythagoras({lessonNumber,task,checkState,attempts}:Props
     const settings=loadVoiceSettings();const voice=selectBestRussianVoice(window.speechSynthesis.getVoices(),settings.voiceURI);const utterance=new SpeechSynthesisUtterance(prepareRussianSpeechText(text));utterance.lang='ru-RU';utterance.voice=voice??null;utterance.rate=settings.rate;utterance.onend=()=>{if(token===tokenRef.current)setSpeaking(false)};utterance.onerror=()=>setSpeaking(false);setSpeaking(true);window.speechSynthesis.speak(utterance);
   }
   function playSource(source:string,token:number){
-    if(typeof Audio==='undefined'){setSpeaking(false);setVoiceIssue(true);return}
-    const settings=loadVoiceSettings();const audio=new Audio(source);audioRef.current=audio;audio.preload='auto';audio.playbackRate=settings.rate;audio.onended=()=>{if(token===tokenRef.current)setSpeaking(false);audioRef.current=null};const fail=()=>{if(token===tokenRef.current){audioRef.current=null;setSpeaking(false);setVoiceIssue(true)}};audio.onerror=fail;void audio.play().catch(fail);
+    if(typeof Audio==='undefined'){setSpeaking(false);setVoiceIssue('unavailable');return}
+    const settings=loadVoiceSettings();const audio=new Audio(source);audioRef.current=audio;audio.preload='auto';audio.playbackRate=settings.rate;audio.onended=()=>{if(token===tokenRef.current)setSpeaking(false);audioRef.current=null};const fail=(error?:unknown)=>{if(token===tokenRef.current){audioRef.current=null;setSpeaking(false);setVoiceIssue(issueFromError(error))}};audio.onerror=()=>fail();void audio.play().catch(fail);
   }
   function speak(text=message,voiceAction=action){
     if(speaking){stop();return}
-    stop();setVoiceIssue(false);const token=++tokenRef.current;const settings=loadVoiceSettings();window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'practice-mentor'}}));
+    stop();setVoiceIssue('');const token=++tokenRef.current;const settings=loadVoiceSettings();window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'practice-mentor'}}));
     if(settings.engine!=='studio'){systemSpeak(text,token);return}
     const id=narrationId(voiceAction);const ready=peekStudioAudioUrl(id,text);setSpeaking(true);if(ready){playSource(ready,token);return}
-    void getStudioAudioUrl(id,text).then(source=>{if(token===tokenRef.current)playSource(source,token)}).catch(()=>{if(token===tokenRef.current){setSpeaking(false);setVoiceIssue(true)}});
+    void getStudioAudioUrl(id,text).then(source=>{if(token===tokenRef.current)playSource(source,token)}).catch(error=>{if(token===tokenRef.current){setSpeaking(false);setVoiceIssue(issueFromError(error))}});
   }
   function choose(next:MentorAction){setAction(next);const nextMessage=messageFor(task,checkState,attempts,next);speak(nextMessage,next)}
 
   useEffect(()=>{
-    stop();setAction('status');setVoiceIssue(false);
+    stop();setAction('status');setVoiceIssue('');
     const firstWrong=messageFor(task,'wrong',1,'status');prefetchStudioAudioUrl(narrationId('status'),firstWrong);
     if(loadVoiceSettings().engine==='studio'){
       for(const voiceAction of MANUAL_ACTIONS){const text=messageFor(task,'idle',0,voiceAction);prefetchStudioAudioUrl(narrationId(voiceAction),text)}
     }
   },[task.id]);
   useEffect(()=>{
-    if(loadVoiceSettings().engine!=='studio')return;
+    if(loadVoiceSettings().engine!=='studio'||checkState==='correct')return;
     for(const voiceAction of MANUAL_ACTIONS){const text=messageFor(task,checkState,attempts,voiceAction);prefetchStudioAudioUrl(narrationId(voiceAction),text)}
   },[task.id,checkState,attempts]);
   useEffect(()=>{setAction('status')},[checkState,attempts]);
@@ -79,10 +87,12 @@ export function PracticePythagoras({lessonNumber,task,checkState,attempts}:Props
   },[]);
   useEffect(()=>()=>stop(),[]);
 
+  const voiceIssueText=voiceIssue==='busy'?`AI-голос ${STUDIO_VOICE_LABEL} сейчас перегружен. Нажми ▶ ещё раз через несколько секунд.`:voiceIssue==='autoplay'?`Браузер не запустил звук автоматически. Нажми ▶, чтобы услышать ${STUDIO_VOICE_LABEL}.`:voiceIssue==='unavailable'?`AI-голос ${STUDIO_VOICE_LABEL} временно недоступен. Текст подсказки остаётся на экране.`:'';
+
   return <aside className={`practice-pythagoras is-${checkState}`} aria-label="Пифагор — наставник обязательной практики">
     <div className="practice-pythagoras-head"><div className="practice-pythagoras-badge" aria-hidden="true">π</div><div><span>Пифагор · практика</span><b>{checkState==='wrong'?'Разберём без готового ответа':checkState==='correct'?'Разбор решения':'Я рядом, если понадобится помощь'}</b></div><button type="button" className={speaking?'is-speaking':''} onClick={()=>speak()} aria-label={speaking?'Остановить Пифагора':'Озвучить подсказку Пифагора'}>{speaking?'■':'▶'}</button></div>
     <p className="practice-pythagoras-message">{message}</p>
-    {voiceIssue?<small className="practice-pythagoras-voice-error">AI-голос {STUDIO_VOICE_LABEL} временно недоступен. Текст подсказки остаётся на экране.</small>:<small>Подсказки озвучивает тот же AI-голос {STUDIO_VOICE_LABEL}.</small>}
+    {voiceIssue?<small className="practice-pythagoras-voice-error">{voiceIssueText}</small>:<small>Подсказки озвучивает тот же AI-голос {STUDIO_VOICE_LABEL}.</small>}
     <div className="practice-pythagoras-actions">
       <button type="button" onClick={()=>choose('different')}>↻ Объясни иначе</button>
       <button type="button" onClick={()=>choose('example')}>▣ Дай пример</button>
