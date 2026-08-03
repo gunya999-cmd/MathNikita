@@ -74,13 +74,19 @@ function retryDelayMs(response:Response,attempt:number){
   if(response.status===429)return 1600*(attempt+1);
   return 600*(attempt+1);
 }
+async function acquireStudioNetworkSlot(){
+  if(activeStudioRequests<STUDIO_NETWORK_LIMIT){activeStudioRequests+=1;return}
+  await new Promise<void>(resolve=>studioSlotWaiters.push(resolve));
+  // The releasing request transfers its occupied slot directly to this waiter.
+}
+function releaseStudioNetworkSlot(){
+  const next=studioSlotWaiters.shift();
+  if(next){next();return}
+  activeStudioRequests=Math.max(0,activeStudioRequests-1);
+}
 async function withStudioNetworkSlot<T>(work:()=>Promise<T>):Promise<T>{
-  if(activeStudioRequests>=STUDIO_NETWORK_LIMIT)await new Promise<void>(resolve=>studioSlotWaiters.push(resolve));
-  activeStudioRequests+=1;
-  try{return await work()}finally{
-    activeStudioRequests=Math.max(0,activeStudioRequests-1);
-    studioSlotWaiters.shift()?.();
-  }
+  await acquireStudioNetworkSlot();
+  try{return await work()}finally{releaseStudioNetworkSlot()}
 }
 async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<Blob>{
   const response=await withStudioNetworkSlot(()=>fetch('/api/narration',{
