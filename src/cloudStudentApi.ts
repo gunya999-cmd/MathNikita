@@ -16,13 +16,15 @@ async function requestJson<T>(path:string,init:RequestInit={},timeoutMs=10_000):
   const controller=new AbortController();const timer=window.setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const response=await fetch(path,{...init,signal:controller.signal,headers:{'content-type':'application/json',...(init.headers??{})}});
-    const text=await response.text();let payload:ApiErrorPayload={};
-    try{payload=text?JSON.parse(text) as ApiErrorPayload:{}}catch{payload={error:response.ok?'Cloud API returned invalid JSON':'Облачное хранилище пока недоступно.'}}
+    const text=await response.text();let payload:ApiErrorPayload={};let parsed=true;
+    try{payload=text?JSON.parse(text) as ApiErrorPayload:{}}catch{parsed=false;payload={error:'Облачное хранилище пока недоступно.'}}
     if(!response.ok)throw new CloudStudentApiError(response.status,payload);
+    if(!parsed)throw new Error('Облачное хранилище пока недоступно.');
     return payload as T;
   }catch(error){
     if(error instanceof CloudStudentApiError)throw error;
     if(error instanceof DOMException&&error.name==='AbortError')throw new Error('Облако не ответило вовремя. Локальный прогресс сохранён.');
+    if(error instanceof Error&&/облачн/i.test(error.message))throw error;
     throw new Error('Нет связи с облачным хранилищем. Локальный прогресс сохранён.');
   }finally{window.clearTimeout(timer)}
 }
