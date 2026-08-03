@@ -1,0 +1,58 @@
+name: Lessons 6-16 every-stage voice
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/VoiceNarrator.tsx'
+      - 'src/LessonCourseShell.tsx'
+      - 'src/SegmentLengthPlayer.tsx'
+      - 'src/SegmentLengthPracticePlayer.tsx'
+      - 'src/PolylineLessonPlayer.tsx'
+      - 'src/GeometrySummaryPlayer.tsx'
+      - 'src/PlaneLineRayPlayer.tsx'
+      - 'src/PlaneLineRayPracticePlayer.tsx'
+      - 'src/PlaneLineRaySummaryPlayer.tsx'
+      - 'src/ScaleCoordinateRayPlayer.tsx'
+      - 'src/ScaleCoordinateRayPracticePlayer.tsx'
+      - 'src/ScaleCoordinateRaySummaryPlayer.tsx'
+      - 'src/NaturalNumberComparisonPlayer.tsx'
+      - 'tests/lessons-six-to-sixteen-every-stage-voice.spec.ts'
+      - '.github/workflows/lessons6-16-every-stage-voice.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/VoiceNarrator.tsx'
+      - 'tests/lessons-six-to-sixteen-every-stage-voice.spec.ts'
+      - '.github/workflows/lessons6-16-every-stage-voice.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  every-stage-voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Verify actual Sulafat playback on every stage in lessons 6-16
+        run: npx playwright test tests/lessons-six-to-sixteen-every-stage-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: every-stage-voice-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
