@@ -1,4 +1,4 @@
-import { useEffect,useMemo,useState,type CSSProperties } from 'react';
+import { useEffect,useState,type CSSProperties } from 'react';
 import { skillLabels } from './data/course';
 import type { LearnerState } from './learningEngine';
 import { buildDashboardSnapshot,formatDashboardTime,lessonTitle,type DashboardSnapshot,type LessonAnalyticsRow } from './studentAnalytics';
@@ -23,7 +23,12 @@ function findNextLesson(snapshot:DashboardSnapshot){
   if(active&&active.lessonNumber>=maxCompleted)return active;
   return snapshot.lessons.find(row=>row.lessonNumber===maxCompleted+1&&!row.completed)??snapshot.lessons.find(row=>!row.completed)??snapshot.lessons[snapshot.lessons.length-1];
 }
-function recentRows(snapshot:DashboardSnapshot,count=6){return [...snapshot.lessons].filter(row=>row.completed||row.sessions>0).sort((a,b)=>(b.completedAt??b.lessonNumber.toString()).localeCompare(a.completedAt??a.lessonNumber.toString())).slice(0,count)}
+function recentRows(snapshot:DashboardSnapshot,count=6){
+  return [...snapshot.lessons].filter(row=>row.completed||row.sessions>0).sort((a,b)=>{
+    const byActivity=(b.completedAt??b.lastSeenAt??'').localeCompare(a.completedAt??a.lastSeenAt??'');
+    return byActivity||b.lessonNumber-a.lessonNumber;
+  }).slice(0,count);
+}
 
 function WeekStrip({snapshot}:{snapshot:DashboardSnapshot}){
   const days=snapshot.trend.slice(-7);const max=Math.max(10,...days.map(day=>day.activeMinutes));
@@ -85,7 +90,7 @@ function StudentDashboard({snapshot,state,onContinue}:{snapshot:DashboardSnapsho
   const nextLesson=findNextLesson(snapshot);const weekGoal=Math.max(0,4-snapshot.studyDaysLast7);const earned=snapshot.rewards.filter(item=>item.earned).length;
   return <>
     <section className="ld-student-hero">
-      <div className="ld-student-hero-copy"><span>Личный кабинет</span><h1>{nextLesson.completed?'Все доступные уроки пройдены':`Продолжим с урока ${nextLesson.lessonNumber}`}</h1><p>{nextLesson.title}</p><button type="button" onClick={onContinue}>{nextLesson.sessions>0&&!nextLesson.completed?'Продолжить урок':'Открыть следующий урок'} <b>→</b></button></div>
+      <div className="ld-student-hero-copy"><span>Личный кабинет</span><h1>{nextLesson.completed?'Все доступные уроки пройдены':`Продолжим с урока ${nextLesson.lessonNumber}`}</h1><p>{nextLesson.title}</p><button type="button" onClick={onContinue}>Продолжить обучение <b>→</b></button></div>
       <div className="ld-course-progress"><div><span>Курс</span><b>{snapshot.completedLessons}/{snapshot.readyLessons}</b></div><i><em style={{width:`${snapshot.readyLessons?Math.round(snapshot.completedLessons/snapshot.readyLessons*100):0}%`}}/></i><p>{snapshot.courseProgress}% годовой программы · {snapshot.readyLessons} уроков сейчас доступны</p></div>
       <div className="ld-momentum"><ScoreRing value={snapshot.momentum} label="импульс"/><div><span>Учебный импульс</span><b>{snapshot.momentum>=80?'Отличный ритм':snapshot.momentum>=60?'Хороший темп':'Набираем ритм'}</b><p>{weekGoal?`Ещё ${weekGoal} учебн. ${weekGoal===1?'день':'дня'} до цели недели`:'Недельная цель выполнена'}</p></div></div>
     </section>
@@ -102,7 +107,7 @@ function ParentDashboard({snapshot,state}:{snapshot:DashboardSnapshot;state:Lear
   return <>
     <section className="ld-parent-hero"><div><span>Родительский кабинет</span><h1>Обзор обучения</h1><p>Не поток сырых метрик, а состояние курса: прогресс, время, качество, самостоятельность и темы, где нужна помощь.</p></div><div className="ld-parent-summary"><span>Текущая точка</span><b>Урок {next.lessonNumber}</b><small>{next.title}</small></div></section>
     <MiniStats snapshot={snapshot} parent/>
-    <section className="ld-grid ld-grid-parent"><article className="ld-panel ld-parent-priority"><SectionHeading eyebrow="Главное" title="На что обратить внимание"/><ParentAttention snapshot={snapshot} state={state}/></article><article className="ld-panel"><SectionHeading eyebrow="Последние 7 дней" title="Учебный ритм" caption={`${snapshot.studyDaysLast7} учебных дня`}/><WeekStrip snapshot={snapshot}/><div className="ld-parent-week-foot"><span>Активно <b>{formatDashboardTime(snapshot.activeSeconds)}</b></span><span>Экран <b>{formatDashboardTime(snapshot.screenSeconds)}</b></span><span>Фокус <b>{percent(snapshot.focusRate)}</b></span></div></article></section>
+    <section className="ld-grid ld-grid-parent"><article className="ld-panel ld-parent-priority"><SectionHeading eyebrow="Главное" title="На что обратить внимание"/><ParentAttention snapshot={snapshot} state={state}/></article><article className="ld-panel"><SectionHeading eyebrow="Последние 7 дней" title="Учебный ритм" caption={`${snapshot.studyDaysLast7} учебных дня`}/><WeekStrip snapshot={snapshot}/><div className="ld-parent-week-foot"><span>Активно <b>{formatDashboardTime(snapshot.last7ActiveSeconds)}</b></span><span>Экран <b>{formatDashboardTime(snapshot.last7ScreenSeconds)}</b></span><span>Фокус <b>{percent(snapshot.last7FocusRate)}</b></span></div></article></section>
     <section className="ld-panel ld-route-panel"><SectionHeading eyebrow="Курс" title="Продвижение по урокам" caption={`${snapshot.completedLessons} из ${snapshot.readyLessons} доступных уроков завершено`}/><CoursePath snapshot={snapshot} nextLesson={next}/></section>
     <section className="ld-grid ld-grid-2"><article className="ld-panel"><SectionHeading eyebrow="Освоение" title="Навыки и темы риска"/><SkillsPanel state={state}/></article><article className="ld-panel"><SectionHeading eyebrow="Ошибки" title="Где возникали трудности"/><ErrorJournal snapshot={snapshot}/></article></section>
     <section className="ld-panel"><SectionHeading eyebrow="История" title="Последние занятия" caption="Активное и экранное время, точность и ошибки по каждому уроку"/><LessonHistory snapshot={snapshot} parent/></section>
