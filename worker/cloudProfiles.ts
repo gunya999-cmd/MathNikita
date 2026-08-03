@@ -38,10 +38,11 @@ function bytesToHex(bytes:Uint8Array){return Array.from(bytes,b=>b.toString(16).
 function hexToBytes(value:string){const bytes=new Uint8Array(value.length/2);for(let i=0;i<bytes.length;i+=1)bytes[i]=Number.parseInt(value.slice(i*2,i*2+2),16);return bytes}
 function randomBytes(length:number){const bytes=new Uint8Array(length);crypto.getRandomValues(bytes);return bytes}
 function randomHex(length=16){return bytesToHex(randomBytes(length))}
+function randomChars(length:number){const bytes=randomBytes(length);let value='';for(let i=0;i<length;i+=1)value+=LOGIN_ALPHABET[bytes[i]%LOGIN_ALPHABET.length];return value}
 function randomId(){return typeof crypto.randomUUID==='function'?crypto.randomUUID():`${Date.now().toString(36)}-${randomHex(12)}`}
 function randomToken(){const bytes=randomBytes(32);let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
-function randomLoginCode(){let suffix='';for(let i=0;i<7;i+=1)suffix+=LOGIN_ALPHABET[Math.floor(Math.random()*LOGIN_ALPHABET.length)];return`MN-${suffix}`}
-function randomRecoveryCode(){const part=()=>Array.from({length:4},()=>LOGIN_ALPHABET[Math.floor(Math.random()*LOGIN_ALPHABET.length)]).join('');return`MN-RCV-${part()}-${part()}-${part()}`}
+function randomLoginCode(){return`MN-${randomChars(7)}`}
+function randomRecoveryCode(){return`MN-RCV-${randomChars(4)}-${randomChars(4)}-${randomChars(4)}`}
 function normalizeCode(value:string){return value.trim().toUpperCase().replace(/\s+/g,'')}
 function cleanName(value:string){return value.trim().replace(/\s+/g,' ')}
 function validStudentId(value:string){return/^[A-Za-z0-9_-]{8,80}$/.test(value)}
@@ -107,6 +108,17 @@ async function sessionFor(request:Request,db:D1DatabaseLike){
   return row?{...row,tokenHash}:null;
 }
 
+async function recordWrongPin(db:D1DatabaseLike,student:StudentRow,now:number){
+  const attempts=student.failed_attempts+1;const locked=attempts>=MAX_FAILED_ATTEMPTS?now+LOCK_MS:0;
+  await db.prepare('UPDATE students SET failed_attempts=?,locked_until=?,updated_at=? WHERE id=?').bind(locked?0:attempts,locked,new Date(now).toISOString(),student.id).run();
+  return locked;
+}
+
+function lockedResponse(lockedUntil:number,now:number){
+  const retryAfterSeconds=Math.max(1,Math.ceil((lockedUntil-now)/1000));
+  return json({error:'Слишком много попыток. Попробуйте позже.',retryAfterSeconds},{status:429,headers:{'retry-after':String(retryAfterSeconds)}});
+}
+
 async function register(request:Request,db:D1DatabaseLike){
   const body=await parseJson<RegisterBody>(request);if(!body)return json({error:'Invalid JSON'},{status:400});
   const studentId=String(body.studentId??'');const name=cleanName(String(body.name??''));const pin=String(body.pin??'');
@@ -116,8 +128,10 @@ async function register(request:Request,db:D1DatabaseLike){
   let entries:Record<string,string|null>;try{entries=validateEntries(body.entries,false)}catch(error){return json({error:error instanceof Error?error.message:'Invalid entries'},{status:413})}
   const existing=await db.prepare('SELECT * FROM students WHERE id=?').bind(studentId).first<StudentRow>();
   if(existing){
-    const candidate=await pinHash(pin,existing.pin_salt);if(!(await safeEqualHex(candidate,existing.pin_hash)))return json({error:'Student id already exists'},{status:409});
-    const recoveryCode=randomRecoveryCode();await db.prepare('UPDATE students SET recovery_hash=?,updated_at=? WHERE id=?').bind(await sha256(recoveryCode),new Date().toISOString(),existing.id).run();
+    const now=Date.now();if(existing.locked_until>now)return lockedResponse(existing.locked_until,now);
+    const candidate=await pinHash(pin,existing.pin_salt);
+    if(!(await safeEqualHex(candidate,existing.pin_hash))){const locked=await recordWrongPin(db,existing,now);return locked?lockedResponse(locked,now):json({error:'Student id already exists'},{status:409})}
+    const recoveryCode=randomRecoveryCode();await db.prepare('UPDATE students SET recovery_hash=?,failed_attempts=0,locked_until=0,updated_at=? WHERE id=?').bind(await sha256(recoveryCode),new Date().toISOString(),existing.id).run();
     const token=await createSession(db,existing.id);return json({ok:true,student:{id:existing.id,name:existing.display_name,code:existing.login_code},token,recoveryCode,revision:existing.progress_revision,entries:await loadEntries(db,existing.id),resumed:true});
   }
   const loginCode=await uniqueLoginCode(db);const pinSalt=randomHex(16);const recoveryCode=randomRecoveryCode();const now=new Date().toISOString();const revision=Object.keys(entries).length?1:0;const token=randomToken();const tokenHash=await sha256(token);
@@ -132,8 +146,8 @@ async function register(request:Request,db:D1DatabaseLike){
 async function login(request:Request,db:D1DatabaseLike){
   const body=await parseJson<LoginBody>(request);if(!body)return json({error:'Invalid JSON'},{status:400});const code=normalizeCode(String(body.code??''));const pin=String(body.pin??'');if(!validPin(pin))return json({error:'PIN must contain 4 digits'},{status:400});
   const student=await db.prepare('SELECT * FROM students WHERE login_code=?').bind(code).first<StudentRow>();if(!student)return json({error:'Неверный код ученика или PIN.'},{status:401});
-  const now=Date.now();if(student.locked_until>now)return json({error:'Слишком много попыток. Попробуйте позже.',retryAfterSeconds:Math.ceil((student.locked_until-now)/1000)},{status:429,headers:{'retry-after':String(Math.ceil((student.locked_until-now)/1000))}});
-  const candidate=await pinHash(pin,student.pin_salt);if(!(await safeEqualHex(candidate,student.pin_hash))){const attempts=student.failed_attempts+1;const locked=attempts>=MAX_FAILED_ATTEMPTS?now+LOCK_MS:0;await db.prepare('UPDATE students SET failed_attempts=?,locked_until=?,updated_at=? WHERE id=?').bind(locked?0:attempts,locked,new Date().toISOString(),student.id).run();return json({error:'Неверный код ученика или PIN.'},{status:401})}
+  const now=Date.now();if(student.locked_until>now)return lockedResponse(student.locked_until,now);
+  const candidate=await pinHash(pin,student.pin_salt);if(!(await safeEqualHex(candidate,student.pin_hash))){const locked=await recordWrongPin(db,student,now);if(locked)return lockedResponse(locked,now);return json({error:'Неверный код ученика или PIN.'},{status:401})}
   await db.prepare('UPDATE students SET failed_attempts=0,locked_until=0,updated_at=? WHERE id=?').bind(new Date().toISOString(),student.id).run();const token=await createSession(db,student.id);
   return json({ok:true,student:{id:student.id,name:student.display_name,code:student.login_code},token,revision:student.progress_revision,entries:await loadEntries(db,student.id)});
 }
