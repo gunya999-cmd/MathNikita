@@ -4,6 +4,8 @@ import { totalLessons, yearPlan } from './data/yearPlan';
 import { LessonCourseShell } from './LessonCourseShell';
 import { LearnerDashboard } from './LearnerDashboard';
 import { StudentAccountGate } from './StudentAccountGate';
+import { CloudSyncBadge } from './CloudSyncBadge';
+import { CLOUD_RECONCILED_EVENT, startStudentCloudSync, syncStudentCloudNow } from './cloudStudentSync';
 import { backupStudentProfileOnPageHide, getAuthenticatedStudentProfile, switchStudentProfile } from './studentProfiles';
 import './focusLearning.css';
 import {
@@ -58,17 +60,22 @@ export function App() {
 
   useEffect(() => {
     if (PROFILE_E2E_BYPASS || !profile) return;
-    const backup = () => backupStudentProfileOnPageHide();
+    const stopCloud=startStudentCloudSync(profile.id);
+    const backup = () => { backupStudentProfileOnPageHide(); if(profile.cloud) void syncStudentCloudNow(profile.id); };
     const onVisibility = () => { if (document.visibilityState === 'hidden') backup(); };
     const onStorage = () => {
       if (!getAuthenticatedStudentProfile()) window.location.reload();
     };
+    const onCloudReconciled=()=>window.location.reload();
     window.addEventListener('pagehide', backup);
     window.addEventListener('storage', onStorage);
+    window.addEventListener(CLOUD_RECONCILED_EVENT,onCloudReconciled);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      stopCloud();
       window.removeEventListener('pagehide', backup);
       window.removeEventListener('storage', onStorage);
+      window.removeEventListener(CLOUD_RECONCILED_EVENT,onCloudReconciled);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [profile?.id]);
@@ -128,7 +135,8 @@ export function App() {
         </nav>
         <div className="topbar-profile-actions">
           <div className="xp-pill">⭐ <b>{state.xp}</b> XP</div>
-          {profile && <button className="student-profile-pill" onClick={changeStudent} aria-label={`Сменить ученика. Сейчас ${profile.name}`}><span>{profile.avatar}</span><div><b>{profile.name}</b><small>Сменить ученика</small></div></button>}
+          {profile&&<CloudSyncBadge profile={profile}/>}          
+          {profile && <button className="student-profile-pill" onClick={changeStudent} aria-label={`Сменить ученика. Сейчас ${profile.name}`}><span>{profile.avatar}</span><div><b>{profile.name}</b><small>{profile.cloud?.studentCode??'Сменить ученика'}</small></div></button>}
         </div>
       </header>
 

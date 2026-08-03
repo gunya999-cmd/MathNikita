@@ -1,3 +1,11 @@
+export type StudentCloudLink = {
+  studentCode: string;
+  token: string;
+  revision: number;
+  linkedAt: string;
+  lastSyncedAt?: string;
+};
+
 export type StudentProfile = {
   id: string;
   name: string;
@@ -6,6 +14,7 @@ export type StudentProfile = {
   pinHash: string;
   createdAt: string;
   lastUsedAt: string;
+  cloud?: StudentCloudLink;
 };
 
 type ProfileRegistry = {
@@ -19,11 +28,17 @@ type ProfileStorageBundle = {
   storage: Record<string, string>;
 };
 
+type CloudBaseline = {
+  version: 1;
+  fingerprints: Record<string, string>;
+};
+
 const ACCOUNT_PREFIX = 'mathnikita:accounts:';
 const REGISTRY_KEY = `${ACCOUNT_PREFIX}registry:v1`;
 const WORKSPACE_OWNER_KEY = `${ACCOUNT_PREFIX}workspace-owner:v1`;
 const SESSION_KEY = `${ACCOUNT_PREFIX}session:v1`;
 const PROFILE_DATA_PREFIX = `${ACCOUNT_PREFIX}profile-data:`;
+const CLOUD_BASELINE_PREFIX = `${ACCOUNT_PREFIX}cloud-baseline:`;
 const AVATARS = ['🐱', '🦊', '🐼', '🐯', '🐧', '🦁', '🐙', '🐨'];
 
 function emptyRegistry(): ProfileRegistry {
@@ -46,6 +61,10 @@ function saveRegistry(registry: ProfileRegistry) {
 
 function profileDataKey(profileId: string) {
   return `${PROFILE_DATA_PREFIX}${profileId}:v1`;
+}
+
+function cloudBaselineKey(profileId: string) {
+  return `${CLOUD_BASELINE_PREFIX}${profileId}:v1`;
 }
 
 function isStudentDataKey(key: string) {
@@ -139,28 +158,6 @@ function validatePin(pin: string) {
   if (!/^\d{4}$/.test(pin)) throw new Error('PIN должен состоять ровно из 4 цифр.');
 }
 
-export function getStudentProfiles() {
-  return [...loadRegistry().profiles].sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt));
-}
-
-export function getAuthenticatedStudentProfile() {
-  const id = sessionProfileId();
-  if (!id || workspaceOwnerId() !== id) return null;
-  return loadRegistry().profiles.find(profile => profile.id === id) ?? null;
-}
-
-export function hasUnassignedStudentProgress() {
-  return loadRegistry().profiles.length === 0 && Object.keys(collectLiveStudentStorage()).length > 0;
-}
-
-export function saveCurrentStudentWorkspace() {
-  const ownerId = workspaceOwnerId();
-  if (!ownerId) return;
-  const profileExists = loadRegistry().profiles.some(profile => profile.id === ownerId);
-  if (!profileExists) return;
-  saveProfileStorage(ownerId, collectLiveStudentStorage());
-}
-
 function activateWorkspace(profileId: string) {
   const ownerId = workspaceOwnerId();
   if (ownerId === profileId) {
@@ -178,6 +175,71 @@ function markProfileUsed(profileId: string) {
   const now = new Date().toISOString();
   registry.profiles = registry.profiles.map(profile => profile.id === profileId ? { ...profile, lastUsedAt: now } : profile);
   saveRegistry(registry);
+}
+
+export function getStudentProfiles() {
+  return [...loadRegistry().profiles].sort((a, b) => b.lastUsedAt.localeCompare(a.lastUsedAt));
+}
+
+export function getStudentProfile(profileId: string) {
+  return loadRegistry().profiles.find(profile => profile.id === profileId) ?? null;
+}
+
+export function getAuthenticatedStudentProfile() {
+  const id = sessionProfileId();
+  if (!id || workspaceOwnerId() !== id) return null;
+  return getStudentProfile(id);
+}
+
+export function hasUnassignedStudentProgress() {
+  return loadRegistry().profiles.length === 0 && Object.keys(collectLiveStudentStorage()).length > 0;
+}
+
+export function getCurrentStudentStorageSnapshot() {
+  return collectLiveStudentStorage();
+}
+
+export function replaceActiveStudentStorage(profileId: string, storage: Record<string, string>) {
+  if (workspaceOwnerId() !== profileId) throw new Error('Нельзя заменить данные неактивного ученика.');
+  clearLiveStudentStorage();
+  Object.entries(storage).forEach(([key, value]) => localStorage.setItem(key, value));
+  saveProfileStorage(profileId, storage);
+}
+
+export function getCloudBaseline(profileId: string) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(cloudBaselineKey(profileId)) ?? 'null') as CloudBaseline | null;
+    if (parsed?.version === 1 && parsed.fingerprints && typeof parsed.fingerprints === 'object') return parsed.fingerprints;
+  } catch {
+    // A missing baseline simply causes a safe full delta on the next cloud sync.
+  }
+  return {} as Record<string, string>;
+}
+
+export function setCloudBaseline(profileId: string, fingerprints: Record<string, string>) {
+  const baseline: CloudBaseline = { version: 1, fingerprints };
+  localStorage.setItem(cloudBaselineKey(profileId), JSON.stringify(baseline));
+}
+
+export function updateStudentCloudLink(profileId: string, cloud: StudentCloudLink) {
+  const registry = loadRegistry();
+  registry.profiles = registry.profiles.map(profile => profile.id === profileId ? { ...profile, cloud } : profile);
+  saveRegistry(registry);
+  return registry.profiles.find(profile => profile.id === profileId) ?? null;
+}
+
+export function updateStudentCloudSession(profileId: string, patch: Partial<StudentCloudLink>) {
+  const profile = getStudentProfile(profileId);
+  if (!profile?.cloud) return null;
+  return updateStudentCloudLink(profileId, { ...profile.cloud, ...patch });
+}
+
+export function saveCurrentStudentWorkspace() {
+  const ownerId = workspaceOwnerId();
+  if (!ownerId) return;
+  const profileExists = loadRegistry().profiles.some(profile => profile.id === ownerId);
+  if (!profileExists) return;
+  saveProfileStorage(ownerId, collectLiveStudentStorage());
 }
 
 export async function createStudentProfile(nameInput: string, pin: string, adoptExistingProgress: boolean) {
@@ -216,15 +278,58 @@ export async function createStudentProfile(nameInput: string, pin: string, adopt
   return profile;
 }
 
+export async function importCloudStudentProfile(input:{id:string;name:string;studentCode:string;token:string;revision:number;entries:Record<string,string>;pin:string}) {
+  validatePin(input.pin);
+  const registry = loadRegistry();
+  const linked = registry.profiles.find(profile => profile.cloud?.studentCode === input.studentCode);
+  if (linked) {
+    const now = new Date().toISOString();
+    const salt = randomHex(16);
+    const pinHash = await pinDigest(input.pin, salt);
+    registry.profiles = registry.profiles.map(profile => profile.id === linked.id ? {
+      ...profile,
+      name: cleanName(input.name),
+      pinSalt: salt,
+      pinHash,
+      lastUsedAt: now,
+      cloud: { studentCode: input.studentCode, token: input.token, revision: input.revision, linkedAt: profile.cloud?.linkedAt ?? now, lastSyncedAt: now },
+    } : profile);
+    saveRegistry(registry);
+    saveProfileStorage(linked.id, input.entries);
+    activateWorkspace(linked.id);
+    replaceActiveStudentStorage(linked.id, input.entries);
+    return getStudentProfile(linked.id)!;
+  }
+  if (registry.profiles.some(profile => profile.id === input.id)) throw new Error('Этот облачный профиль уже связан с другим локальным учеником.');
+  const now = new Date().toISOString();
+  const salt = randomHex(16);
+  const profile: StudentProfile = {
+    id: input.id,
+    name: cleanName(input.name),
+    avatar: AVATARS[registry.profiles.length % AVATARS.length],
+    pinSalt: salt,
+    pinHash: await pinDigest(input.pin, salt),
+    createdAt: now,
+    lastUsedAt: now,
+    cloud: { studentCode: input.studentCode, token: input.token, revision: input.revision, linkedAt: now, lastSyncedAt: now },
+  };
+  registry.profiles.push(profile);
+  saveRegistry(registry);
+  saveProfileStorage(profile.id, input.entries);
+  activateWorkspace(profile.id);
+  replaceActiveStudentStorage(profile.id, input.entries);
+  return getStudentProfile(profile.id)!;
+}
+
 export async function authenticateStudentProfile(profileId: string, pin: string) {
   validatePin(pin);
-  const profile = loadRegistry().profiles.find(item => item.id === profileId);
+  const profile = getStudentProfile(profileId);
   if (!profile) throw new Error('Профиль ученика не найден.');
   const hash = await pinDigest(pin, profile.pinSalt);
   if (hash !== profile.pinHash) throw new Error('Неверный PIN. Попробуйте ещё раз.');
   activateWorkspace(profile.id);
   markProfileUsed(profile.id);
-  return profile;
+  return getStudentProfile(profile.id)!;
 }
 
 export function switchStudentProfile() {
