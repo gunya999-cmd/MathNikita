@@ -60,10 +60,15 @@ export function App() {
     if (PROFILE_E2E_BYPASS || !profile) return;
     const backup = () => backupStudentProfileOnPageHide();
     const onVisibility = () => { if (document.visibilityState === 'hidden') backup(); };
+    const onStorage = () => {
+      if (!getAuthenticatedStudentProfile()) window.location.reload();
+    };
     window.addEventListener('pagehide', backup);
+    window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.removeEventListener('pagehide', backup);
+      window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [profile?.id]);
