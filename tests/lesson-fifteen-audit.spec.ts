@@ -82,9 +82,11 @@ test('lesson 15 covers source tasks 126-134, exact semantics, visuals and all ma
   await expect(page.locator('.l15-scale126-model')).toContainText('Единичный отрезок = 5 мм');
 
   await jump(page,4,'l15-practice2');
-  await page.locator('.inline-answer input').fill('15 мм');
-  await page.locator('.check-button').click();
-  await expect(page.locator('.instant-feedback.bad')).toBeVisible();
+  for(const wrong of ['15 мм','5 см']){
+    await page.locator('.inline-answer input').fill(wrong);
+    await page.locator('.check-button').click();
+    await expect(page.locator('.instant-feedback.bad')).toBeVisible();
+  }
   await page.locator('.inline-answer input').fill('5 мм');
   await page.locator('.check-button').click();
   await expect(page.locator('.instant-feedback.good')).toContainText('90 : 18 = 5 мм');
@@ -113,6 +115,16 @@ test('lesson 15 covers source tasks 126-134, exact semantics, visuals and all ma
   await expect(page.locator('.l15-arrow-model')).toContainText('74 → +8 → 82');
   await expect(page.locator('.l15-arrow-model')).toContainText('424 → −16 → 408');
 
+  await jump(page,21,'l15-challenge');
+  for(const wrong of ['85 мм','8,5 мм','85 см']){
+    await page.locator('.inline-answer input').fill(wrong);
+    await page.locator('.check-button').click();
+    await expect(page.locator('.instant-feedback.bad')).toBeVisible();
+  }
+  await page.locator('.inline-answer input').fill('8.5 см');
+  await page.locator('.check-button').click();
+  await expect(page.locator('.instant-feedback.good')).toContainText('8,5 см');
+
   expect(mainActivities).toHaveLength(15);
   for(const entry of mainActivities)await solveMainActivity(page,entry);
 
@@ -120,6 +132,28 @@ test('lesson 15 covers source tasks 126-134, exact semantics, visuals and all ma
   await expect(page.locator('.summary-card')).toContainText('Основная часть ✓');
   await expect(page.locator('.summary-card')).toContainText('дальше — обязательная практика и финальное объяснение');
   await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
+});
+
+test('lesson 15 mandatory decimal field rejects a ten-times-larger answer',async({page})=>{
+  await mockNarration(page,{ids:[]});
+  await openLessonFifteen(page);
+  await page.evaluate(()=>localStorage.setItem('mathnikita:extended-practice:15:v2','8'));
+  await jump(page,24,'l15-summary');
+
+  const practice=page.locator('.extended-practice');
+  await expect(practice).toHaveAttribute('data-practice-task','l15-master-1');
+  const inputs=practice.locator('.extended-practice-multi input');
+  await expect(inputs).toHaveCount(4);
+  await inputs.nth(0).fill('3');
+  await inputs.nth(1).fill('5');
+  await inputs.nth(2).fill('15');
+  await inputs.nth(3).fill('85');
+  await practice.locator('.extended-practice-check').click();
+  await expect(practice.locator('.extended-practice-feedback.is-wrong')).toBeVisible();
+
+  await inputs.nth(2).fill('1,5');
+  await practice.locator('.extended-practice-check').click();
+  await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
 });
 
 test('lesson 15 migrates stale v1 lesson, practice, completion, reflection and old timing payload',async({page})=>{
