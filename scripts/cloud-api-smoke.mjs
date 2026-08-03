@@ -3,28 +3,42 @@ import {setTimeout as sleep} from 'node:timers/promises';
 
 const port=8791;
 const base=`http://127.0.0.1:${port}`;
-const child=spawn('npx',['-y','wrangler@4.114.0','dev','--local','--ip','127.0.0.1','--port',String(port)],{stdio:['ignore','pipe','pipe'],env:{...process.env}});
+const child=spawn('npx',['-y','wrangler@4.114.0','dev','--local','--ip','127.0.0.1','--port',String(port)],{stdio:['ignore','pipe','pipe'],env:{...process.env},detached:process.platform!=='win32'});
 let output='';
 child.stdout.on('data',chunk=>{output+=chunk.toString();process.stdout.write(chunk)});
 child.stderr.on('data',chunk=>{output+=chunk.toString();process.stderr.write(chunk)});
 
+async function fetchBound(url,options={},timeoutMs=20_000){
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{return await fetch(url,{...options,signal:controller.signal})}
+  catch(error){if(error?.name==='AbortError')throw new Error(`request timed out after ${timeoutMs}ms: ${url}`);throw error}
+  finally{clearTimeout(timer)}
+}
+
 async function waitReady(){
   for(let attempt=0;attempt<80;attempt+=1){
     if(child.exitCode!==null)throw new Error(`wrangler exited early (${child.exitCode})\n${output}`);
-    try{const response=await fetch(`${base}/api/cloud/status`);if(response.ok)return}catch{}
+    try{const response=await fetchBound(`${base}/api/cloud/status`,{},2_000);if(response.ok)return}catch{}
     await sleep(500);
   }
   throw new Error(`wrangler did not become ready\n${output}`);
 }
 
 async function api(path,options={}){
-  const response=await fetch(`${base}${path}`,{...options,headers:{'content-type':'application/json',...(options.headers??{})}});
+  console.log(`\n[cloud-smoke] ${options.method??'GET'} ${path}`);
+  const response=await fetchBound(`${base}${path}`,{...options,headers:{'content-type':'application/json',...(options.headers??{})}});
   const text=await response.text();let body={};try{body=text?JSON.parse(text):{}}catch{body={raw:text}}
+  console.log(`[cloud-smoke] -> ${response.status}`);
   return{status:response.status,body};
 }
 
 function assert(condition,message){if(!condition)throw new Error(message)}
+function stopWrangler(){
+  if(child.exitCode!==null)return;
+  try{if(process.platform!=='win32')process.kill(-child.pid,'SIGTERM');else child.kill('SIGTERM')}catch{try{child.kill('SIGTERM')}catch{}}
+}
 
+let failed;
 try{
   await waitReady();
   const id=`cloud-smoke-${Date.now()}`;
@@ -62,8 +76,10 @@ try{
   assert(newPin.body.entries?.['mathnikita:test-marker']==='device-b','progress was lost during PIN recovery');
 
   console.log('\nCloud D1 smoke: OK');
-}finally{
-  child.kill('SIGTERM');
-  await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(3000)]);
-  if(child.exitCode===null)child.kill('SIGKILL');
+}catch(error){failed=error;console.error('\nCloud D1 smoke failed:',error)}finally{
+  stopWrangler();
+  await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(2500)]);
+  if(child.exitCode===null){try{if(process.platform!=='win32')process.kill(-child.pid,'SIGKILL');else child.kill('SIGKILL')}catch{}}
 }
+if(failed)throw failed;
+process.exit(0);
