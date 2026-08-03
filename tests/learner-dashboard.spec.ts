@@ -6,7 +6,7 @@ async function mockNarration(page:Page){
   await page.route('**/api/narration',route=>route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-dashboard-mock'}));
 }
 
-test('student and parent dashboards show the same seeded learning history',async({page})=>{
+async function seedDashboard(page:Page){
   await page.addInitScript(()=>{
     const now=new Date();const yesterday=new Date(now.getFullYear(),now.getMonth(),now.getDate()-1);const before=new Date(now.getFullYear(),now.getMonth(),now.getDate()-2);
     const key=(date:Date)=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,'0');const d=String(date.getDate()).padStart(2,'0');return`${y}-${m}-${d}`};
@@ -23,19 +23,35 @@ test('student and parent dashboards show the same seeded learning history',async
       [key(now)]:{screenSeconds:900,focusSeconds:820,activeSeconds:760,correct:5,wrong:0,completedLessons:0}
     },events:[{id:'wrong-1',at:yesterday.toISOString(),lessonNumber:6,type:'answer_wrong',area:'practice',key:'practice:l6-source-47',label:'Построй отрезок 6 см 3 мм'}]}));
   });
+}
+
+test('student dashboard leads with next action and keeps detailed analytics secondary',async({page})=>{
+  await seedDashboard(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  await expect(page.getByRole('heading',{name:'Твой математический маршрут'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Продолжим с урока 7'})).toBeVisible();
   await expect(page.getByText('Учебный импульс')).toBeVisible();
-  await expect(page.getByText('34 верно · 6 ошибок')).toBeVisible();
-  await expect(page.getByText('Недавние уроки')).toBeVisible();
-  await expect(page.getByText('№6').first()).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Где ты сейчас'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Что получается и что подтянуть'})).toBeVisible();
+  await expect(page.getByText('Подробная статистика')).toBeVisible();
+  await page.getByText('Подробная статистика').click();
+  await expect(page.getByText('Время на экране')).toBeVisible();
+  await page.getByRole('button',{name:/Открыть следующий урок|Продолжить урок/}).click();
+  await expect(page.getByRole('button',{name:/Открыть урок 7:/})).toBeVisible();
+});
+
+test('parent dashboard prioritizes attention, course status, history and errors',async({page})=>{
+  await seedDashboard(page);
+  await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Родителям'}).click();
-  await expect(page.getByRole('heading',{name:'Полная аналитика обучения'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Обзор обучения'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'На что обратить внимание'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Продвижение по урокам'})).toBeVisible();
   await expect(page.getByText('34 верно · 6 ошибок')).toBeVisible();
-  await expect(page.getByText('Последние занятия')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Где возникали трудности'})).toBeVisible();
   await expect(page.getByText('Построй отрезок 6 см 3 мм')).toBeVisible();
-  await expect(page.getByText(/Историческое завершение уроков/)).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Последние занятия'})).toBeVisible();
+  await expect(page.getByText(/Историческое завершение и накопленное время/)).toBeVisible();
 });
 
 test('lesson session starts writing detailed screen and focus telemetry',async({page})=>{
