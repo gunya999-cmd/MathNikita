@@ -20,6 +20,7 @@ on:
       - 'src/VoiceNarrator.tsx'
       - 'src/MentorResponsiveBehavior.tsx'
       - 'tests/lesson-sixteen-audit.spec.ts'
+      - 'tests/lesson-sixteen-feedback-audit.spec.ts'
       - '.github/workflows/lesson16-audit.yml'
   push:
     branches: [main]
@@ -40,6 +41,7 @@ on:
       - 'src/VoiceNarrator.tsx'
       - 'src/MentorResponsiveBehavior.tsx'
       - 'tests/lesson-sixteen-audit.spec.ts'
+      - 'tests/lesson-sixteen-feedback-audit.spec.ts'
       - '.github/workflows/lesson16-audit.yml'
 
 permissions:
@@ -63,7 +65,7 @@ jobs:
       - name: Build
         run: npm run build
       - name: Run lesson 16 audit
-        run: npx playwright test tests/lesson-sixteen-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
+        run: npx playwright test tests/lesson-sixteen-audit.spec.ts tests/lesson-sixteen-feedback-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
