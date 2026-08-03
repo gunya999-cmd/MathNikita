@@ -24,7 +24,6 @@ const REGISTRY_KEY = `${ACCOUNT_PREFIX}registry:v1`;
 const WORKSPACE_OWNER_KEY = `${ACCOUNT_PREFIX}workspace-owner:v1`;
 const SESSION_KEY = `${ACCOUNT_PREFIX}session:v1`;
 const PROFILE_DATA_PREFIX = `${ACCOUNT_PREFIX}profile-data:`;
-const LEGACY_COURSE_KEY = 'math-course-state-v3';
 const AVATARS = ['🐱', '🦊', '🐼', '🐯', '🐧', '🦁', '🐙', '🐨'];
 
 function emptyRegistry(): ProfileRegistry {
@@ -50,8 +49,7 @@ function profileDataKey(profileId: string) {
 }
 
 function isStudentDataKey(key: string) {
-  if (key.startsWith(ACCOUNT_PREFIX)) return false;
-  return key === LEGACY_COURSE_KEY || key.startsWith('mathnikita:');
+  return !key.startsWith(ACCOUNT_PREFIX);
 }
 
 function collectLiveStudentStorage() {
@@ -237,5 +235,9 @@ export function switchStudentProfile() {
 export function backupStudentProfileOnPageHide() {
   const sessionId = sessionProfileId();
   if (!sessionId || sessionId !== workspaceOwnerId()) return;
-  saveCurrentStudentWorkspace();
+  try {
+    saveCurrentStudentWorkspace();
+  } catch {
+    // The live workspace remains intact even if a best-effort backup cannot be written.
+  }
 }
