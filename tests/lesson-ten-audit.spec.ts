@@ -1,11 +1,29 @@
 import { expect,test,type Page } from '@playwright/test';
-import { lessonTenStages } from '../src/PlaneLineRayPlayer';
 import { extendedPracticeLesson10 } from '../src/data/extendedPracticeLesson10';
 import { lessonTenMastery } from '../src/data/lessonTenMastery';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
 
 const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson10.tasks,...lessonTenMastery];
-const mainActivities=lessonTenStages.flatMap((stage,stageIndex)=>stage.activity?[{stage,stageIndex,activity:stage.activity}]:[]);
+
+type MainActivity={stageIndex:number;stageId:string;type:'choice'|'input'|'order';answer:string|string[]};
+const mainActivities:MainActivity[]=[
+  {stageIndex:2,stageId:'l10-plane-check',type:'choice',answer:'поверхность стола'},
+  {stageIndex:5,stageId:'l10-one-line-check',type:'input',answer:'1'},
+  {stageIndex:7,stageId:'l10-name-check',type:'choice',answer:'AB, BA или m'},
+  {stageIndex:9,stageId:'l10-ray-check',type:'choice',answer:'OA'},
+  {stageIndex:10,stageId:'l10-practice1',type:'choice',answer:'прямая'},
+  {stageIndex:11,stageId:'l10-practice2',type:'input',answer:'2'},
+  {stageIndex:12,stageId:'l10-practice3',type:'choice',answer:'KP'},
+  {stageIndex:13,stageId:'l10-practice4',type:'choice',answer:'OA и OB'},
+  {stageIndex:14,stageId:'l10-practice5',type:'order',answer:['Отметить две различные точки A и B','Приложить линейку к точкам A и B','Провести линию через обе точки','Продолжить изображение в обе стороны']},
+  {stageIndex:15,stageId:'l10-practice6',type:'choice',answer:'тонкий луч света, идущий от источника в одном направлении'},
+  {stageIndex:16,stageId:'l10-quiz1',type:'choice',answer:'плоскость бесконечна'},
+  {stageIndex:17,stageId:'l10-quiz2',type:'input',answer:'1'},
+  {stageIndex:18,stageId:'l10-quiz3',type:'input',answer:'0'},
+  {stageIndex:19,stageId:'l10-quiz4',type:'choice',answer:'O'},
+  {stageIndex:20,stageId:'l10-quiz5',type:'input',answer:'2'},
+  {stageIndex:21,stageId:'l10-challenge',type:'input',answer:'3'},
+];
 
 type NarrationLog={ids:string[]};
 
@@ -29,15 +47,14 @@ async function jump(page:Page,stageIndex:number,stageId:string){
   await expect(page.locator(`[data-stage-id="${stageId}"]`)).toBeVisible();
 }
 
-async function solveMainActivity(page:Page,entry:(typeof mainActivities)[number]){
-  await jump(page,entry.stageIndex,entry.stage.id);
-  const {activity}=entry;
-  if(activity.type==='choice'){
-    await page.locator('.choice-grid').getByRole('button',{name:String(activity.answer),exact:true}).click();
-  }else if(activity.type==='input'){
-    await page.locator('.inline-answer input').fill(String(activity.answer));
+async function solveMainActivity(page:Page,entry:MainActivity){
+  await jump(page,entry.stageIndex,entry.stageId);
+  if(entry.type==='choice'){
+    await page.locator('.choice-grid').getByRole('button',{name:String(entry.answer),exact:true}).click();
+  }else if(entry.type==='input'){
+    await page.locator('.inline-answer input').fill(String(entry.answer));
   }else{
-    for(const item of activity.answer as string[])await page.locator('.order-bank').getByRole('button',{name:item,exact:true}).click();
+    for(const item of entry.answer as string[])await page.locator('.order-bank').getByRole('button',{name:item,exact:true}).click();
   }
   await page.locator('.check-button').click();
   await expect(page.locator('.instant-feedback.good')).toBeVisible();
