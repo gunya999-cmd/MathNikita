@@ -3,6 +3,7 @@ import type { ExtendedPracticeTask } from './data/extendedPracticeTypes';
 import { prepareRussianSpeechText,selectBestRussianVoice } from './voiceQuality';
 import { getStudioAudioUrl,loadVoiceSettings,peekStudioAudioUrl,prefetchStudioAudioUrl,STUDIO_VOICE_LABEL } from './studioVoice';
 
+// Audit-only no-op marker: fresh post-merge rerun of lessons 6-16 on 2026-08-03.
 type CheckState='idle'|'correct'|'wrong';
 type MentorAction='status'|'different'|'example'|'hint'|'why';
 type VoiceIssue=''|'busy'|'autoplay'|'unavailable';
