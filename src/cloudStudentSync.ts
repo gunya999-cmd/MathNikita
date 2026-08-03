@@ -13,6 +13,7 @@ import {
 export type CloudSyncPhase='local'|'syncing'|'saved'|'offline'|'needs-login'|'error';
 export type CloudSyncStatus={phase:CloudSyncPhase;label:string;at:string};
 
+export const CLOUD_RECONCILED_EVENT='mathnikita-cloud-reconciled';
 const STATUS_EVENT='mathnikita-cloud-status';
 const syncLocks=new Map<string,Promise<void>>();
 
@@ -21,6 +22,7 @@ function emit(phase:CloudSyncPhase,label:string){
   window.dispatchEvent(new CustomEvent(STATUS_EVENT,{detail}));
   return detail;
 }
+function notifyReconciled(){window.dispatchEvent(new Event(CLOUD_RECONCILED_EVENT))}
 
 function fingerprint(value:string){
   let hash=2166136261;
@@ -93,8 +95,9 @@ async function runSync(profileId:string,pullIfClean:boolean,retryConflict:boolea
       replaceActiveStudentStorage(profileId,merged);
       setCloudBaseline(profileId,storageFingerprints(conflict.entries));
       updateStudentCloudSession(profileId,{revision:conflict.revision});
-      if(retryConflict){await runSync(profileId,false,false);return}
+      if(retryConflict){await runSync(profileId,false,false);notifyReconciled();return}
       emit('error','Конфликт прогресса сохранён локально');
+      notifyReconciled();
       return;
     }
     setCloudBaseline(profileId,storageFingerprints(getCurrentStudentStorageSnapshot()));
@@ -107,6 +110,10 @@ async function runSync(profileId:string,pullIfClean:boolean,retryConflict:boolea
   if(remote.revision>profile.cloud.revision){
     replaceActiveStudentStorage(profileId,remote.entries);
     setCloudBaseline(profileId,storageFingerprints(remote.entries));
+    updateStudentCloudSession(profileId,{revision:remote.revision,lastSyncedAt:new Date().toISOString()});
+    emit('saved','Получен прогресс с другого устройства');
+    notifyReconciled();
+    return;
   }
   updateStudentCloudSession(profileId,{revision:remote.revision,lastSyncedAt:new Date().toISOString()});
   emit('saved','Прогресс сохранён');
