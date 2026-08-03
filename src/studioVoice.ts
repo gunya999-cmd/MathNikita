@@ -121,3 +121,5 @@ export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
   audioUrlCache.set(key,request);
   return request;
 }
+
+// Audit-only no-op marker: fresh post-merge rerun of lessons 6-16 on 2026-08-03.
