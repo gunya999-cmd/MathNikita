@@ -98,7 +98,6 @@ test('summary finishes before mandatory practice and the toolbar listens to prac
   await installSequencingAudit(page);
   await routeNarration(page);
   await openLesson(page,lessonNumber);
-  window;
   const total=await totalStages(page);
 
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-stop-narration')));
