@@ -4,21 +4,7 @@ const mainResults={'l6-a1':true,'l6-a2':true,'l6-a3':true,'l6-a4':true,'l6-a5':t
 
 type RequestAudit={active:number;maxActive:number;ids:string[]};
 
-async function prepareTaskFive(page:Page){
-  await page.addInitScript(({results})=>{
-    localStorage.setItem('mathnikita-selected-lesson','6');
-    localStorage.setItem('mathnikita-lesson-6-progress-v2',JSON.stringify({version:2,stageIndex:23,responses:{},orders:{},checked:{},results}));
-    localStorage.setItem('mathnikita:lesson-6-revision-v2-migrated','1');
-    localStorage.setItem('mathnikita:lesson-6-practice-v3-migrated','1');
-    localStorage.setItem('mathnikita:extended-practice:6:v3','4');
-    localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',rate:.94}));
-    class MockAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){window.setTimeout(()=>this.onended?.(),20);return Promise.resolve()}}
-    Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:MockAudio});
-  },{results:mainResults});
-}
-
-async function openTaskFive(page:Page,audit:RequestAudit){
-  await prepareTaskFive(page);
+async function routeNarrationAudit(page:Page,audit:RequestAudit){
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'gemini',voice:'Sulafat'})}));
   await page.route('**/api/narration',async route=>{
     const payload=route.request().postDataJSON() as {id?:string};
@@ -28,6 +14,29 @@ async function openTaskFive(page:Page,audit:RequestAudit){
     audit.active-=1;
     await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-lesson-six-task-five'});
   });
+}
+async function installAudioMock(page:Page){
+  await page.addInitScript(()=>{
+    localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',rate:.94}));
+    localStorage.setItem('mathnikita-mentor-auto-guide','false');
+    class MockAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){window.setTimeout(()=>this.onended?.(),20);return Promise.resolve()}}
+    Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:MockAudio});
+  });
+}
+async function prepareTaskFive(page:Page){
+  await installAudioMock(page);
+  await page.addInitScript(({results})=>{
+    localStorage.setItem('mathnikita-selected-lesson','6');
+    localStorage.setItem('mathnikita-lesson-6-progress-v2',JSON.stringify({version:2,stageIndex:23,responses:{},orders:{},checked:{},results}));
+    localStorage.setItem('mathnikita:lesson-6-revision-v2-migrated','1');
+    localStorage.setItem('mathnikita:lesson-6-practice-v3-migrated','1');
+    localStorage.setItem('mathnikita:extended-practice:6:v3','4');
+  },{results:mainResults});
+}
+
+async function openTaskFive(page:Page,audit:RequestAudit){
+  await prepareTaskFive(page);
+  await routeNarrationAudit(page,audit);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/Открыть урок 6:/}).click();
   await page.locator('.lesson-opening-start').click();
@@ -66,6 +75,28 @@ test('lesson 6 practice throttles background Sulafat warmup instead of bursting 
   expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-different')).toBeFalsy();
   expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-example')).toBeFalsy();
   expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-why')).toBeFalsy();
+  expect(audit.maxActive).toBeLessThanOrEqual(2);
+});
+
+test('lesson 6 core CatMentor warmups also obey the global Sulafat request limit',async({page})=>{
+  const audit:RequestAudit={active:0,maxActive:0,ids:[]};
+  await installAudioMock(page);
+  await page.addInitScript(()=>{
+    localStorage.setItem('mathnikita-selected-lesson','6');
+    localStorage.setItem('mathnikita:lesson-6-revision-v2-migrated','1');
+    localStorage.setItem('mathnikita:lesson-6-practice-v3-migrated','1');
+    localStorage.removeItem('mathnikita-lesson-6-progress-v2');
+  });
+  await routeNarrationAudit(page,audit);
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:/Открыть урок 6:/}).click();
+  await page.locator('.lesson-opening-start').click();
+  await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible({timeout:8_000});
+
+  for(const id of ['mentor-l6-intro-hint','mentor-l6-intro-different','mentor-l6-intro-example','mentor-l6-intro-why']){
+    await expect.poll(()=>audit.ids.filter(item=>item===id).length,{timeout:8_000}).toBe(1);
+  }
+  await page.waitForTimeout(350);
   expect(audit.maxActive).toBeLessThanOrEqual(2);
 });
 
