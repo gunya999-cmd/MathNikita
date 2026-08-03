@@ -39,7 +39,7 @@ export const lessonFifteenStages:Stage[]=[
 ];
 
 const empty:Saved={version:2,stageIndex:0,responses:{},checked:{},results:{}};
-function norm(value:string){return value.trim().toLowerCase().replace(/[\s\u00a0,.;:]+/g,'').replace(/ё/g,'е').replace(/мм|см/g,'')}
+function norm(value:string){return value.normalize('NFKC').trim().toLowerCase().replace(/ё/g,'е').replace(/(\d)\.(\d)/g,'$1,$2').replace(/;/g,',').replace(/[\s\u00a0]+/g,'').replace(/:+/g,'')}
 function load():Saved{try{const parsed=JSON.parse(localStorage.getItem(KEY)??'null') as Partial<Saved>|null;return parsed?.version===2?{...empty,...parsed,stageIndex:Math.min(Math.max(Number(parsed.stageIndex)||0,0),lessonFifteenStages.length-1),responses:parsed.responses??{},checked:parsed.checked??{},results:parsed.results??{}}:empty}catch{return empty}}
 
 function PracticeVisual({kind}:{kind:Visual}){
