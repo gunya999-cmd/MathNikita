@@ -125,16 +125,35 @@ test('lesson 11 source tasks, diagrams and every main interactive task are corre
   await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
 });
 
-test('lesson 11 ignores stale v1 lesson and practice completion state',async({page})=>{
+test('lesson 11 migrates stale v1 progress, practice, completion and reflection state',async({page})=>{
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.evaluate(()=>{
+    localStorage.removeItem('mathnikita:lesson-11-revision-v2-migrated');
     localStorage.setItem('mathnikita-lesson-11-progress-v1',JSON.stringify({version:1,stageIndex:21,responses:{},orders:{},checked:{},results:{},completedAt:new Date().toISOString()}));
     localStorage.setItem('mathnikita:extended-practice:11:v1','18');
+    localStorage.setItem('mathnikita:extended-practice:11:v1:draft',JSON.stringify({taskId:'old'}));
+    localStorage.setItem('mathnikita:lesson-complete:11',new Date().toISOString());
+    localStorage.setItem('mathnikita:reflection:11',JSON.stringify({saved:true,text:'old reflection'}));
   });
   await page.reload({waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/Открыть урок 11:/}).click();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l11-story"]')).toBeVisible();
+
+  const migrated=await page.evaluate(()=>({
+    marker:localStorage.getItem('mathnikita:lesson-11-revision-v2-migrated'),
+    legacyLesson:localStorage.getItem('mathnikita-lesson-11-progress-v1'),
+    legacyPractice:localStorage.getItem('mathnikita:extended-practice:11:v1'),
+    legacyDraft:localStorage.getItem('mathnikita:extended-practice:11:v1:draft'),
+    completion:localStorage.getItem('mathnikita:lesson-complete:11'),
+    reflection:localStorage.getItem('mathnikita:reflection:11'),
+  }));
+  expect(migrated.marker).toBe('1');
+  expect(migrated.legacyLesson).toBeNull();
+  expect(migrated.legacyPractice).toBeNull();
+  expect(migrated.legacyDraft).toBeNull();
+  expect(migrated.completion).toBeNull();
+  expect(migrated.reflection).toBeNull();
 
   await jump(page,21,'l11-summary');
   const summary=page.locator('.summary-card');
