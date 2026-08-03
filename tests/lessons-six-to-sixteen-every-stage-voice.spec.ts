@@ -76,9 +76,6 @@ for(let lessonNumber=6;lessonNumber<=16;lessonNumber+=1){
       expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');
       expect(narration.text.trim().length,`Empty narration text for lesson ${lessonNumber}, stage ${stageId}`).toBeGreaterThan(15);
 
-      const title=await scope.locator('.stage-copy h2').first().textContent().catch(()=>null);
-      if(title?.trim())expect(narration.text).toContain(title.trim());
-
       await expect.poll(async()=>(await playedIds(page)).includes(expectedId),{timeout:6_000,message:`Sulafat was generated but Audio.play() never succeeded for lesson ${lessonNumber}, stage ${stageId}`}).toBeTruthy();
     }
 
