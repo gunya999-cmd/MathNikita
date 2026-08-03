@@ -2,6 +2,7 @@ import type { ExtendedPracticeSet } from './extendedPracticeTypes';
 import { buildMasteryPractice } from './masteryPracticeGenerator';
 import { lessonFiveMastery } from './lessonFiveMastery';
 import { lessonSixMastery } from './lessonSixMastery';
+import { lessonNineMastery } from './lessonNineMastery';
 import { migrateLessonSixRevision } from '../lessonSixRevisionMigration';
 import { extendedPracticeLesson1 } from './extendedPracticeLesson1';
 import { extendedPracticeLesson2 } from './extendedPracticeLesson2';
@@ -74,7 +75,7 @@ const basePracticeByLesson: Record<number, ExtendedPracticeSet> = {
 export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = Object.fromEntries(
   Object.entries(basePracticeByLesson).map(([key,practice])=>{
     const lessonNumber=Number(key);
-    const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:buildMasteryPractice(lessonNumber);
+    const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:lessonNumber===9?lessonNineMastery:buildMasteryPractice(lessonNumber);
     return [lessonNumber,{...practice,tasks:[...practice.tasks,...masteryTasks]}];
   }),
 );
