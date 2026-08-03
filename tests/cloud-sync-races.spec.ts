@@ -4,6 +4,7 @@ function fingerprint(value:string){let hash=2166136261;for(let index=0;index<val
 
 async function seedLinkedProfile(page:Page,marker='v1',revision=1){
   await page.addInitScript(({marker,revision,fingerprintValue})=>{
+    if(sessionStorage.getItem('__mathnikita-cloud-race-seeded')==='1')return;
     const id='race-student-123';const now=new Date().toISOString();
     localStorage.setItem('mathnikita:accounts:registry:v1',JSON.stringify({version:1,profiles:[{id,name:'Никита',avatar:'🐱',pinSalt:'salt',pinHash:'hash',createdAt:now,lastUsedAt:now,cloud:{studentCode:'MN-RACE123',token:'race-token-12345678901234567890',revision,linkedAt:now,lastSyncedAt:now}}]}));
     localStorage.setItem('mathnikita:accounts:workspace-owner:v1',id);
@@ -11,6 +12,7 @@ async function seedLinkedProfile(page:Page,marker='v1',revision=1){
     localStorage.setItem(`mathnikita:accounts:cloud-baseline:${id}:v1`,JSON.stringify({version:1,fingerprints:{'mathnikita:race-marker':fingerprintValue}}));
     localStorage.setItem('mathnikita:race-marker',marker);
     sessionStorage.setItem('mathnikita:accounts:session:v1',id);
+    sessionStorage.setItem('__mathnikita-cloud-race-seeded','1');
   },{marker,revision,fingerprintValue:fingerprint(marker)});
 }
 
