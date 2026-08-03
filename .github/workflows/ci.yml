@@ -58,6 +58,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify lesson 6 desktop voice parity
         run: npx playwright test tests/lesson-six-desktop-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Verify lesson 6 task 5 feedback and TTS load
+        run: npx playwright test tests/lesson-six-task-five-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Verify learner and parent dashboards
         run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Upload failure traces

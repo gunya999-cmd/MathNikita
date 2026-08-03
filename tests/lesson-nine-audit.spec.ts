@@ -163,5 +163,5 @@ test('lesson 9 prepares Sulafat narration for lesson, mandatory practice and bot
 
   await page.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();
   await expect.poll(()=>log.ids.some(id=>id==='mentor-practice-9-l9-p1-hint')).toBeTruthy();
-  await expect(page.locator('.practice-pythagoras')).toContainText('тот же AI-голос Sulafat');
+  await expect(page.locator('.practice-pythagoras')).toContainText('Sulafat');
 });

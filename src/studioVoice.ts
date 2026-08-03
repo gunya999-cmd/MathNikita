@@ -12,6 +12,14 @@ export const DEFAULT_VOICE_RATE=.94;
 const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
+type PrefetchItem={key:string;id:string;text:string};
+const prefetchQueue:PrefetchItem[]=[];
+const queuedPrefetchKeys=new Set<string>();
+const PREFETCH_QUEUE_LIMIT=24;
+const STUDIO_NETWORK_LIMIT=2;
+const studioSlotWaiters:Array<()=>void>=[];
+let prefetchRunning=false;
+let activeStudioRequests=0;
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 function persistVoiceSettings(settings:StoredVoiceSettings){
@@ -38,7 +46,26 @@ export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSett
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
 function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${studioNarrationText(text)}`}
 export function peekStudioAudioUrl(id:string,text:string){return readyAudioUrlCache.get(cacheKey(id,text))}
-export function prefetchStudioAudioUrl(id:string,text:string){if(!id||!text)return;void getStudioAudioUrl(id,text).catch(()=>undefined)}
+
+function drainPrefetchQueue(){
+  if(prefetchRunning)return;
+  const next=prefetchQueue.shift();
+  if(!next)return;
+  queuedPrefetchKeys.delete(next.key);
+  if(readyAudioUrlCache.has(next.key)||audioUrlCache.has(next.key)){drainPrefetchQueue();return}
+  prefetchRunning=true;
+  void getStudioAudioUrl(next.id,next.text).catch(()=>undefined).finally(()=>{
+    prefetchRunning=false;
+    window.setTimeout(drainPrefetchQueue,120);
+  });
+}
+export function prefetchStudioAudioUrl(id:string,text:string){
+  if(!id||!text)return;
+  const key=cacheKey(id,text);
+  if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
+  if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
+  queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
+}
 
 function wait(ms:number){return new Promise(resolve=>window.setTimeout(resolve,ms))}
 function retryDelayMs(response:Response,attempt:number){
@@ -47,14 +74,30 @@ function retryDelayMs(response:Response,attempt:number){
   if(response.status===429)return 1600*(attempt+1);
   return 600*(attempt+1);
 }
+async function acquireStudioNetworkSlot(){
+  if(activeStudioRequests<STUDIO_NETWORK_LIMIT){activeStudioRequests+=1;return}
+  await new Promise<void>(resolve=>studioSlotWaiters.push(resolve));
+  // The releasing request transfers its occupied slot directly to this waiter.
+}
+function releaseStudioNetworkSlot(){
+  const next=studioSlotWaiters.shift();
+  if(next){next();return}
+  activeStudioRequests=Math.max(0,activeStudioRequests-1);
+}
+async function withStudioNetworkSlot<T>(work:()=>Promise<T>):Promise<T>{
+  await acquireStudioNetworkSlot();
+  try{return await work()}finally{releaseStudioNetworkSlot()}
+}
 async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<Blob>{
-  const response=await fetch('/api/narration',{
+  const response=await withStudioNetworkSlot(()=>fetch('/api/narration',{
     method:'POST',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({id,text:prepared,version:STUDIO_VOICE_VERSION}),
-  });
+  }));
   if(!response.ok){
     if(attempt<2&&RETRYABLE_STATUS.has(response.status)){
+      // The network slot is already released here, so Retry-After never blocks
+      // another learner-triggered or auto-narration request from using a slot.
       await wait(retryDelayMs(response,attempt));
       return requestStudioAudio(id,prepared,attempt+1);
     }

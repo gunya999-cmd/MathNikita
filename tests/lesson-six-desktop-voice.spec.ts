@@ -36,15 +36,25 @@ async function routeNarration(page:Page,requests:NarrationRequest[]){
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'gemini',model:'gemini-2.5-flash-preview-tts',fallbackModel:'gemini-2.5-pro-preview-tts',voice:'Sulafat',version:'ru-teacher-gemini-sulafat-v2',automaticSystemFallback:false})}));
   await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await new Promise(resolve=>setTimeout(resolve,70));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-desktop-mock'})});
 }
+async function audioPlays(page:Page){return page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays)}
 async function expectWarmAndInstant(page:Page,requests:NarrationRequest[],button:Locator,id:string){
   await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);
   await page.waitForTimeout(100);
-  const playsBefore=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays);
-  const callsBefore=requests.filter(item=>item.id===id).length;
+  const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
   await domClick(button);
-  await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:700}).toBeGreaterThan(playsBefore);
+  await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);
   await page.waitForTimeout(100);
   expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
+}
+async function expectOnDemandThenCached(page:Page,requests:NarrationRequest[],button:Locator,id:string){
+  expect(requests.filter(item=>item.id===id).length).toBe(0);
+  const firstPlays=await audioPlays(page);await domClick(button);
+  await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:2_000}).toBe(1);
+  await expect.poll(()=>audioPlays(page),{timeout:2_000}).toBeGreaterThan(firstPlays);
+  await page.waitForTimeout(120);
+  const callsAfterFirst=requests.filter(item=>item.id===id).length;const secondPlays=await audioPlays(page);await domClick(button);
+  await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(secondPlays);
+  expect(requests.filter(item=>item.id===id).length).toBe(callsAfterFirst);
 }
 async function setMainStage(page:Page,index:number){
   await page.evaluate(({index})=>{
@@ -77,7 +87,7 @@ test('lesson 6 desktop CatMentor warms all manual Sulafat actions before clicks'
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
-test('lesson 6 desktop mandatory practice warms narrator and every Pythagoras action',async({page})=>{
+test('lesson 6 desktop mandatory practice warms only essential Pythagoras audio and caches on-demand actions',async({page})=>{
   test.setTimeout(45_000);const requests:NarrationRequest[]=[];await installVoiceMocks(page);
   await page.addInitScript(()=>{
     const results={'l6-a1':true,'l6-a2':true,'l6-a3':true,'l6-a4':true,'l6-a5':true,'l6-p1':true,'l6-p2':true,'l6-p3':true,'l6-p4':true,'l6-p5':true,'l6-p6':true,'l6-q1':true,'l6-q2':true,'l6-q3':true,'l6-q4':true,'l6-q5':true,'l6-star':true};
@@ -90,13 +100,14 @@ test('lesson 6 desktop mandatory practice warms narrator and every Pythagoras ac
   await routeNarration(page,requests);await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});await openLessonSix(page);
   const task=page.locator('[data-practice-task="l6-source-47"]');await expect(task).toBeVisible({timeout:8_000});
   await expect.poll(()=>requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length,{timeout:6_000}).toBe(1);
+  await expect.poll(()=>requests.filter(item=>item.id==='mentor-practice-6-l6-source-47-status').length,{timeout:6_000}).toBe(1);
   const practiceActions=task.locator('.practice-pythagoras-actions');
   await expectWarmAndInstant(page,requests,practiceActions.getByRole('button').filter({hasText:'Подсказка'}),'mentor-practice-6-l6-source-47-hint');
-  await expectWarmAndInstant(page,requests,practiceActions.getByRole('button').filter({hasText:'Объясни иначе'}),'mentor-practice-6-l6-source-47-different');
-  await expectWarmAndInstant(page,requests,practiceActions.getByRole('button').filter({hasText:'Дай пример'}),'mentor-practice-6-l6-source-47-example');
-  await expectWarmAndInstant(page,requests,practiceActions.getByRole('button').filter({hasText:'Почему так?'}),'mentor-practice-6-l6-source-47-why');
-  const narratorPlaysBefore=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays);
-  const narratorCalls=requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length;await domClick(task.locator('.extended-practice-voice button'));await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:700}).toBeGreaterThan(narratorPlaysBefore);expect(requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length).toBe(narratorCalls);
+  await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Объясни иначе'}),'mentor-practice-6-l6-source-47-different');
+  await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Дай пример'}),'mentor-practice-6-l6-source-47-example');
+  await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Почему так?'}),'mentor-practice-6-l6-source-47-why');
+  const narratorPlaysBefore=await audioPlays(page);const narratorCalls=requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length;
+  await domClick(task.locator('.extended-practice-voice button'));await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(narratorPlaysBefore);expect(requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length).toBe(narratorCalls);
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
@@ -106,8 +117,8 @@ test('lesson 6 desktop narrates all 6 practice stages from a warmed Sulafat clip
     requests.length=0;await setMainStage(page,stage.index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const scope=page.locator(`[data-stage-id="${stage.id}"]`);await expect(scope).toBeVisible({timeout:6_000});const id=`lesson-06-stage-${stage.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text.length).toBeGreaterThan(25);expect(narration.text).toContain(studioNarrationText(await scope.locator('.activity-area h3').innerText()));
-    await page.waitForTimeout(100);const playsBefore=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays);const callsBefore=requests.filter(item=>item.id===id).length;
-    await domClick(page.locator('.voice-narrator > button').first());await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:700}).toBeGreaterThan(playsBefore);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
+    await page.waitForTimeout(100);const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
+    await domClick(page.locator('.voice-narrator > button').first());await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
@@ -118,9 +129,9 @@ test('lesson 6 desktop auto-narrates all 20 mandatory practice tasks with one sh
     const taskData=practice.tasks[index];requests.length=0;await setMandatoryPracticeIndex(page,index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const task=page.locator(`[data-practice-task="${taskData.id}"]`);await expect(task).toBeVisible({timeout:7_000});const id=`lesson-06-practice-${taskData.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text).toBe(studioNarrationText(practiceNarrationText(taskData,index,practice.tasks.length)));
-    await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:1_500}).toBeGreaterThan(0);
-    await page.waitForTimeout(40);const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays);
-    await domClick(task.locator('.extended-practice-voice button'));await expect.poll(async()=>page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays),{timeout:700}).toBeGreaterThan(playsBefore);await page.waitForTimeout(30);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
+    await expect.poll(()=>audioPlays(page),{timeout:1_500}).toBeGreaterThan(0);
+    await page.waitForTimeout(40);const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await audioPlays(page);
+    await domClick(task.locator('.extended-practice-voice button'));await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);await page.waitForTimeout(30);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
