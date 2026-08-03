@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'src/VoiceNarrator.tsx'
+      - 'src/CatMentor.tsx'
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'src/stageNarrationSequence.ts'
       - 'src/LessonCourseShell.tsx'
       - 'src/SegmentLengthPlayer.tsx'
       - 'src/SegmentLengthPracticePlayer.tsx'
@@ -18,12 +21,17 @@ on:
       - 'src/ScaleCoordinateRaySummaryPlayer.tsx'
       - 'src/NaturalNumberComparisonPlayer.tsx'
       - 'tests/lessons-six-to-sixteen-every-stage-voice.spec.ts'
+      - 'tests/lessons-six-to-sixteen-voice-sequencing.spec.ts'
       - '.github/workflows/lessons6-16-every-stage-voice.yml'
   push:
     branches: [main]
     paths:
       - 'src/VoiceNarrator.tsx'
+      - 'src/CatMentor.tsx'
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'src/stageNarrationSequence.ts'
       - 'tests/lessons-six-to-sixteen-every-stage-voice.spec.ts'
+      - 'tests/lessons-six-to-sixteen-voice-sequencing.spec.ts'
       - '.github/workflows/lessons6-16-every-stage-voice.yml'
 
 permissions:
@@ -46,8 +54,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Build
         run: npm run build
-      - name: Verify actual Sulafat playback on every stage in lessons 6-16
-        run: npx playwright test tests/lessons-six-to-sixteen-every-stage-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Verify actual Sulafat playback and sequencing on every stage in lessons 6-16
+        run: npx playwright test tests/lessons-six-to-sixteen-every-stage-voice.spec.ts tests/lessons-six-to-sixteen-voice-sequencing.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
