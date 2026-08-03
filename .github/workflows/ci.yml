@@ -71,6 +71,32 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  desktop-chromium-student-profiles:
+    name: Desktop Chromium · student profiles and isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Verify registration, PIN and per-student storage isolation
+        run: npx playwright test tests/student-profiles.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-profile-traces-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   ipad-webkit-lesson5-regression:
     name: iPad WebKit regression · lesson 5 Sulafat
     runs-on: ubuntu-latest
