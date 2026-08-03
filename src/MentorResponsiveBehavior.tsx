@@ -25,6 +25,7 @@ export function MentorResponsiveBehavior({ rootRef, lessonNumber, mode }: Props)
   },[rootRef,lessonNumber,mode]);
 
   useEffect(() => {
+    if (mode !== 'opening') return;
     if (!window.matchMedia('(max-width: 1279px)').matches) return;
     const timer = window.setTimeout(() => {
       const root = rootRef.current;
