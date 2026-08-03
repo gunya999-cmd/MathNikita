@@ -20,6 +20,7 @@ function loadDraft(lessonNumber:number,taskId:string):PracticeDraft|null{
 }
 function saveDraft(lessonNumber:number,draft:PracticeDraft){localStorage.setItem(draftStorageKey(lessonNumber),JSON.stringify(draft))}
 function clearDraft(lessonNumber:number){localStorage.removeItem(draftStorageKey(lessonNumber))}
+function summaryStageActive(){const stage=typeof document==='undefined'?null:document.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');return Boolean(stage?.dataset.stageId?.endsWith('-summary'))}
 
 export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
   const practice=extendedPracticeByLesson[lessonNumber];
@@ -73,10 +74,15 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     if(!practice||!currentTask)return;
     const currentText=practiceNarrationText(currentTask,completed,practice.tasks.length);prefetchStudioAudioUrl(practiceNarrationId(lessonNumber,currentTask),currentText);
     const nextTask=practice.tasks[completed+1];if(nextTask)prefetchStudioAudioUrl(practiceNarrationId(lessonNumber,nextTask),practiceNarrationText(nextTask,completed+1,practice.tasks.length));
-    if(lastSpokenTaskRef.current===currentTask.id)return;
-    let cancelWait=()=>{};
-    const timer=window.setTimeout(()=>{cancelWait=runWhenStageNarrationIdle(()=>{if(lastSpokenTaskRef.current!==currentTask.id)playTaskNarration(currentTask,completed)})},120);
-    return()=>{window.clearTimeout(timer);cancelWait()};
+    let timer:number|null=null;let cancelWait=()=>{};
+    const scheduleAuto=()=>{
+      if(lastSpokenTaskRef.current===currentTask.id||!summaryStageActive())return;
+      if(timer!==null)window.clearTimeout(timer);cancelWait();
+      timer=window.setTimeout(()=>{cancelWait=runWhenStageNarrationIdle(()=>{if(summaryStageActive()&&lastSpokenTaskRef.current!==currentTask.id)playTaskNarration(currentTask,completed)})},120);
+    };
+    scheduleAuto();
+    const observer=new MutationObserver(scheduleAuto);observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['data-stage-id','hidden']});
+    return()=>{observer.disconnect();if(timer!==null)window.clearTimeout(timer);cancelWait()};
   },[lessonNumber,currentTask?.id]);
   useEffect(()=>()=>stopPracticeVoice(),[]);
 
