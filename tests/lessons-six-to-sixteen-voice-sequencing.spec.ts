@@ -50,6 +50,7 @@ async function clearAudit(page:Page){
 async function openLesson(page:Page,lessonNumber:number){
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:new RegExp(`Открыть урок ${lessonNumber}:`)}).click();
+  await clearAudit(page);
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toBeVisible();
 }
