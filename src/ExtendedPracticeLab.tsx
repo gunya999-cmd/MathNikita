@@ -59,7 +59,7 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
   },[lessonNumber,practice?.tasks.length]);
 
   useEffect(()=>{
-    const reset=(event:Event)=>{const detail=(event as CustomEvent<{lessonNumber?:number}>).detail;if(detail?.lessonNumber!==lessonNumber)return;setCompleted(0);setResponse('');setMultiResponse({});setCheckState('idle');setAttempts(0);lastSpokenTaskRef.current='';stopPracticeVoice();onRestart?.()};
+    const reset=(event:Event)=>{const detail=(event as CustomEvent<{lessonNumber?:number}>).detail;if(detail?.lessonNumber!==lessonNumber)return;clearDraft(lessonNumber);saveExtendedPracticeProgress(lessonNumber,0);setCompleted(0);setResponse('');setMultiResponse({});setCheckState('idle');setAttempts(0);lastSpokenTaskRef.current='';stopPracticeVoice();onRestart?.()};
     window.addEventListener('mathnikita-lesson-reset',reset);return()=>window.removeEventListener('mathnikita-lesson-reset',reset);
   },[lessonNumber,onRestart]);
   useEffect(()=>{
