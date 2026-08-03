@@ -5,8 +5,10 @@ import { lessonSixMastery } from './lessonSixMastery';
 import { lessonNineMastery } from './lessonNineMastery';
 import { lessonTenMastery } from './lessonTenMastery';
 import { lessonElevenMastery } from './lessonElevenMastery';
+import { lessonTwelveMastery } from './lessonTwelveMastery';
 import { migrateLessonSixRevision } from '../lessonSixRevisionMigration';
 import { migrateLessonElevenRevision } from '../lessonElevenRevisionMigration';
+import { migrateLessonTwelveRevision } from '../lessonTwelveRevisionMigration';
 import { extendedPracticeLesson1 } from './extendedPracticeLesson1';
 import { extendedPracticeLesson2 } from './extendedPracticeLesson2';
 import { extendedPracticeLesson3a } from './extendedPracticeLesson3a';
@@ -35,6 +37,7 @@ import { extendedPracticeLesson23 } from './extendedPracticeLesson23';
 
 migrateLessonSixRevision();
 migrateLessonElevenRevision();
+migrateLessonTwelveRevision();
 
 const lesson3: ExtendedPracticeSet = {
   title:'Тренировочная мастерская: десятичная запись',
@@ -79,7 +82,7 @@ const basePracticeByLesson: Record<number, ExtendedPracticeSet> = {
 export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = Object.fromEntries(
   Object.entries(basePracticeByLesson).map(([key,practice])=>{
     const lessonNumber=Number(key);
-    const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:lessonNumber===9?lessonNineMastery:lessonNumber===10?lessonTenMastery:lessonNumber===11?lessonElevenMastery:buildMasteryPractice(lessonNumber);
+    const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:lessonNumber===9?lessonNineMastery:lessonNumber===10?lessonTenMastery:lessonNumber===11?lessonElevenMastery:lessonNumber===12?lessonTwelveMastery:buildMasteryPractice(lessonNumber);
     return [lessonNumber,{...practice,tasks:[...practice.tasks,...masteryTasks]}];
   }),
 );
