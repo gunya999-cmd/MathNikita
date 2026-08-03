@@ -4,6 +4,7 @@ import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from './da
 import { extendedPracticeStorageKey,isExtendedPracticeAnswerCorrect,loadExtendedPracticeProgress,saveExtendedPracticeProgress } from './extendedPracticeEngine';
 import { practiceNarrationId,practiceNarrationText } from './practiceNarration';
 import { PracticePythagoras } from './PracticePythagoras';
+import { runWhenStageNarrationIdle } from './stageNarrationSequence';
 import { prepareRussianSpeechText,selectBestRussianVoice } from './voiceQuality';
 import { getStudioAudioUrl,loadVoiceSettings,peekStudioAudioUrl,prefetchStudioAudioUrl,STUDIO_VOICE_LABEL } from './studioVoice';
 import './extendedPracticeLab.css';
@@ -73,7 +74,9 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     const currentText=practiceNarrationText(currentTask,completed,practice.tasks.length);prefetchStudioAudioUrl(practiceNarrationId(lessonNumber,currentTask),currentText);
     const nextTask=practice.tasks[completed+1];if(nextTask)prefetchStudioAudioUrl(practiceNarrationId(lessonNumber,nextTask),practiceNarrationText(nextTask,completed+1,practice.tasks.length));
     if(lastSpokenTaskRef.current===currentTask.id)return;
-    const timer=window.setTimeout(()=>playTaskNarration(currentTask,completed),120);return()=>window.clearTimeout(timer);
+    let cancelWait=()=>{};
+    const timer=window.setTimeout(()=>{cancelWait=runWhenStageNarrationIdle(()=>{if(lastSpokenTaskRef.current!==currentTask.id)playTaskNarration(currentTask,completed)})},120);
+    return()=>{window.clearTimeout(timer);cancelWait()};
   },[lessonNumber,currentTask?.id]);
   useEffect(()=>()=>stopPracticeVoice(),[]);
 
