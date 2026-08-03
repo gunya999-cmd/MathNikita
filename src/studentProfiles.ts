@@ -283,10 +283,21 @@ export async function importCloudStudentProfile(input:{id:string;name:string;stu
   const registry = loadRegistry();
   const linked = registry.profiles.find(profile => profile.cloud?.studentCode === input.studentCode);
   if (linked) {
-    updateStudentCloudLink(linked.id, { studentCode: input.studentCode, token: input.token, revision: input.revision, linkedAt: linked.cloud?.linkedAt ?? new Date().toISOString(), lastSyncedAt: new Date().toISOString() });
+    const now = new Date().toISOString();
+    const salt = randomHex(16);
+    const pinHash = await pinDigest(input.pin, salt);
+    registry.profiles = registry.profiles.map(profile => profile.id === linked.id ? {
+      ...profile,
+      name: cleanName(input.name),
+      pinSalt: salt,
+      pinHash,
+      lastUsedAt: now,
+      cloud: { studentCode: input.studentCode, token: input.token, revision: input.revision, linkedAt: profile.cloud?.linkedAt ?? now, lastSyncedAt: now },
+    } : profile);
+    saveRegistry(registry);
     saveProfileStorage(linked.id, input.entries);
     activateWorkspace(linked.id);
-    markProfileUsed(linked.id);
+    replaceActiveStudentStorage(linked.id, input.entries);
     return getStudentProfile(linked.id)!;
   }
   if (registry.profiles.some(profile => profile.id === input.id)) throw new Error('Этот облачный профиль уже связан с другим локальным учеником.');
@@ -306,7 +317,8 @@ export async function importCloudStudentProfile(input:{id:string;name:string;stu
   saveRegistry(registry);
   saveProfileStorage(profile.id, input.entries);
   activateWorkspace(profile.id);
-  return profile;
+  replaceActiveStudentStorage(profile.id, input.entries);
+  return getStudentProfile(profile.id)!;
 }
 
 export async function authenticateStudentProfile(profileId: string, pin: string) {
