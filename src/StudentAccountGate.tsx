@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { loginCloudStudent } from './cloudStudentApi';
+import { loginCloudStudent, recoverCloudStudent } from './cloudStudentApi';
 import { connectLocalProfileToCloud, refreshCloudLogin, storageFingerprints } from './cloudStudentSync';
 import {
   authenticateStudentProfile,
@@ -12,7 +12,7 @@ import {
 } from './studentProfiles';
 import './studentAccount.css';
 
-type Mode = 'choose' | 'create' | 'pin' | 'cloud-login' | 'cloud-ready';
+type Mode = 'choose' | 'create' | 'pin' | 'cloud-login' | 'recover' | 'cloud-ready';
 type CloudReceipt={studentCode:string;recoveryCode:string};
 
 type Props = {
@@ -27,6 +27,9 @@ export function StudentAccountGate({ onAuthenticated }: Props) {
   const [pin, setPin] = useState('');
   const [pinRepeat, setPinRepeat] = useState('');
   const [cloudCode, setCloudCode] = useState('');
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [newPinRepeat, setNewPinRepeat] = useState('');
   const [receipt, setReceipt] = useState<CloudReceipt | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -39,6 +42,16 @@ export function StudentAccountGate({ onAuthenticated }: Props) {
 
   function resetForm() {
     setError('');setPin('');setPinRepeat('');
+  }
+
+  function resetRecovery() {
+    setError('');setRecoveryCode('');setNewPin('');setNewPinRepeat('');
+  }
+
+  function openRecovery(code='') {
+    setCloudCode(code);
+    resetRecovery();
+    setMode('recover');
   }
 
   function openPin(profile: StudentProfile) {
@@ -105,6 +118,21 @@ export function StudentAccountGate({ onAuthenticated }: Props) {
     finally{setBusy(false)}
   }
 
+  async function recoverFromCloud(){
+    if(busy)return;setError('');
+    if(newPin!==newPinRepeat){setError('Новые PIN-коды не совпадают.');return}
+    if(!/^\d{4}$/.test(newPin)){setError('Новый PIN должен состоять ровно из 4 цифр.');return}
+    setBusy(true);
+    try{
+      const response=await recoverCloudStudent(cloudCode,recoveryCode,newPin);
+      const profile=await importCloudStudentProfile({id:response.student.id,name:response.student.name,studentCode:response.student.code,token:response.token,revision:response.revision,entries:response.entries,pin:newPin});
+      setCloudBaseline(profile.id,storageFingerprints(response.entries));
+      setReceipt({studentCode:response.student.code,recoveryCode:response.recoveryCode??''});
+      setMode('cloud-ready');
+    }catch(cause){setError(cause instanceof Error?cause.message:'Не удалось восстановить профиль.')}
+    finally{setBusy(false)}
+  }
+
   return <main className="student-account-page">
     <section className="student-account-shell">
       <header className="student-account-brand">
@@ -125,6 +153,7 @@ export function StudentAccountGate({ onAuthenticated }: Props) {
           </button>
         </div>
         <button className="account-secondary" onClick={()=>{setMode('cloud-login');setCloudCode('');resetForm()}}>Войти по коду ученика с другого устройства</button>
+        <button className="account-link" onClick={()=>openRecovery()}>Забыл PIN · восстановить по коду</button>
         <small className="account-device-note">Облачные профили можно открыть на другом устройстве по коду MN-… и тому же PIN.</small>
       </div>}
 
@@ -142,6 +171,7 @@ export function StudentAccountGate({ onAuthenticated }: Props) {
         {error && <div className="account-error" role="alert">{error}</div>}
         <button className="account-primary" onClick={createProfile} disabled={busy}>{busy ? 'Создаю и сохраняю…' : 'Создать профиль'}</button>
         <button className="account-link" onClick={()=>{setMode('cloud-login');setCloudCode('');resetForm()}}>Уже есть код ученика MN-…</button>
+        <button className="account-link" onClick={()=>openRecovery()}>Забыл PIN · есть код восстановления</button>
         <small className="account-security-note">Если интернета нет, профиль всё равно создастся локально. Облако подключится при следующем входе.</small>
       </div>}
 
@@ -154,6 +184,7 @@ export function StudentAccountGate({ onAuthenticated }: Props) {
         <label className="account-field pin-single"><span>PIN</span><input aria-label={`PIN для ${selected.name}`} value={pin} onChange={event => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" pattern="[0-9]*" maxLength={4} type="password" autoComplete="current-password" placeholder="••••" autoFocus onKeyDown={event => event.key === 'Enter' && login()} /></label>
         {error && <div className="account-error" role="alert">{error}</div>}
         <button className="account-primary" onClick={login} disabled={busy || pin.length !== 4}>{busy ? 'Проверяю и синхронизирую…' : 'Войти'}</button>
+        {selected.cloud&&<button className="account-link" onClick={()=>openRecovery(selected.cloud?.studentCode)}>Забыл PIN · восстановить</button>}
       </div>}
 
       {mode==='cloud-login'&&<div className="student-account-card account-form-card pin-login-card">
@@ -165,13 +196,30 @@ export function StudentAccountGate({ onAuthenticated }: Props) {
         <label className="account-field pin-single"><span>PIN</span><input aria-label="PIN облачного профиля" value={pin} onChange={event=>setPin(event.target.value.replace(/\D/g,'').slice(0,4))} inputMode="numeric" maxLength={4} type="password" placeholder="••••" onKeyDown={event=>event.key==='Enter'&&loginFromCloud()} /></label>
         {error&&<div className="account-error" role="alert">{error}</div>}
         <button className="account-primary" onClick={loginFromCloud} disabled={busy||pin.length!==4||!cloudCode.startsWith('MN-')}>{busy?'Загружаю прогресс…':'Войти и загрузить прогресс'}</button>
+        <button className="account-link" onClick={()=>openRecovery(cloudCode)}>Забыл PIN · восстановить по recovery-коду</button>
+      </div>}
+
+      {mode==='recover'&&<div className="student-account-card account-form-card">
+        <button className="account-back" onClick={()=>{setMode(profiles.length?'choose':'create');resetRecovery()}}>← Назад</button>
+        <span className="account-eyebrow">Восстановление доступа</span>
+        <h1>Задать новый PIN</h1>
+        <p>Нужны код ученика MN-… и recovery-код, который был показан при подключении облака. Почта и телефон не нужны.</p>
+        <label className="account-field"><span>Код ученика</span><input aria-label="Код ученика для восстановления" value={cloudCode} onChange={event=>setCloudCode(event.target.value.toUpperCase().replace(/\s/g,'').slice(0,12))} placeholder="MN-7K4P2Q" autoFocus /></label>
+        <label className="account-field"><span>Код восстановления</span><input aria-label="Код восстановления" value={recoveryCode} onChange={event=>setRecoveryCode(event.target.value.toUpperCase().replace(/\s/g,'').slice(0,40))} placeholder="MN-RCV-XXXX-XXXX-XXXX" /></label>
+        <div className="account-pin-row">
+          <label className="account-field"><span>Новый PIN</span><input aria-label="Новый PIN" value={newPin} onChange={event=>setNewPin(event.target.value.replace(/\D/g,'').slice(0,4))} inputMode="numeric" maxLength={4} type="password" placeholder="••••" /></label>
+          <label className="account-field"><span>Повтори новый PIN</span><input aria-label="Повтори новый PIN" value={newPinRepeat} onChange={event=>setNewPinRepeat(event.target.value.replace(/\D/g,'').slice(0,4))} inputMode="numeric" maxLength={4} type="password" placeholder="••••" onKeyDown={event=>event.key==='Enter'&&recoverFromCloud()} /></label>
+        </div>
+        {error&&<div className="account-error" role="alert">{error}</div>}
+        <button className="account-primary" onClick={recoverFromCloud} disabled={busy||!cloudCode.startsWith('MN-')||!recoveryCode.startsWith('MN-RCV-')||newPin.length!==4||newPinRepeat.length!==4}>{busy?'Восстанавливаю…':'Сменить PIN и восстановить профиль'}</button>
+        <small className="account-security-note">После восстановления старый PIN перестанет работать, а система выдаст новый recovery-код.</small>
       </div>}
 
       {mode==='cloud-ready'&&receipt&&<div className="student-account-card account-form-card cloud-ready-card">
         <div className="cloud-ready-icon">☁</div>
         <span className="account-eyebrow">Облачное сохранение включено</span>
         <h1>Прогресс теперь защищён</h1>
-        <p>На другом устройстве достаточно кода ученика и PIN. Сохраните код восстановления отдельно — он нужен, если PIN будет забыт.</p>
+        <p>На другом устройстве достаточно кода ученика и PIN. Сохраните текущий код восстановления отдельно — предыдущий recovery-код больше использовать нельзя.</p>
         <div className="cloud-code-box"><span>Код ученика</span><b>{receipt.studentCode}</b></div>
         <div className="cloud-code-box recovery"><span>Код восстановления</span><b>{receipt.recoveryCode}</b></div>
         <small className="account-security-note">PIN и код восстановления в открытом виде на сервере не хранятся.</small>
