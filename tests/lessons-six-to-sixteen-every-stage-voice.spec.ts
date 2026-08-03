@@ -1,32 +1,6 @@
 import { expect,test,type Page } from '@playwright/test';
-import { lessonSixStages } from '../src/SegmentLengthPlayer';
-import { lessonSevenStages } from '../src/SegmentLengthPracticePlayer';
-import { lessonEightStages } from '../src/PolylineLessonPlayer';
-import { lessonNineStages } from '../src/GeometrySummaryPlayer';
-import { lessonTenStages } from '../src/PlaneLineRayPlayer';
-import { lessonElevenStages } from '../src/PlaneLineRayPracticePlayer';
-import { lessonTwelveStages } from '../src/PlaneLineRaySummaryPlayer';
-import { lessonThirteenStages } from '../src/ScaleCoordinateRayPlayer';
-import { lessonFourteenStages } from '../src/ScaleCoordinateRayPracticePlayer';
-import { lessonFifteenStages } from '../src/ScaleCoordinateRaySummaryPlayer';
-import { lessonSixteenStages } from '../src/NaturalNumberComparisonPlayer';
 
 type NarrationRequest={id:string;text:string;version:string};
-type StageRef={id:string};
-
-const stagesByLesson:Record<number,StageRef[]>={
-  6:lessonSixStages,
-  7:lessonSevenStages,
-  8:lessonEightStages,
-  9:lessonNineStages,
-  10:lessonTenStages,
-  11:lessonElevenStages,
-  12:lessonTwelveStages,
-  13:lessonThirteenStages,
-  14:lessonFourteenStages,
-  15:lessonFifteenStages,
-  16:lessonSixteenStages,
-};
 
 async function installVoiceAudit(page:Page){
   await page.addInitScript(()=>{
@@ -64,11 +38,18 @@ async function openLesson(page:Page,lessonNumber:number){
   await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toBeVisible();
 }
 
+async function stageCount(page:Page){
+  const text=await page.locator('.lesson-runtime:not([hidden]) .stage-counter').innerText();
+  const match=text.match(/Этап\s+\d+\s+из\s+(\d+)/i);
+  if(!match)throw new Error(`Cannot read stage count from: ${text}`);
+  return Number(match[1]);
+}
+
 async function playedIds(page:Page){
   return page.evaluate(()=>(window as unknown as {__everyStageVoiceAudit:{played:string[]}}).__everyStageVoiceAudit.played);
 }
 
-for(const lessonNumber of Object.keys(stagesByLesson).map(Number)){
+for(let lessonNumber=6;lessonNumber<=16;lessonNumber+=1){
   test(`lesson ${lessonNumber} actually plays Sulafat on every main stage`,async({page})=>{
     test.setTimeout(120_000);
     const requests:NarrationRequest[]=[];
@@ -76,25 +57,31 @@ for(const lessonNumber of Object.keys(stagesByLesson).map(Number)){
     await routeNarration(page,requests);
     await openLesson(page,lessonNumber);
 
-    const stages=stagesByLesson[lessonNumber];
-    expect(stages.length).toBeGreaterThan(0);
+    const total=await stageCount(page);
+    expect(total).toBeGreaterThan(0);
+    const seenStageIds=new Set<string>();
 
-    for(let stageIndex=0;stageIndex<stages.length;stageIndex+=1){
-      const stage=stages[stageIndex];
+    for(let stageIndex=0;stageIndex<total;stageIndex+=1){
       await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
-      const scope=page.locator(`.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id="${stage.id}"]`);
+      await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из ${total}`,{timeout:5_000});
+      const scope=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');
       await expect(scope).toBeVisible({timeout:5_000});
+      const stageId=await scope.getAttribute('data-stage-id');
+      expect(stageId,`Missing data-stage-id in lesson ${lessonNumber}, stage ${stageIndex+1}`).toBeTruthy();
+      seenStageIds.add(stageId!);
 
-      const expectedId=`lesson-${String(lessonNumber).padStart(2,'0')}-stage-${stage.id}`;
-      await expect.poll(()=>requests.some(item=>item.id===expectedId),{timeout:6_000,message:`No Sulafat request for lesson ${lessonNumber}, stage ${stage.id}`}).toBeTruthy();
+      const expectedId=`lesson-${String(lessonNumber).padStart(2,'0')}-stage-${stageId}`;
+      await expect.poll(()=>requests.some(item=>item.id===expectedId),{timeout:6_000,message:`No Sulafat request for lesson ${lessonNumber}, stage ${stageId}`}).toBeTruthy();
       const narration=requests.find(item=>item.id===expectedId)!;
       expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');
-      expect(narration.text.trim().length,`Empty narration text for lesson ${lessonNumber}, stage ${stage.id}`).toBeGreaterThan(15);
+      expect(narration.text.trim().length,`Empty narration text for lesson ${lessonNumber}, stage ${stageId}`).toBeGreaterThan(15);
 
       const title=await scope.locator('.stage-copy h2').first().textContent().catch(()=>null);
       if(title?.trim())expect(narration.text).toContain(title.trim());
 
-      await expect.poll(async()=>(await playedIds(page)).includes(expectedId),{timeout:6_000,message:`Sulafat was generated but Audio.play() never succeeded for lesson ${lessonNumber}, stage ${stage.id}`}).toBeTruthy();
+      await expect.poll(async()=>(await playedIds(page)).includes(expectedId),{timeout:6_000,message:`Sulafat was generated but Audio.play() never succeeded for lesson ${lessonNumber}, stage ${stageId}`}).toBeTruthy();
     }
+
+    expect(seenStageIds.size,`Lesson ${lessonNumber} did not expose a unique stage id for every stage`).toBe(total);
   });
 }
