@@ -81,15 +81,22 @@ for(let lessonNumber=6;lessonNumber<=16;lessonNumber+=1){
 
     await expect.poll(async()=>firstIndex(await auditEvents(page),event=>event.kind==='played'&&event.narrationId===narrationId),{timeout:8_000}).toBeGreaterThanOrEqual(0);
     await expect.poll(async()=>firstIndex(await auditEvents(page),event=>event.kind==='ended'&&event.narrationId===narrationId),{timeout:8_000,message:`Stage narration was interrupted before onended in lesson ${lessonNumber}`}).toBeGreaterThanOrEqual(0);
-    await expect.poll(async()=>firstIndex(await auditEvents(page),event=>event.kind==='request'&&event.source==='mentor'),{timeout:8_000}).toBeGreaterThanOrEqual(0);
+    await expect.poll(async()=>{
+      const events=await auditEvents(page);
+      const ended=firstIndex(events,event=>event.kind==='ended'&&event.narrationId===narrationId);
+      if(ended<0)return-1;
+      return events.findIndex((event,index)=>index>ended&&event.kind==='request'&&event.source==='mentor');
+    },{timeout:8_000,message:`Automatic mentor did not resume after stage narration in lesson ${lessonNumber}`}).toBeGreaterThanOrEqual(0);
 
     const events=await auditEvents(page);
     const played=firstIndex(events,event=>event.kind==='played'&&event.narrationId===narrationId);
     const ended=firstIndex(events,event=>event.kind==='ended'&&event.narrationId===narrationId);
-    const mentor=firstIndex(events,event=>event.kind==='request'&&event.source==='mentor');
+    const mentorDuring=events.findIndex((event,index)=>index>played&&index<ended&&event.kind==='request'&&event.source==='mentor');
+    const mentorAfter=events.findIndex((event,index)=>index>ended&&event.kind==='request'&&event.source==='mentor');
     expect(played).toBeGreaterThanOrEqual(0);
     expect(ended).toBeGreaterThan(played);
-    expect(mentor,`Automatic mentor interrupted the main narration in lesson ${lessonNumber}`).toBeGreaterThan(ended);
+    expect(mentorDuring,`Automatic mentor interrupted the main narration in lesson ${lessonNumber}`).toBe(-1);
+    expect(mentorAfter,`Automatic mentor did not resume after the main narration in lesson ${lessonNumber}`).toBeGreaterThan(ended);
   });
 }
 
