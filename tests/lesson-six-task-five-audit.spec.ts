@@ -66,12 +66,12 @@ test('lesson 6 practice throttles background Sulafat warmup instead of bursting 
 });
 
 test('lesson 6 mentor distinguishes browser autoplay block from Sulafat outage',async({page})=>{
-  await page.addInitScript(()=>{
+  const audit:RequestAudit={active:0,maxActive:0,ids:[]};
+  await openTaskFive(page,audit);
+  await page.evaluate(()=>{
     class BlockedAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){const error=new Error('play blocked');error.name='NotAllowedError';return Promise.reject(error)}}
     Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:BlockedAudio});
   });
-  const audit:RequestAudit={active:0,maxActive:0,ids:[]};
-  await openTaskFive(page,audit);
   const task=page.locator('[data-practice-task="l6-p5"]');
   await task.locator('.practice-pythagoras-head button').click();
   await expect(task.locator('.practice-pythagoras-voice-error')).toContainText('Браузер не запустил звук автоматически');
