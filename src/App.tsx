@@ -124,7 +124,7 @@ export function App() {
 
       {screen === 'map' && <main className="dashboard"><header><span>Карта знаний</span><h1>Курс математики 5 класса</h1><p>175 уроков по I варианту планирования Мерзляка.</p></header><div className="world-grid">{islands.map(([icon,title,count],i)=><article key={title}><i>{icon}</i><h3>{title}</h3><p>{count} уроков</p><b>{i===0?'20 уроков готовы':i===1?'3 урока готовы':'В разработке'}</b></article>)}</div></main>}
 
-      {screen === 'progress' && <LearnerDashboard mode="student" state={state}/>}      
+      {screen === 'progress' && <LearnerDashboard mode="student" state={state} onContinue={() => setScreen('course')}/>}      
       {screen === 'parent' && <LearnerDashboard mode="parent" state={state}/>}      
 
       {routeBuilt && <div className="route-modal"><div><span>🎉</span><h2>Маршрут построен!</h2><p>Начинаем с урока №1.</p><button onClick={() => { setRouteBuilt(false); setScreen('course'); }}>Открыть первый урок</button></div></div>}
