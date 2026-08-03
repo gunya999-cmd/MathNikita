@@ -9,7 +9,6 @@ type VoiceIssue=''|'busy'|'autoplay'|'unavailable';
 type Props={lessonNumber:number;task:ExtendedPracticeTask;checkState:CheckState;attempts:number};
 type MentorSpeakDetail={taskId?:string;state?:CheckState;attempts?:number};
 type AudioRequestDetail={source?:string};
-const MANUAL_ACTIONS:MentorAction[]=['hint','different','example','why'];
 
 function safeToken(value:string){return value.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80)}
 function responseGuide(task:ExtendedPracticeTask){
@@ -67,15 +66,12 @@ export function PracticePythagoras({lessonNumber,task,checkState,attempts}:Props
 
   useEffect(()=>{
     stop();setAction('status');setVoiceIssue('');
-    const firstWrong=messageFor(task,'wrong',1,'status');prefetchStudioAudioUrl(narrationId('status'),firstWrong);
-    if(loadVoiceSettings().engine==='studio'){
-      for(const voiceAction of MANUAL_ACTIONS){const text=messageFor(task,'idle',0,voiceAction);prefetchStudioAudioUrl(narrationId(voiceAction),text)}
-    }
+    if(loadVoiceSettings().engine!=='studio')return;
+    // Keep background TTS pressure low: warm only the automatic first-error line
+    // and the most useful manual action. Other actions are generated on demand.
+    prefetchStudioAudioUrl(narrationId('status'),messageFor(task,'wrong',1,'status'));
+    prefetchStudioAudioUrl(narrationId('hint'),messageFor(task,'idle',0,'hint'));
   },[task.id]);
-  useEffect(()=>{
-    if(loadVoiceSettings().engine!=='studio'||checkState==='correct')return;
-    for(const voiceAction of MANUAL_ACTIONS){const text=messageFor(task,checkState,attempts,voiceAction);prefetchStudioAudioUrl(narrationId(voiceAction),text)}
-  },[task.id,checkState,attempts]);
   useEffect(()=>{setAction('status')},[checkState,attempts]);
   useEffect(()=>{
     const handler=(event:Event)=>{const detail=(event as CustomEvent<MentorSpeakDetail>).detail;if(detail?.taskId!==task.id||detail.state!=='wrong')return;const nextAttempts=Math.max(1,Number(detail.attempts)||1);setAction('status');speak(messageFor(task,'wrong',nextAttempts,'status'),'status')};
