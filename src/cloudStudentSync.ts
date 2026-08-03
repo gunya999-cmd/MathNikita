@@ -52,6 +52,12 @@ function applyLocalChanges(remote:Record<string,string>,local:Record<string,stri
   return merged;
 }
 
+function baselineAfterAcceptedChanges(baseline:Record<string,string>,changes:Record<string,string|null>){
+  const accepted={...baseline};
+  Object.entries(changes).forEach(([key,value])=>{if(value===null)delete accepted[key];else accepted[key]=fingerprint(value)});
+  return accepted;
+}
+
 function linkedAt(profileId:string){return getStudentProfile(profileId)?.cloud?.linkedAt??new Date().toISOString()}
 
 async function reconcileRemote(profileId:string,response:{token:string;revision:number;entries:Record<string,string>;student:{code:string}},preserveLocalChanges:boolean){
@@ -82,40 +88,50 @@ export async function refreshCloudLogin(profileId:string,pin:string){
   return response;
 }
 
-async function runSync(profileId:string,pullIfClean:boolean,retryConflict:boolean){
+async function runSync(profileId:string,pullIfClean:boolean,retryConflict:boolean,followUp=true){
   const active=getAuthenticatedStudentProfile();const profile=getStudentProfile(profileId);
   if(active?.id!==profileId||!profile?.cloud)return;
-  const local=getCurrentStudentStorageSnapshot();const baseline=getCloudBaseline(profileId);const changes=computeChanges(local,baseline);
+  const requestLocal=getCurrentStudentStorageSnapshot();const baselineAtStart=getCloudBaseline(profileId);const changes=computeChanges(requestLocal,baselineAtStart);
   if(Object.keys(changes).length){
     emit('syncing','Синхронизация…');
     const response=await pushCloudChanges(profile.cloud.token,profile.cloud.revision,changes);
     if('error'in response){
       const conflict=response as CloudConflictResponse;
-      const merged=applyLocalChanges(conflict.entries,local,baseline);
+      const freshLocal=getCurrentStudentStorageSnapshot();
+      const merged=applyLocalChanges(conflict.entries,freshLocal,baselineAtStart);
       replaceActiveStudentStorage(profileId,merged);
       setCloudBaseline(profileId,storageFingerprints(conflict.entries));
       updateStudentCloudSession(profileId,{revision:conflict.revision});
-      if(retryConflict){await runSync(profileId,false,false);notifyReconciled();return}
+      if(retryConflict){await runSync(profileId,false,false,followUp);notifyReconciled();return}
       emit('error','Конфликт прогресса сохранён локально');
       notifyReconciled();
       return;
     }
-    setCloudBaseline(profileId,storageFingerprints(getCurrentStudentStorageSnapshot()));
+    const acceptedBaseline=baselineAfterAcceptedChanges(baselineAtStart,changes);
+    setCloudBaseline(profileId,acceptedBaseline);
     updateStudentCloudSession(profileId,{revision:response.revision,lastSyncedAt:response.updatedAt});
-    emit('saved','Прогресс сохранён');
+    const latestLocal=getCurrentStudentStorageSnapshot();
+    const editsMadeInFlight=computeChanges(latestLocal,acceptedBaseline);
+    if(followUp&&Object.keys(editsMadeInFlight).length){await runSync(profileId,false,true,false);return}
+    emit('saved',Object.keys(editsMadeInFlight).length?'Есть новые изменения · сохраняю следующим шагом':'Прогресс сохранён');
     return;
   }
   if(!pullIfClean){emit('saved','Прогресс сохранён');return}
   const remote=await fetchCloudSnapshot(profile.cloud.token);
+  const freshLocal=getCurrentStudentStorageSnapshot();
+  const editsMadeDuringPull=computeChanges(freshLocal,baselineAtStart);
   if(remote.revision>profile.cloud.revision){
-    replaceActiveStudentStorage(profileId,remote.entries);
+    const merged=applyLocalChanges(remote.entries,freshLocal,baselineAtStart);
+    replaceActiveStudentStorage(profileId,merged);
     setCloudBaseline(profileId,storageFingerprints(remote.entries));
     updateStudentCloudSession(profileId,{revision:remote.revision,lastSyncedAt:new Date().toISOString()});
+    if(followUp&&Object.keys(editsMadeDuringPull).length)await runSync(profileId,false,true,false);
     emit('saved','Получен прогресс с другого устройства');
     notifyReconciled();
     return;
   }
   updateStudentCloudSession(profileId,{revision:remote.revision,lastSyncedAt:new Date().toISOString()});
+  if(followUp&&Object.keys(editsMadeDuringPull).length){await runSync(profileId,false,true,false);return}
   emit('saved','Прогресс сохранён');
 }
 
