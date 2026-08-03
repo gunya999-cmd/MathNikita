@@ -2,7 +2,7 @@ import type { ExtendedPracticeTask } from './data/extendedPracticeData';
 
 export type ExtendedPracticeResponse = string | Record<string,string>;
 
-const PRACTICE_VERSION_BY_LESSON:Record<number,number>={5:2,6:3};
+const PRACTICE_VERSION_BY_LESSON:Record<number,number>={5:2,6:3,9:2};
 
 export function extendedPracticeStorageKey(lessonNumber:number){
   const version=PRACTICE_VERSION_BY_LESSON[lessonNumber]??1;
