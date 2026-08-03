@@ -16,7 +16,10 @@ type PrefetchItem={key:string;id:string;text:string};
 const prefetchQueue:PrefetchItem[]=[];
 const queuedPrefetchKeys=new Set<string>();
 const PREFETCH_QUEUE_LIMIT=24;
+const STUDIO_NETWORK_LIMIT=2;
+const studioSlotWaiters:Array<()=>void>=[];
 let prefetchRunning=false;
+let activeStudioRequests=0;
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 function persistVoiceSettings(settings:StoredVoiceSettings){
@@ -71,14 +74,24 @@ function retryDelayMs(response:Response,attempt:number){
   if(response.status===429)return 1600*(attempt+1);
   return 600*(attempt+1);
 }
+async function withStudioNetworkSlot<T>(work:()=>Promise<T>):Promise<T>{
+  if(activeStudioRequests>=STUDIO_NETWORK_LIMIT)await new Promise<void>(resolve=>studioSlotWaiters.push(resolve));
+  activeStudioRequests+=1;
+  try{return await work()}finally{
+    activeStudioRequests=Math.max(0,activeStudioRequests-1);
+    studioSlotWaiters.shift()?.();
+  }
+}
 async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<Blob>{
-  const response=await fetch('/api/narration',{
+  const response=await withStudioNetworkSlot(()=>fetch('/api/narration',{
     method:'POST',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({id,text:prepared,version:STUDIO_VOICE_VERSION}),
-  });
+  }));
   if(!response.ok){
     if(attempt<2&&RETRYABLE_STATUS.has(response.status)){
+      // The network slot is already released here, so Retry-After never blocks
+      // another learner-triggered or auto-narration request from using a slot.
       await wait(retryDelayMs(response,attempt));
       return requestStudioAudio(id,prepared,attempt+1);
     }
