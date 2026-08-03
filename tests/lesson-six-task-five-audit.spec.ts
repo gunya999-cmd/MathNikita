@@ -59,21 +59,27 @@ test('lesson 6 task 5 rejects adjacent-only answer and teaches all point pairs',
 test('lesson 6 practice throttles background Sulafat warmup instead of bursting TTS',async({page})=>{
   const audit:RequestAudit={active:0,maxActive:0,ids:[]};
   await openTaskFive(page,audit);
-  await page.waitForTimeout(1300);
+  await page.waitForTimeout(1500);
   expect(audit.ids.some(id=>id==='lesson-06-practice-l6-p5')).toBeTruthy();
   expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-status')).toBeTruthy();
+  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-hint')).toBeTruthy();
+  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-different')).toBeFalsy();
+  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-example')).toBeFalsy();
+  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-why')).toBeFalsy();
   expect(audit.maxActive).toBeLessThanOrEqual(2);
 });
 
 test('lesson 6 mentor distinguishes browser autoplay block from Sulafat outage',async({page})=>{
   const audit:RequestAudit={active:0,maxActive:0,ids:[]};
   await openTaskFive(page,audit);
+  const task=page.locator('[data-practice-task="l6-p5"]');
+  await expect.poll(()=>audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length,{timeout:4_000}).toBe(1);
+  await page.waitForTimeout(1200);
   await page.evaluate(()=>{
     class BlockedAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){const error=new Error('play blocked');error.name='NotAllowedError';return Promise.reject(error)}}
     Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:BlockedAudio});
   });
-  const task=page.locator('[data-practice-task="l6-p5"]');
-  await task.locator('.practice-pythagoras-head button').click();
+  await task.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();
   await expect(task.locator('.practice-pythagoras-voice-error')).toContainText('Браузер не запустил звук автоматически');
   await expect(task.locator('.practice-pythagoras-voice-error')).not.toContainText('временно недоступен');
 });
