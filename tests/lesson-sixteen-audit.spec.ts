@@ -43,22 +43,30 @@ async function openLessonSixteen(page:Page){
 
 async function jump(page:Page,stageIndex:number,stageId:string){
   await page.evaluate(({stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:16,stageIndex}})),{stageIndex});
-  await expect(page.locator(`[data-stage-id="${stageId}"]`)).toBeVisible();
+  const stage=page.locator(`[data-stage-id="${stageId}"]`);
+  await expect(stage).toBeVisible();
+  await page.evaluate(()=>{
+    document.documentElement.style.scrollBehavior='auto';
+    document.body.style.scrollBehavior='auto';
+    window.scrollTo({top:0,behavior:'auto'});
+  });
+  await page.waitForTimeout(120);
 }
 
 async function solveMainActivity(page:Page,entry:MainActivity){
   await jump(page,entry.stageIndex,entry.stageId);
+  const stage=page.locator(`[data-stage-id="${entry.stageId}"]`);
   if(entry.type==='choice'){
-    await page.locator('.choice-grid').getByRole('button',{name:String(entry.answer),exact:true}).click();
+    await stage.locator('.choice-grid').getByRole('button',{name:String(entry.answer),exact:true}).click();
   }else if(entry.type==='input'){
-    await page.locator('.inline-answer input').fill(String(entry.answer));
+    await stage.locator('.inline-answer input').fill(String(entry.answer));
   }else{
-    const result=page.locator('.order-result button');
+    const result=stage.locator('.order-result button');
     while(await result.count())await result.first().click();
-    for(const item of entry.answer as string[])await page.locator('.order-bank').getByRole('button',{name:item,exact:true}).click();
+    for(const item of entry.answer as string[])await stage.locator('.order-bank').getByRole('button',{name:item,exact:true}).click();
   }
-  await page.locator('.check-button').click();
-  await expect(page.locator('.instant-feedback.good')).toBeVisible();
+  await stage.locator('.check-button').click();
+  await expect(stage.locator('.instant-feedback.good')).toBeVisible();
 }
 
 async function solveMandatoryTask(page:Page,task:ExtendedPracticeTask){
@@ -105,28 +113,30 @@ test('lesson 16 matches Merzlyak lesson-16 scope, source tasks, visuals and ever
   await expect(page.locator('.l16-sorting-model')).toContainText('479 < 591 < 701 < 846 < 894');
 
   await jump(page,11,'l16-practice5');
-  await expect(page.locator('.order-bank button').first()).toHaveText('846');
-  await expect(page.locator('.order-bank button').first()).not.toHaveText('479');
+  await expect(page.locator('[data-stage-id="l16-practice5"] .order-bank button').first()).toHaveText('846');
+  await expect(page.locator('[data-stage-id="l16-practice5"] .order-bank button').first()).not.toHaveText('479');
 
   await jump(page,12,'l16-between');
   await expect(page.locator('.l16-between-model')).toContainText('678 < x < 684');
   await expect(page.locator('.l16-between-model')).toContainText('24 315 < x < 24 316 → 0 натуральных решений');
 
   await jump(page,3,'l16-practice1');
-  await page.locator('.inline-answer input').fill('>');
-  await page.locator('.check-button').click();
-  await expect(page.locator('.instant-feedback.bad')).toBeVisible();
-  await page.locator('.inline-answer input').fill('<');
-  await page.locator('.check-button').click();
-  await expect(page.locator('.instant-feedback.good')).toBeVisible();
+  const practiceOne=page.locator('[data-stage-id="l16-practice1"]');
+  await practiceOne.locator('.inline-answer input').fill('>');
+  await practiceOne.locator('.check-button').click();
+  await expect(practiceOne.locator('.instant-feedback.bad')).toBeVisible();
+  await practiceOne.locator('.inline-answer input').fill('<');
+  await practiceOne.locator('.check-button').click();
+  await expect(practiceOne.locator('.instant-feedback.good')).toBeVisible();
 
   await jump(page,20,'l16-quiz5');
-  await page.locator('.inline-answer input').fill('1');
-  await page.locator('.check-button').click();
-  await expect(page.locator('.instant-feedback.bad')).toBeVisible();
-  await page.locator('.inline-answer input').fill('0');
-  await page.locator('.check-button').click();
-  await expect(page.locator('.instant-feedback.good')).toContainText('соседние натуральные числа');
+  const quizFive=page.locator('[data-stage-id="l16-quiz5"]');
+  await quizFive.locator('.inline-answer input').fill('1');
+  await quizFive.locator('.check-button').click();
+  await expect(quizFive.locator('.instant-feedback.bad')).toBeVisible();
+  await quizFive.locator('.inline-answer input').fill('0');
+  await quizFive.locator('.check-button').click();
+  await expect(quizFive.locator('.instant-feedback.good')).toContainText('соседние натуральные числа');
 
   expect(mainActivities).toHaveLength(15);
   for(const entry of mainActivities)await solveMainActivity(page,entry);
