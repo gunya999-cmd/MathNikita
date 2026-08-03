@@ -1,12 +1,12 @@
-import { multiInputTask as multi, type ExtendedPracticeTask } from './extendedPracticeTypes';
+import { multiInputTask as multi, type ExtendedPracticeField, type ExtendedPracticeTask } from './extendedPracticeTypes';
 
-const field=(id:string,label:string,answers:string[])=>({id,label,answers});
+const field=(id:string,label:string,answers:string[],validation?:ExtendedPracticeField['validation']):ExtendedPracticeField=>({id,label,answers,...(validation?{validation}:{})});
 
 export const lessonFifteenMastery:ExtendedPracticeTask[]=[
   multi('l15-master-1','№126. Отрезок длиной 9 см задаёт шкалу от 0 до 18 и разделён на 6 равных больших частей.',[
     field('increment','Изменение числа между соседними большими штрихами',['3']),
     field('unit-mm','Физическая длина одного единичного отрезка, мм',['5']),
-    field('large-cm','Физическая длина одной большой части, см',['1,5','1.5']),
+    field('large-cm','Физическая длина одной большой части, см',['1,5','1.5'],'decimal'),
     field('coord17-mm','Расстояние от 0 до координаты 17, мм',['85']),
   ],'Разделяй отдельно координатную величину и физическую длину: 18 единиц занимают 9 см.','Большой шаг: 18 : 6 = 3; единичный отрезок: 9 см : 18 = 0,5 см = 5 мм; большая часть 1,5 см; координата 17 находится в 85 мм от нуля.'),
   multi('l15-master-2','№127. По рисунку 57 восстановлены координаты точек A, B, C, D, E, F.',[
