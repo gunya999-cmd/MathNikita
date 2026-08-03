@@ -1,50 +1,52 @@
-name: Lesson 12 audit
+name: Lesson 15 audit
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - 'src/PlaneLineRaySummaryPlayer.tsx'
-      - 'src/lessonTwelve.css'
+      - 'src/ScaleCoordinateRaySummaryPlayer.tsx'
+      - 'src/LessonFifteenOpening.ts'
+      - 'src/coordinateRay.css'
       - 'src/CatMentor.tsx'
-      - 'src/data/lessonTwelveMentorScripts.json'
-      - 'src/data/extendedPracticeLesson12.ts'
-      - 'src/data/lessonTwelveMastery.ts'
+      - 'src/data/lessonFifteenMentorScripts.json'
+      - 'src/data/extendedPracticeLesson15.ts'
+      - 'src/data/lessonFifteenMastery.ts'
       - 'src/data/extendedPracticeData.ts'
       - 'src/extendedPracticeEngine.ts'
-      - 'src/lessonTwelveRevisionMigration.ts'
+      - 'src/lessonFifteenRevisionMigration.ts'
       - 'src/ExtendedPracticeLab.tsx'
       - 'src/LessonReflection.tsx'
       - 'src/PracticePythagoras.tsx'
       - 'src/VoiceNarrator.tsx'
       - 'src/MentorResponsiveBehavior.tsx'
-      - 'tests/lesson-twelve-audit.spec.ts'
-      - '.github/workflows/lesson12-audit.yml'
+      - 'tests/lesson-fifteen-audit.spec.ts'
+      - '.github/workflows/lesson15-audit.yml'
   push:
     branches: [main]
     paths:
-      - 'src/PlaneLineRaySummaryPlayer.tsx'
-      - 'src/lessonTwelve.css'
+      - 'src/ScaleCoordinateRaySummaryPlayer.tsx'
+      - 'src/LessonFifteenOpening.ts'
+      - 'src/coordinateRay.css'
       - 'src/CatMentor.tsx'
-      - 'src/data/lessonTwelveMentorScripts.json'
-      - 'src/data/extendedPracticeLesson12.ts'
-      - 'src/data/lessonTwelveMastery.ts'
+      - 'src/data/lessonFifteenMentorScripts.json'
+      - 'src/data/extendedPracticeLesson15.ts'
+      - 'src/data/lessonFifteenMastery.ts'
       - 'src/data/extendedPracticeData.ts'
       - 'src/extendedPracticeEngine.ts'
-      - 'src/lessonTwelveRevisionMigration.ts'
+      - 'src/lessonFifteenRevisionMigration.ts'
       - 'src/ExtendedPracticeLab.tsx'
       - 'src/LessonReflection.tsx'
       - 'src/PracticePythagoras.tsx'
       - 'src/VoiceNarrator.tsx'
       - 'src/MentorResponsiveBehavior.tsx'
-      - 'tests/lesson-twelve-audit.spec.ts'
-      - '.github/workflows/lesson12-audit.yml'
+      - 'tests/lesson-fifteen-audit.spec.ts'
+      - '.github/workflows/lesson15-audit.yml'
 
 permissions:
   contents: read
 
 jobs:
-  lesson-twelve:
+  lesson-fifteen:
     runs-on: ubuntu-latest
     timeout-minutes: 14
     steps:
@@ -57,17 +59,16 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Install Chromium
-        # Voice regression accepts both playable Sulafat audio and the explicit Sulafat fallback UI.
         run: npx playwright install --with-deps chromium
       - name: Build
         run: npm run build
-      - name: Run lesson 12 audit
-        run: npx playwright test tests/lesson-twelve-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Run lesson 15 audit
+        run: npx playwright test tests/lesson-fifteen-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Upload failure traces
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: lesson12-audit-${{ github.sha }}
+          name: lesson15-audit-${{ github.sha }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7

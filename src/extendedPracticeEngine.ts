@@ -2,7 +2,7 @@ import type { ExtendedPracticeTask } from './data/extendedPracticeData';
 
 export type ExtendedPracticeResponse = string | Record<string,string>;
 
-const PRACTICE_VERSION_BY_LESSON:Record<number,number>={5:2,6:3,9:2,10:2,11:2,12:2,13:2,14:2};
+const PRACTICE_VERSION_BY_LESSON:Record<number,number>={5:2,6:3,9:2,10:2,11:2,12:2,13:2,14:2,15:2};
 
 export function extendedPracticeStorageKey(lessonNumber:number){
   const version=PRACTICE_VERSION_BY_LESSON[lessonNumber]??1;
@@ -16,6 +16,19 @@ export function normalizePracticeAnswer(value:string){
     .replace(/ё/g,'е')
     .replace(/[\s.,;:!?()[\]{}'"«»]/g,'')
     .replace(/[−–—]/g,'-');
+}
+
+export function normalizeDecimalPracticeAnswer(value:string){
+  const normalized=value
+    .normalize('NFKC')
+    .toLocaleLowerCase('ru-RU')
+    .replace(/ё/g,'е')
+    .replace(/[\s\u00a0]+/g,'')
+    .replace(/,/g,'.')
+    .replace(/[−–—]/g,'-');
+  if(!/^[+-]?\d+(?:\.\d+)?$/.test(normalized))return normalized;
+  const numeric=Number(normalized);
+  return Number.isFinite(numeric)?String(numeric):normalized;
 }
 
 export function loadExtendedPracticeProgress(lessonNumber:number,taskCount:number){
@@ -33,8 +46,9 @@ export function isExtendedPracticeAnswerCorrect(task:ExtendedPracticeTask,respon
   if(task.type==='multi-input'){
     if(typeof response==='string')return false;
     return task.fields.every(field=>{
-      const normalized=normalizePracticeAnswer(response[field.id]??'');
-      return field.answers.some(answer=>normalized===normalizePracticeAnswer(answer));
+      const normalize=field.validation==='decimal'?normalizeDecimalPracticeAnswer:normalizePracticeAnswer;
+      const normalized=normalize(response[field.id]??'');
+      return field.answers.some(answer=>normalized===normalize(answer));
     });
   }
   if(typeof response!=='string')return false;

@@ -74,9 +74,10 @@ test('lesson 9 definitions, equal pairs, source tasks and diagrams are mathemati
   await expect(page.locator('.instant-feedback.good')).toContainText('AB = AC − BC = 8 − 2 = 6 см');
   await expect(page.locator('.instant-feedback.good')).toContainText('AD = AB + BD = 6 + 6 = 12 см');
 
+  const mentorBubble=page.locator('.cat-mentor-bubble');
+  await expect(mentorBubble).toContainText('AD = 12 см, без двойного счёта участка BC');
   await page.locator('.cat-mentor-actions').getByRole('button',{name:/Дай пример/}).click();
-  await expect(page.locator('.cat-mentor-bubble')).toContainText('AB = AC − BC = 8 − 2 = 6');
-  await expect(page.locator('.cat-mentor-bubble')).toContainText('AD = AB + BD = 6 + 6 = 12');
+  await expect(mentorBubble).toContainText(/AB = AC − BC = 8 − 2 = 6 см\. Затем AD = AB \+ BD = 6 \+ 6 = 12 см\./);
 
   await jump(page,20,'l9-challenge');
   await expect(page.locator('.polyline-ruler strong')).toContainText('3 = 13 − 5 − 5');
