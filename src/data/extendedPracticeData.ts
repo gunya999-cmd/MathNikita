@@ -9,12 +9,14 @@ import { lessonTwelveMastery } from './lessonTwelveMastery';
 import { lessonThirteenMastery } from './lessonThirteenMastery';
 import { lessonFourteenMastery } from './lessonFourteenMastery';
 import { lessonFifteenMastery } from './lessonFifteenMastery';
+import { lessonSixteenMastery } from './lessonSixteenMastery';
 import { migrateLessonSixRevision } from '../lessonSixRevisionMigration';
 import { migrateLessonElevenRevision } from '../lessonElevenRevisionMigration';
 import { migrateLessonTwelveRevision } from '../lessonTwelveRevisionMigration';
 import { migrateLessonThirteenRevision } from '../lessonThirteenRevisionMigration';
 import { migrateLessonFourteenRevision } from '../lessonFourteenRevisionMigration';
 import { migrateLessonFifteenRevision } from '../lessonFifteenRevisionMigration';
+import { migrateLessonSixteenRevision } from '../lessonSixteenRevisionMigration';
 import { extendedPracticeLesson1 } from './extendedPracticeLesson1';
 import { extendedPracticeLesson2 } from './extendedPracticeLesson2';
 import { extendedPracticeLesson3a } from './extendedPracticeLesson3a';
@@ -47,6 +49,7 @@ migrateLessonTwelveRevision();
 migrateLessonThirteenRevision();
 migrateLessonFourteenRevision();
 migrateLessonFifteenRevision();
+migrateLessonSixteenRevision();
 
 const lesson3: ExtendedPracticeSet = {
   title:'Тренировочная мастерская: десятичная запись',
@@ -91,7 +94,7 @@ const basePracticeByLesson: Record<number, ExtendedPracticeSet> = {
 export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = Object.fromEntries(
   Object.entries(basePracticeByLesson).map(([key,practice])=>{
     const lessonNumber=Number(key);
-    const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:lessonNumber===9?lessonNineMastery:lessonNumber===10?lessonTenMastery:lessonNumber===11?lessonElevenMastery:lessonNumber===12?lessonTwelveMastery:lessonNumber===13?lessonThirteenMastery:lessonNumber===14?lessonFourteenMastery:lessonNumber===15?lessonFifteenMastery:buildMasteryPractice(lessonNumber);
+    const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:lessonNumber===9?lessonNineMastery:lessonNumber===10?lessonTenMastery:lessonNumber===11?lessonElevenMastery:lessonNumber===12?lessonTwelveMastery:lessonNumber===13?lessonThirteenMastery:lessonNumber===14?lessonFourteenMastery:lessonNumber===15?lessonFifteenMastery:lessonNumber===16?lessonSixteenMastery:buildMasteryPractice(lessonNumber);
     return [lessonNumber,{...practice,tasks:[...practice.tasks,...masteryTasks]}];
   }),
 );
