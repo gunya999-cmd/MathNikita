@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { skillLabels, type CourseTask } from './data/course';
 import { totalLessons, yearPlan } from './data/yearPlan';
 import { LessonCourseShell } from './LessonCourseShell';
 import { LearnerDashboard } from './LearnerDashboard';
+import { StudentAccountGate } from './StudentAccountGate';
+import { backupStudentProfileOnPageHide, getAuthenticatedStudentProfile, switchStudentProfile } from './studentProfiles';
 import './focusLearning.css';
 import {
   advanceAfterCorrect,
@@ -16,6 +18,8 @@ import {
 
 type Screen = 'learn' | 'course' | 'map' | 'progress' | 'parent';
 type Feedback = 'idle' | 'correct' | 'wrong';
+
+const PROFILE_E2E_BYPASS = import.meta.env.VITE_E2E_BYPASS_PROFILE === '1';
 
 const islands = [
   ['🏘️', 'Натуральные числа', 20],
@@ -43,6 +47,7 @@ function answerChoices(task: CourseTask): string[] | null {
 }
 
 export function App() {
+  const profile = PROFILE_E2E_BYPASS ? null : getAuthenticatedStudentProfile();
   const [screen, setScreen] = useState<Screen>('course');
   const [state, setState] = useState<LearnerState>(loadLearnerState);
   const [answer, setAnswer] = useState('');
@@ -50,6 +55,18 @@ export function App() {
   const [attemptsOnTask, setAttemptsOnTask] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [routeBuilt, setRouteBuilt] = useState(false);
+
+  useEffect(() => {
+    if (PROFILE_E2E_BYPASS || !profile) return;
+    const backup = () => backupStudentProfileOnPageHide();
+    const onVisibility = () => { if (document.visibilityState === 'hidden') backup(); };
+    window.addEventListener('pagehide', backup);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('pagehide', backup);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [profile?.id]);
 
   const task = getCurrentTask(state);
   const lesson = currentLesson(state);
@@ -86,6 +103,13 @@ export function App() {
     if (finishingDiagnostic) setRouteBuilt(true);
   }
 
+  function changeStudent() {
+    switchStudentProfile();
+    window.location.reload();
+  }
+
+  if (!PROFILE_E2E_BYPASS && !profile) return <StudentAccountGate />;
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -97,7 +121,10 @@ export function App() {
           <button className={screen === 'progress' ? 'active' : ''} onClick={() => setScreen('progress')}>Кабинет</button>
           <button className={screen === 'parent' ? 'active' : ''} onClick={() => setScreen('parent')}>Родителям</button>
         </nav>
-        <div className="xp-pill">⭐ <b>{state.xp}</b> XP</div>
+        <div className="topbar-profile-actions">
+          <div className="xp-pill">⭐ <b>{state.xp}</b> XP</div>
+          {profile && <button className="student-profile-pill" onClick={changeStudent} aria-label={`Сменить ученика. Сейчас ${profile.name}`}><span>{profile.avatar}</span><div><b>{profile.name}</b><small>Сменить ученика</small></div></button>}
+        </div>
       </header>
 
       {screen === 'course' && <LessonCourseShell />}
