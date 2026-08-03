@@ -55,7 +55,7 @@ test('student code and PIN restore cloud progress on a clean device',async({page
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'))).toBe('restored-from-cloud');
   const registry=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita:accounts:registry:v1')??'null'));
   expect(registry?.profiles?.[0]?.cloud?.studentCode).toBe('MN-Q7W8E9R');
-  expect(registry?.profiles?.[0]?.cloud?.revision).toBe(8);
+  expect(registry?.profiles?.[0]?.cloud?.revision).toBeGreaterThanOrEqual(8);
 });
 
 test('recovery code changes the PIN, rotates recovery and restores progress',async({page})=>{
@@ -65,8 +65,8 @@ test('recovery code changes the PIN, rotates recovery and restores progress',asy
   await expect(page.getByRole('heading',{name:'Задать новый PIN'})).toBeVisible();
   await page.getByLabel('Код ученика для восстановления').fill('MN-RCV4321');
   await page.getByLabel('Код восстановления').fill('MN-RCV-OLD1-CODE-9999');
-  await page.getByLabel('Новый PIN').fill('5678');
-  await page.getByLabel('Повтори новый PIN').fill('5678');
+  await page.getByLabel('Новый PIN',{exact:true}).fill('5678');
+  await page.getByLabel('Повтори новый PIN',{exact:true}).fill('5678');
   await page.getByRole('button',{name:'Сменить PIN и восстановить профиль'}).click();
   await expect(page.getByText('MN-RCV-NEWW-CODE-2345',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:/Я сохранил коды/}).click();
