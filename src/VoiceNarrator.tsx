@@ -1,6 +1,7 @@
 import { useEffect,useMemo,useRef,useState,type RefObject } from 'react';
 import { extendedPracticeByLesson } from './data/extendedPracticeData';
 import { practiceNarrationId,practiceNarrationText } from './practiceNarration';
+import { setStageNarrationActive } from './stageNarrationSequence';
 import { isNaturalRussianVoice,isRussianVoice,rankRussianVoices,selectBestRussianVoice } from './voiceQuality';
 import { DEFAULT_VOICE_RATE,getStudioAudioUrl,loadVoiceSettings,peekStudioAudioUrl,prefetchStudioAudioUrl,saveVoiceSettings,STUDIO_VOICE_LABEL,studioNarrationText,type VoiceEngine } from './studioVoice';
 import './voiceNarrator.css';
@@ -48,10 +49,10 @@ function getNarrationText(root:HTMLElement|null,mode:VoiceNarratorProps['mode'],
     return collectVisibleText(scope,['.lesson-opening-copy h1','.lesson-opening-copy p','.lesson-opening-question b','.lesson-opening-plan li span'])||scope.textContent?.trim()||'';
   }
   if(!root)return'';
-  const stage=resolveStageNarration(root,lessonNumber);if(stage)return stage.text;
   const sharedPractice=resolvePracticeNarration(root,lessonNumber);if(sharedPractice)return sharedPractice.text;
   const practice=visiblePractice(root);if(practice)return collectVisibleText(practice,['h3','.extended-practice-instruction','.extended-practice-input span','.extended-practice-options button']);
   const finalReflection=visibleFinalReflection(root);if(finalReflection)return collectVisibleText(finalReflection,['.reflection-heading h2','.reflection-heading p','blockquote','.reflection-answer > span']);
+  const stage=resolveStageNarration(root,lessonNumber);if(stage)return stage.text;
   const scope=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden])');return scope?collectVisibleText(scope,['.lesson-block h2','.lesson-block .block-text','.lesson-block .lesson-items li']):'';
 }
 
@@ -60,10 +61,10 @@ function getNarrationId(root:HTMLElement|null,mode:VoiceNarratorProps['mode'],le
   if(!resolvedLesson&&root){const lessonLabel=root.querySelector<HTMLElement>('.lesson-mode-toolbar > div > span')?.textContent??'';const lessonMatch=lessonLabel.match(/Урок\s+(\d+)/i);const storedLesson=typeof localStorage!=='undefined'?Number(localStorage.getItem('mathnikita-selected-lesson')):0;resolvedLesson=lessonMatch?Number(lessonMatch[1]):storedLesson}
   if(!Number.isFinite(resolvedLesson)||resolvedLesson<1)return'';
   const lessonId=lessonToken(resolvedLesson);if(mode==='opening')return`lesson-${lessonId}-opening`;if(!root)return'';
-  const stage=resolveStageNarration(root,resolvedLesson);if(stage)return stage.id;
   const sharedPractice=resolvePracticeNarration(root,resolvedLesson);if(sharedPractice)return sharedPractice.id;
   const practice=visiblePractice(root);const practiceId=safeNarrationToken(practice?.dataset.practiceTask??'');if(practiceId)return`lesson-${lessonId}-practice-${practiceId}`;
   if(visibleFinalReflection(root))return`lesson-${lessonId}-reflection`;
+  const stage=resolveStageNarration(root,resolvedLesson);if(stage)return stage.id;
   const stageLabel=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .stage-counter')?.textContent??'';const stageMatch=stageLabel.match(/Этап\s+(\d+)/i);if(stageMatch)return`lesson-${lessonId}-stage-${String(Number(stageMatch[1])).padStart(2,'0')}`;return'';
 }
 
@@ -73,17 +74,26 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
   const systemSupported=typeof window!=='undefined'&&'speechSynthesis'in window;const audioSupported=canCreateAudioElement();
   const[voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);const[speaking,setSpeaking]=useState(false);const[settingsOpen,setSettingsOpen]=useState(false);const[studioIssue,setStudioIssue]=useState('');const initialSettings=useMemo(loadVoiceSettings,[]);
   const[engine,setEngine]=useState<VoiceEngine>(initialSettings.engine);const[voiceURI,setVoiceURI]=useState(initialSettings.voiceURI??'');const[rate,setRate]=useState(initialSettings.rate??DEFAULT_VOICE_RATE);const[studioStatus,setStudioStatus]=useState<StudioStatus>('checking');
-  const sessionRef=useRef(0);const audioRef=useRef<HTMLAudioElement|null>(null);const narratorRef=useRef<HTMLDivElement|null>(null);const lastAutoStageRef=useRef('');
+  const sessionRef=useRef(0);const audioRef=useRef<HTMLAudioElement|null>(null);const narratorRef=useRef<HTMLDivElement|null>(null);const lastAutoStageRef=useRef('');const autoStageSessionRef=useRef<number|null>(null);const autoStageIdRef=useRef('');
 
-  function stop(){sessionRef.current+=1;if(audioRef.current){audioRef.current.pause();audioRef.current.currentTime=0;audioRef.current.src='';audioRef.current=null}if(systemSupported)window.speechSynthesis.cancel();setSpeaking(false)}
-  function failStudio(session:number,message='AI-голос временно недоступен. Нажми ещё раз.'){if(sessionRef.current!==session)return;audioRef.current=null;setSpeaking(false);setStudioIssue(message)}
+  function releaseAutoStage(session:number,narrationId:string,ended=false){
+    if(autoStageSessionRef.current!==session)return;
+    if(ended)window.dispatchEvent(new CustomEvent('mathnikita-audio-ended',{detail:{source:'narrator',lessonNumber,narrationId}}));
+    autoStageSessionRef.current=null;autoStageIdRef.current='';setStageNarrationActive(false,narrationId);
+  }
+  function stop(){
+    const autoSession=autoStageSessionRef.current;const autoId=autoStageIdRef.current;
+    if(autoSession!==null){autoStageSessionRef.current=null;autoStageIdRef.current='';setStageNarrationActive(false,autoId)}
+    sessionRef.current+=1;if(audioRef.current){audioRef.current.pause();audioRef.current.currentTime=0;audioRef.current.src='';audioRef.current=null}if(systemSupported)window.speechSynthesis.cancel();setSpeaking(false)
+  }
+  function failStudio(session:number,message='AI-голос временно недоступен. Нажми ещё раз.'){if(sessionRef.current!==session)return;releaseAutoStage(session,autoStageIdRef.current,false);audioRef.current=null;setSpeaking(false);setStudioIssue(message)}
 
   useEffect(()=>{if(!systemSupported)return;const loadVoices=()=>{const next=rankRussianVoices(window.speechSynthesis.getVoices());setVoices(next);setVoiceURI(current=>selectBestRussianVoice(next,current)?.voiceURI??'')};loadVoices();window.speechSynthesis.addEventListener('voiceschanged',loadVoices);return()=>window.speechSynthesis.removeEventListener('voiceschanged',loadVoices)},[systemSupported]);
   useEffect(()=>{let active=true;fetch('/api/narration-status',{cache:'no-store'}).then(async response=>response.ok?response.json():Promise.reject()).then((data:{studioConfigured?:boolean})=>{if(active)setStudioStatus(data.studioConfigured?'ready':'unavailable')}).catch(()=>{if(active)setStudioStatus('unavailable')});return()=>{active=false}},[]);
   useEffect(()=>{saveVoiceSettings({engine,voiceURI,rate});if(engine==='system')setStudioIssue('')},[engine,voiceURI,rate]);
   useEffect(()=>{if(!settingsOpen)return;const closeOnOutside=(event:PointerEvent)=>{const target=event.target;if(target instanceof Node&&!narratorRef.current?.contains(target))setSettingsOpen(false)};const closeOnEscape=(event:KeyboardEvent)=>{if(event.key==='Escape')setSettingsOpen(false)};document.addEventListener('pointerdown',closeOnOutside);window.addEventListener('keydown',closeOnEscape);return()=>{document.removeEventListener('pointerdown',closeOnOutside);window.removeEventListener('keydown',closeOnEscape)}},[settingsOpen]);
   useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
-  useEffect(()=>{stop();const root=rootRef.current;if(!root||mode==='opening')return;let currentId=getNarrationId(root,mode,lessonNumber);const observer=new MutationObserver(()=>{const nextId=getNarrationId(root,mode,lessonNumber);if(nextId&&nextId!==currentId){currentId=nextId;stop();setStudioIssue('')}});observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();stop()}},[mode,rootRef,lessonNumber]);
+  useEffect(()=>{stop();return()=>stop()},[mode,rootRef,lessonNumber]);
   useEffect(()=>{
     if(engine!=='studio')return;
     if(mode==='opening'){const id=getNarrationId(null,mode,lessonNumber);const text=getNarrationText(null,mode,openingText,lessonNumber);if(id&&text)prefetchStudioAudioUrl(id,text);return}
@@ -102,37 +112,43 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
       const stage=resolveStageNarration(root,lessonNumber);if(!stage||stage.id===lastAutoStageRef.current)return;
       lastAutoStageRef.current=stage.id;
       if(timer!==null)window.clearTimeout(timer);
-      timer=window.setTimeout(()=>{const latest=resolveStageNarration(root,lessonNumber);if(latest?.id===stage.id)playNarration(latest.text,latest.id)},70);
+      timer=window.setTimeout(()=>{const latest=resolveStageNarration(root,lessonNumber);if(latest?.id===stage.id)playNarration(latest.text,latest.id,true)},70);
     };
     schedule();
     const observer=new MutationObserver(schedule);observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-stage-id','hidden']});
     return()=>{observer.disconnect();if(timer!==null)window.clearTimeout(timer)};
   },[mode,lessonNumber,rootRef,engine,rate,voiceURI]);
 
-  function startSystemSpeech(text:string,session:number){if(!systemSupported||!text){setSpeaking(false);return}window.speechSynthesis.cancel();const chunks=splitForSpeech(studioNarrationText(text));const selectedVoice=selectBestRussianVoice(voices,voiceURI);setSpeaking(true);let index=0;const playNext=()=>{if(sessionRef.current!==session||index>=chunks.length){setSpeaking(false);return}const utterance=new SpeechSynthesisUtterance(chunks[index]);utterance.lang='ru-RU';utterance.voice=selectedVoice??null;utterance.rate=Math.min(Math.max(rate,.88),1.04);utterance.pitch=1;utterance.volume=1;utterance.onend=()=>{index+=1;window.setTimeout(playNext,130)};utterance.onerror=()=>setSpeaking(false);window.speechSynthesis.speak(utterance)};playNext()}
+  function startSystemSpeech(text:string,narrationId:string,session:number,autoStage:boolean){
+    if(!systemSupported||!text){setSpeaking(false);if(autoStage)releaseAutoStage(session,narrationId,false);return}
+    window.speechSynthesis.cancel();const chunks=splitForSpeech(studioNarrationText(text));const selectedVoice=selectBestRussianVoice(voices,voiceURI);setSpeaking(true);let index=0;
+    const playNext=()=>{if(sessionRef.current!==session)return;if(index>=chunks.length){setSpeaking(false);if(autoStage)releaseAutoStage(session,narrationId,true);return}const utterance=new SpeechSynthesisUtterance(chunks[index]);utterance.lang='ru-RU';utterance.voice=selectedVoice??null;utterance.rate=Math.min(Math.max(rate,.88),1.04);utterance.pitch=1;utterance.volume=1;utterance.onend=()=>{index+=1;window.setTimeout(playNext,130)};utterance.onerror=()=>{setSpeaking(false);if(autoStage)releaseAutoStage(session,narrationId,false)};window.speechSynthesis.speak(utterance)};playNext()
+  }
 
-  function playStudioSource(source:string,session:number,narrationId:string){
+  function playStudioSource(source:string,session:number,narrationId:string,autoStage:boolean){
     const audio=createNarrationAudio(source);if(!audio){failStudio(session,'AI-аудио не поддерживается этим браузером.');return}
     audio.preload='auto';audio.playbackRate=rate;audioRef.current=audio;setSpeaking(true);
-    const fail=()=>failStudio(session);audio.onended=()=>{if(sessionRef.current===session)setSpeaking(false);audioRef.current=null};audio.onerror=fail;
+    const fail=()=>failStudio(session);audio.onended=()=>{if(sessionRef.current===session){setSpeaking(false);if(autoStage)releaseAutoStage(session,narrationId,true)}audioRef.current=null};audio.onerror=fail;
     void audio.play().then(()=>{if(sessionRef.current===session)window.dispatchEvent(new CustomEvent('mathnikita-audio-played',{detail:{source:'narrator',lessonNumber,narrationId}}))}).catch(fail);
   }
 
-  async function startStudioSpeech(text:string,narrationId:string,session:number){
+  async function startStudioSpeech(text:string,narrationId:string,session:number,autoStage:boolean){
     if(!narrationId){failStudio(session);return}setSpeaking(true);
-    try{const source=await getStudioAudioUrl(narrationId,text);if(sessionRef.current===session)playStudioSource(source,session,narrationId)}catch{failStudio(session)}
+    try{const source=await getStudioAudioUrl(narrationId,text);if(sessionRef.current===session)playStudioSource(source,session,narrationId,autoStage)}catch{failStudio(session)}
   }
 
-  function playNarration(text:string,narrationId:string){
+  function playNarration(text:string,narrationId:string,autoStage=false){
     if(!text||!narrationId)return;
-    stop();setStudioIssue('');const session=sessionRef.current+1;sessionRef.current=session;window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator'}}));
-    if(engine==='studio'){const readySource=peekStudioAudioUrl(narrationId,text);if(readySource){playStudioSource(readySource,session,narrationId);return}void startStudioSpeech(text,narrationId,session);return}
-    startSystemSpeech(text,session);
+    stop();setStudioIssue('');const session=sessionRef.current+1;sessionRef.current=session;
+    if(autoStage){autoStageSessionRef.current=session;autoStageIdRef.current=narrationId;setStageNarrationActive(true,narrationId)}
+    window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator'}}));
+    if(engine==='studio'){const readySource=peekStudioAudioUrl(narrationId,text);if(readySource){playStudioSource(readySource,session,narrationId,autoStage);return}void startStudioSpeech(text,narrationId,session,autoStage);return}
+    startSystemSpeech(text,narrationId,session,autoStage);
   }
 
   function speak(){
     if(speaking){stop();return}
-    const text=getNarrationText(rootRef.current,mode,openingText,lessonNumber);const narrationId=getNarrationId(rootRef.current,mode,lessonNumber);playNarration(text,narrationId);
+    const text=getNarrationText(rootRef.current,mode,openingText,lessonNumber);const narrationId=getNarrationId(rootRef.current,mode,lessonNumber);playNarration(text,narrationId,false);
   }
 
   const voiceOptions=rankRussianVoices(voices);const selectedVoice=selectBestRussianVoice(voiceOptions,voiceURI);
