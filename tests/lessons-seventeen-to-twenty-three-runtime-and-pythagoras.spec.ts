@@ -84,8 +84,12 @@ for(let lessonNumber=17;lessonNumber<=23;lessonNumber+=1){
     const total=await totalStages(page,lessonNumber);expect(total).toBeGreaterThan(0);const stageIds=new Set<string>();
     for(let stageIndex=0;stageIndex<total;stageIndex+=1){
       await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
-      const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');await expect(stage).toBeVisible();const stageId=await stage.getAttribute('data-stage-id');expect(stageId).toBeTruthy();
-      const special=specialStageIds[lessonNumber];if(special)expect(stageId).toBe(special[stageIndex]);else await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из ${total}`);
+      const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');
+      await expect(stage).toBeVisible();
+      const special=specialStageIds[lessonNumber];
+      if(special)await expect(stage).toHaveAttribute('data-stage-id',special[stageIndex],{timeout:5_000});
+      else await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из ${total}`,{timeout:5_000});
+      const stageId=await stage.getAttribute('data-stage-id');expect(stageId).toBeTruthy();
       stageIds.add(stageId!);
     }
     expect(stageIds.size).toBe(total);expect(pageErrors,`Runtime exception while traversing lesson ${lessonNumber}: ${pageErrors.join(' | ')}`).toEqual([]);
