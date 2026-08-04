@@ -1,16 +1,64 @@
 import { expect,test,type Page } from '@playwright/test';
 
 type NarrationRequest={id:string;text:string;version:string};
-type RuntimeAudit={audioPlays:number};
+type RuntimeAudit={audioPlays:number;playedIds:string[]};
 
 async function installAudit(page:Page){
   await page.addInitScript(()=>{
-    const audit:RuntimeAudit={audioPlays:0};
+    const audit:RuntimeAudit={audioPlays:0,playedIds:[]};
+    const blobNarrationIds=new WeakMap<Blob,string>();
+    const nativeFetch=window.fetch.bind(window);
+    const nativeCreateObjectURL=URL.createObjectURL.bind(URL);
+    let objectUrlSequence=0;
+
+    window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+      let narrationId='';
+      if(url.includes('/api/narration')){
+        let rawBody=init?.body;
+        if(rawBody==null&&input instanceof Request){
+          try{rawBody=await input.clone().text()}catch{/* request body inspection is audit-only */}
+        }
+        if(typeof rawBody==='string'){
+          try{narrationId=(JSON.parse(rawBody) as {id?:string}).id??''}catch{/* non-JSON request */}
+        }
+      }
+      const response=await nativeFetch(input,init);
+      if(!narrationId)return response;
+      return new Proxy(response,{
+        get(target,property){
+          if(property==='blob')return async()=>{
+            const blob=await target.blob();
+            blobNarrationIds.set(blob,narrationId);
+            return blob;
+          };
+          const value=Reflect.get(target,property,target);
+          return typeof value==='function'?value.bind(target):value;
+        },
+      });
+    };
+
+    URL.createObjectURL=(blob:Blob|MediaSource)=>{
+      if(blob instanceof Blob){
+        const narrationId=blobNarrationIds.get(blob);
+        if(narrationId)return`blob:mathnikita-audit/${encodeURIComponent(narrationId)}/${++objectUrlSequence}`;
+      }
+      return nativeCreateObjectURL(blob);
+    };
+
     class MockAudio{
       src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;timer:number|null=null;
       constructor(source=''){this.src=source}
       pause(){if(this.timer!==null){window.clearTimeout(this.timer);this.timer=null}}
-      play(){this.pause();audit.audioPlays+=1;this.timer=window.setTimeout(()=>{this.timer=null;this.onended?.()},35);return Promise.resolve()}
+      play(){
+        this.pause();
+        audit.audioPlays+=1;
+        const prefix='blob:mathnikita-audit/';
+        if(this.src.startsWith(prefix))audit.playedIds.push(decodeURIComponent(this.src.slice(prefix.length).split('/')[0]));
+        else audit.playedIds.push(this.src);
+        this.timer=window.setTimeout(()=>{this.timer=null;this.onended?.()},35);
+        return Promise.resolve();
+      }
     }
     Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:MockAudio});
     (window as unknown as {__hardRuntimeAudit:RuntimeAudit}).__hardRuntimeAudit=audit;
@@ -42,8 +90,8 @@ async function totalStages(page:Page){
   return Number(match[1]);
 }
 
-async function audioPlayCount(page:Page){
-  return page.evaluate(()=>(window as unknown as {__hardRuntimeAudit:RuntimeAudit}).__hardRuntimeAudit.audioPlays);
+async function playedIdCount(page:Page,id:string){
+  return page.evaluate(id=>(window as unknown as {__hardRuntimeAudit:RuntimeAudit}).__hardRuntimeAudit.playedIds.filter(item=>item===id).length,id);
 }
 
 const mentorActions=[
@@ -89,11 +137,11 @@ for(let lessonNumber=6;lessonNumber<=16;lessonNumber+=1){
     await page.waitForTimeout(60);
 
     for(const action of mentorActions){
-      const before=await audioPlayCount(page);
+      const expectedId=`mentor-practice-${lessonNumber}-${taskId}-${action.suffix}`;
+      const beforeExpectedPlay=await playedIdCount(page,expectedId);
       await page.locator('.practice-pythagoras-actions').getByRole('button',{name:action.label,exact:true}).click();
       await expect(page.locator('.practice-pythagoras-message')).not.toBeEmpty();
-      await expect.poll(()=>audioPlayCount(page),{timeout:8_000,message:`Lesson ${lessonNumber}: ${action.label} did not reach Audio.play()`}).toBeGreaterThan(before);
-      const expectedId=`mentor-practice-${lessonNumber}-${taskId}-${action.suffix}`;
+      await expect.poll(()=>playedIdCount(page,expectedId),{timeout:8_000,message:`Lesson ${lessonNumber}: ${action.label} did not play ${expectedId}`}).toBeGreaterThan(beforeExpectedPlay);
       await expect.poll(()=>requests.some(item=>item.id===expectedId),{timeout:8_000,message:`Lesson ${lessonNumber}: no Sulafat request ${expectedId}`}).toBeTruthy();
       const request=requests.find(item=>item.id===expectedId)!;
       expect(request.version).toBe('ru-teacher-gemini-sulafat-v2');
