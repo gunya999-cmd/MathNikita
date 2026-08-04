@@ -35,7 +35,18 @@ async function mockNarration(page:Page,log:NarrationLog){
   });
 }
 
+async function installDeterministicScroll(page:Page){
+  await page.addInitScript(()=>{
+    const nativeScrollTo=window.scrollTo.bind(window);
+    window.scrollTo=((first:ScrollToOptions|number,second?:number)=>{
+      if(typeof first==='number'){nativeScrollTo(first,second??0);return}
+      nativeScrollTo({...first,behavior:'auto'});
+    }) as typeof window.scrollTo;
+  });
+}
+
 async function openLessonSixteen(page:Page){
+  await installDeterministicScroll(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/Открыть урок 16:/}).click();
   await page.locator('.lesson-opening-start').click();
@@ -46,25 +57,7 @@ async function jump(page:Page,stageIndex:number,stageId:string){
   await page.evaluate(({stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:16,stageIndex}})),{stageIndex});
   const stage=page.locator(`[data-stage-id="${stageId}"]`);
   await expect(stage).toBeVisible();
-  await page.evaluate(async()=>{
-    document.documentElement.style.scrollBehavior='auto';
-    document.body.style.scrollBehavior='auto';
-    for(let frame=0;frame<4;frame+=1){
-      window.scrollTo({top:0,behavior:'auto'});
-      await new Promise<void>(resolve=>requestAnimationFrame(()=>resolve()));
-    }
-  });
-  let previous='';
-  let stableSamples=0;
-  await expect.poll(async()=>{
-    const box=await stage.boundingBox();
-    if(!box)return false;
-    const scrollY=await page.evaluate(()=>window.scrollY);
-    const signature=[scrollY,box.x,box.y,box.width,box.height].map(value=>Math.round(value*10)/10).join(':');
-    if(signature===previous)stableSamples+=1;else stableSamples=0;
-    previous=signature;
-    return stableSamples>=2;
-  },{timeout:4_000,intervals:[50,75,100,150]}).toBeTruthy();
+  await page.evaluate(()=>window.scrollTo({top:0,behavior:'auto'}));
 }
 
 async function stableClick(locator:Locator){
@@ -79,8 +72,8 @@ async function stableClick(locator:Locator){
     const signature=[box.x,box.y,box.width,box.height].map(value=>Math.round(value*10)/10).join(':');
     if(signature===previous)stableSamples+=1;else stableSamples=0;
     previous=signature;
-    return stableSamples>=3;
-  },{timeout:5_000,intervals:[50,75,100,150,200]}).toBeTruthy();
+    return stableSamples>=2;
+  },{timeout:4_000,intervals:[50,75,100,150]}).toBeTruthy();
   await locator.click();
 }
 
@@ -166,6 +159,7 @@ test('lesson 16 matches Merzlyak lesson-16 scope, source tasks, visuals and ever
 });
 
 test('lesson 16 migrates stale v1 state without false completion',async({page})=>{
+  await installDeterministicScroll(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.evaluate(()=>{
     localStorage.removeItem('mathnikita:lesson-16-revision-v2-migrated');
