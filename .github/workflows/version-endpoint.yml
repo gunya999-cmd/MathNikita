@@ -1,0 +1,32 @@
+name: Worker version endpoint
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'worker/entry.ts'
+      - 'worker/buildVersion.ts'
+      - 'scripts/write-build-version.mjs'
+      - 'scripts/version-api-smoke.mjs'
+      - 'package.json'
+      - 'wrangler.jsonc'
+      - '.github/workflows/version-endpoint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version-api:
+    name: Wrangler · git SHA + Cloudflare version metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+      - run: npx -y wrangler@4.114.0 deploy --dry-run --outdir .wrangler-version-dry-run
+      - run: node scripts/version-api-smoke.mjs
