@@ -1,4 +1,4 @@
-import { expect,test,type Page } from '@playwright/test';
+import { expect,test,type Locator,type Page } from '@playwright/test';
 import { extendedPracticeLesson16 } from '../src/data/extendedPracticeLesson16';
 import { lessonSixteenMastery } from '../src/data/lessonSixteenMastery';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
@@ -67,6 +67,23 @@ async function jump(page:Page,stageIndex:number,stageId:string){
   },{timeout:4_000,intervals:[50,75,100,150]}).toBeTruthy();
 }
 
+async function stableClick(locator:Locator){
+  await expect(locator).toBeVisible();
+  await expect(locator).toBeEnabled();
+  await locator.scrollIntoViewIfNeeded();
+  let previous='';
+  let stableSamples=0;
+  await expect.poll(async()=>{
+    const box=await locator.boundingBox();
+    if(!box)return false;
+    const signature=[box.x,box.y,box.width,box.height].map(value=>Math.round(value*10)/10).join(':');
+    if(signature===previous)stableSamples+=1;else stableSamples=0;
+    previous=signature;
+    return stableSamples>=3;
+  },{timeout:5_000,intervals:[50,75,100,150,200]}).toBeTruthy();
+  await locator.click();
+}
+
 async function solveMainActivity(page:Page,entry:MainActivity){
   await jump(page,entry.stageIndex,entry.stageId);
   const stage=page.locator(`[data-stage-id="${entry.stageId}"]`);
@@ -79,7 +96,7 @@ async function solveMainActivity(page:Page,entry:MainActivity){
     while(await result.count())await result.first().click();
     for(const item of entry.answer as string[])await stage.locator('.order-bank').getByRole('button',{name:item,exact:true}).click();
   }
-  await stage.locator('.check-button').click();
+  await stableClick(stage.locator('.check-button'));
   await expect(stage.locator('.instant-feedback.good')).toBeVisible();
 }
 
@@ -124,19 +141,19 @@ test('lesson 16 matches Merzlyak lesson-16 scope, source tasks, visuals and ever
   await jump(page,3,'l16-practice1');
   const practiceOne=page.locator('[data-stage-id="l16-practice1"]');
   await practiceOne.locator('.inline-answer input').fill('>');
-  await practiceOne.locator('.check-button').click();
+  await stableClick(practiceOne.locator('.check-button'));
   await expect(practiceOne.locator('.instant-feedback.bad')).toBeVisible();
   await practiceOne.locator('.inline-answer input').fill('<');
-  await practiceOne.locator('.check-button').click();
+  await stableClick(practiceOne.locator('.check-button'));
   await expect(practiceOne.locator('.instant-feedback.good')).toBeVisible();
 
   await jump(page,20,'l16-quiz5');
   const quizFive=page.locator('[data-stage-id="l16-quiz5"]');
   await quizFive.locator('.inline-answer input').fill('1');
-  await quizFive.locator('.check-button').click();
+  await stableClick(quizFive.locator('.check-button'));
   await expect(quizFive.locator('.instant-feedback.bad')).toBeVisible();
   await quizFive.locator('.inline-answer input').fill('0');
-  await quizFive.locator('.check-button').click();
+  await stableClick(quizFive.locator('.check-button'));
   await expect(quizFive.locator('.instant-feedback.good')).toContainText('соседние натуральные числа');
 
   expect(mainActivities).toHaveLength(15);
