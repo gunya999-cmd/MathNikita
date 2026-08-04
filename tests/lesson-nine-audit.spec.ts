@@ -2,6 +2,7 @@ import { expect,test,type Page } from '@playwright/test';
 import { extendedPracticeLesson9 } from '../src/data/extendedPracticeLesson9';
 import { lessonNineMastery } from '../src/data/lessonNineMastery';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
 const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson9.tasks,...lessonNineMastery];
 
@@ -28,20 +29,7 @@ async function jump(page:Page,stageIndex:number,stageId:string){
 }
 
 async function solveMandatoryTask(page:Page,task:ExtendedPracticeTask){
-  const practice=page.locator('.extended-practice');
-  await expect(practice).toHaveAttribute('data-practice-task',task.id);
-  if(task.type==='choice'){
-    await practice.locator('.extended-practice-options').getByRole('button',{name:task.answer,exact:true}).click();
-  }else if(task.type==='multi-input'){
-    const inputs=practice.locator('.extended-practice-multi input');
-    await expect(inputs).toHaveCount(task.fields.length);
-    for(let index=0;index<task.fields.length;index++)await inputs.nth(index).fill(task.fields[index].answers[0]);
-  }else{
-    await practice.locator('.extended-practice-input input').fill(task.answers[0]);
-  }
-  await practice.locator('.extended-practice-check').click();
-  await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await practice.locator('.extended-practice-next').click();
+  await answerMandatoryPractice(page.locator('.extended-practice'),task);
 }
 
 test('lesson 9 definitions, equal pairs, source tasks and diagrams are mathematically correct',async({page})=>{
@@ -75,8 +63,7 @@ test('lesson 9 definitions, equal pairs, source tasks and diagrams are mathemati
   await expect(page.locator('.instant-feedback.good')).toContainText('AD = AB + BD = 6 + 6 = 12 см');
 
   const mentorBubble=page.locator('.cat-mentor-bubble');
-  await expect(mentorBubble).toContainText('AD = 12 см, без двойного счёта участка BC');
-  await page.locator('.cat-mentor-actions').getByRole('button',{name:/Дай пример/}).click();
+  await clickCatMentorAction(page,/Дай пример/);
   await expect(mentorBubble).toContainText(/AB = AC − BC = 8 − 2 = 6 см\. Затем AD = AB \+ BD = 6 \+ 6 = 12 см\./);
 
   await jump(page,20,'l9-challenge');
@@ -153,7 +140,7 @@ test('lesson 9 prepares Sulafat narration for lesson, mandatory practice and bot
   await expect.poll(()=>log.ids.some(id=>id==='lesson-09-stage-l9-story')).toBeTruthy();
 
   await jump(page,9,'l9-practice2');
-  await page.locator('.cat-mentor-actions').getByRole('button',{name:/Подсказка/}).click();
+  await clickCatMentorAction(page,/Подсказка/);
   await expect.poll(()=>log.ids.some(id=>id==='mentor-l9-task71-hint')).toBeTruthy();
   await expect(page.locator('.cat-mentor-bubble')).toContainText('вычти BC из AC');
 

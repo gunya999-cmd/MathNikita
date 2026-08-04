@@ -2,6 +2,7 @@ import { expect,test,type Page } from '@playwright/test';
 import { extendedPracticeLesson11 } from '../src/data/extendedPracticeLesson11';
 import { lessonElevenMastery } from '../src/data/lessonElevenMastery';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
 const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson11.tasks,...lessonElevenMastery];
 
@@ -58,20 +59,7 @@ async function solveMainActivity(page:Page,entry:MainActivity){
 }
 
 async function solveMandatoryTask(page:Page,task:ExtendedPracticeTask){
-  const practice=page.locator('.extended-practice');
-  await expect(practice).toHaveAttribute('data-practice-task',task.id);
-  if(task.type==='choice'){
-    await practice.locator('.extended-practice-options').getByRole('button',{name:task.answer,exact:true}).click();
-  }else if(task.type==='multi-input'){
-    const inputs=practice.locator('.extended-practice-multi input');
-    await expect(inputs).toHaveCount(task.fields.length);
-    for(let index=0;index<task.fields.length;index++)await inputs.nth(index).fill(task.fields[index].answers[0]);
-  }else{
-    await practice.locator('.extended-practice-input input').fill(task.answers[0]);
-  }
-  await practice.locator('.extended-practice-check').click();
-  await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await practice.locator('.extended-practice-next').click();
+  await answerMandatoryPractice(page.locator('.extended-practice'),task);
 }
 
 test('lesson 11 source tasks, diagrams and every main interactive task are correct',async({page})=>{
@@ -212,7 +200,7 @@ test('lesson 11 prepares Sulafat narration for lesson, mandatory practice and bo
   await expect.poll(()=>log.ids.some(id=>id==='lesson-11-stage-l11-story')).toBeTruthy();
 
   await jump(page,10,'l11-practice4');
-  await page.locator('.cat-mentor-actions').getByRole('button',{name:/Подсказка/}).click();
+  await clickCatMentorAction(page,/Подсказка/);
   await expect.poll(()=>log.ids.some(id=>id==='mentor-l11-task99-hint')).toBeTruthy();
   await expect(page.locator('.cat-mentor-bubble')).toContainText('два рисунка');
 

@@ -1,7 +1,8 @@
-import { expect,test,type Page } from '@playwright/test';
+import { expect,test,type Locator,type Page } from '@playwright/test';
 import { extendedPracticeLesson16 } from '../src/data/extendedPracticeLesson16';
 import { lessonSixteenMastery } from '../src/data/lessonSixteenMastery';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
 const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson16.tasks,...lessonSixteenMastery];
 
@@ -34,7 +35,18 @@ async function mockNarration(page:Page,log:NarrationLog){
   });
 }
 
+async function installDeterministicScroll(page:Page){
+  await page.addInitScript(()=>{
+    const nativeScrollTo=window.scrollTo.bind(window);
+    window.scrollTo=((first:ScrollToOptions|number,second?:number)=>{
+      if(typeof first==='number'){nativeScrollTo(first,second??0);return}
+      nativeScrollTo({...first,behavior:'auto'});
+    }) as typeof window.scrollTo;
+  });
+}
+
 async function openLessonSixteen(page:Page){
+  await installDeterministicScroll(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/Открыть урок 16:/}).click();
   await page.locator('.lesson-opening-start').click();
@@ -45,12 +57,15 @@ async function jump(page:Page,stageIndex:number,stageId:string){
   await page.evaluate(({stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:16,stageIndex}})),{stageIndex});
   const stage=page.locator(`[data-stage-id="${stageId}"]`);
   await expect(stage).toBeVisible();
-  await page.evaluate(()=>{
-    document.documentElement.style.scrollBehavior='auto';
-    document.body.style.scrollBehavior='auto';
-    window.scrollTo({top:0,behavior:'auto'});
-  });
-  await page.waitForTimeout(120);
+  await page.evaluate(()=>window.scrollTo({top:0,behavior:'auto'}));
+}
+
+async function activateCheckButton(locator:Locator){
+  await expect(locator).toBeVisible();
+  await expect(locator).toBeEnabled();
+  await locator.focus();
+  await expect(locator).toBeFocused();
+  await locator.press('Enter');
 }
 
 async function solveMainActivity(page:Page,entry:MainActivity){
@@ -65,25 +80,12 @@ async function solveMainActivity(page:Page,entry:MainActivity){
     while(await result.count())await result.first().click();
     for(const item of entry.answer as string[])await stage.locator('.order-bank').getByRole('button',{name:item,exact:true}).click();
   }
-  await stage.locator('.check-button').click();
+  await activateCheckButton(stage.locator('.check-button'));
   await expect(stage.locator('.instant-feedback.good')).toBeVisible();
 }
 
 async function solveMandatoryTask(page:Page,task:ExtendedPracticeTask){
-  const practice=page.locator('.extended-practice');
-  await expect(practice).toHaveAttribute('data-practice-task',task.id);
-  if(task.type==='choice'){
-    await practice.locator('.extended-practice-options').getByRole('button',{name:task.answer,exact:true}).click();
-  }else if(task.type==='multi-input'){
-    const inputs=practice.locator('.extended-practice-multi input');
-    await expect(inputs).toHaveCount(task.fields.length);
-    for(let index=0;index<task.fields.length;index++)await inputs.nth(index).fill(task.fields[index].answers[0]);
-  }else{
-    await practice.locator('.extended-practice-input input').fill(task.answers[0]);
-  }
-  await practice.locator('.extended-practice-check').click();
-  await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await practice.locator('.extended-practice-next').click();
+  await answerMandatoryPractice(page.locator('.extended-practice'),task);
 }
 
 test('lesson 16 matches Merzlyak lesson-16 scope, source tasks, visuals and every core interaction',async({page})=>{
@@ -123,19 +125,19 @@ test('lesson 16 matches Merzlyak lesson-16 scope, source tasks, visuals and ever
   await jump(page,3,'l16-practice1');
   const practiceOne=page.locator('[data-stage-id="l16-practice1"]');
   await practiceOne.locator('.inline-answer input').fill('>');
-  await practiceOne.locator('.check-button').click();
+  await activateCheckButton(practiceOne.locator('.check-button'));
   await expect(practiceOne.locator('.instant-feedback.bad')).toBeVisible();
   await practiceOne.locator('.inline-answer input').fill('<');
-  await practiceOne.locator('.check-button').click();
+  await activateCheckButton(practiceOne.locator('.check-button'));
   await expect(practiceOne.locator('.instant-feedback.good')).toBeVisible();
 
   await jump(page,20,'l16-quiz5');
   const quizFive=page.locator('[data-stage-id="l16-quiz5"]');
   await quizFive.locator('.inline-answer input').fill('1');
-  await quizFive.locator('.check-button').click();
+  await activateCheckButton(quizFive.locator('.check-button'));
   await expect(quizFive.locator('.instant-feedback.bad')).toBeVisible();
   await quizFive.locator('.inline-answer input').fill('0');
-  await quizFive.locator('.check-button').click();
+  await activateCheckButton(quizFive.locator('.check-button'));
   await expect(quizFive.locator('.instant-feedback.good')).toContainText('соседние натуральные числа');
 
   expect(mainActivities).toHaveLength(15);
@@ -148,6 +150,7 @@ test('lesson 16 matches Merzlyak lesson-16 scope, source tasks, visuals and ever
 });
 
 test('lesson 16 migrates stale v1 state without false completion',async({page})=>{
+  await installDeterministicScroll(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.evaluate(()=>{
     localStorage.removeItem('mathnikita:lesson-16-revision-v2-migrated');
@@ -241,7 +244,7 @@ test('lesson 16 uses Sulafat in core, mandatory practice and both Pythagoras lay
   await expect.poll(()=>log.ids.some(id=>id==='lesson-16-stage-l16-mission')).toBeTruthy();
 
   await jump(page,2,'l16-digits-model');
-  await page.locator('.cat-mentor-actions').getByRole('button',{name:/Подсказка/}).click();
+  await clickCatMentorAction(page,/Подсказка/);
   await expect.poll(()=>log.ids.some(id=>id==='mentor-l16-digits-hint')).toBeTruthy();
   await expect(page.locator('.cat-mentor-bubble')).toContainText('Сравни количество цифр');
 

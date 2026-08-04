@@ -2,6 +2,7 @@ import { expect,test,type Page } from '@playwright/test';
 import { extendedPracticeLesson14 } from '../src/data/extendedPracticeLesson14';
 import { lessonFourteenMastery } from '../src/data/lessonFourteenMastery';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
 const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson14.tasks,...lessonFourteenMastery];
 
@@ -60,20 +61,7 @@ async function solveMainActivity(page:Page,entry:MainActivity){
 }
 
 async function solveMandatoryTask(page:Page,task:ExtendedPracticeTask){
-  const practice=page.locator('.extended-practice');
-  await expect(practice).toHaveAttribute('data-practice-task',task.id);
-  if(task.type==='choice'){
-    await practice.locator('.extended-practice-options').getByRole('button',{name:task.answer,exact:true}).click();
-  }else if(task.type==='multi-input'){
-    const inputs=practice.locator('.extended-practice-multi input');
-    await expect(inputs).toHaveCount(task.fields.length);
-    for(let index=0;index<task.fields.length;index++)await inputs.nth(index).fill(task.fields[index].answers[0]);
-  }else{
-    await practice.locator('.extended-practice-input input').fill(task.answers[0]);
-  }
-  await practice.locator('.extended-practice-check').click();
-  await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await practice.locator('.extended-practice-next').click();
+  await answerMandatoryPractice(page.locator('.extended-practice'),task);
 }
 
 test('lesson 14 source tasks, unit-segment semantics, visuals and all main interactions are correct',async({page})=>{
@@ -220,7 +208,7 @@ test('lesson 14 uses Sulafat for lesson, mandatory practice and both Pythagoras 
   await expect.poll(()=>log.ids.some(id=>id==='lesson-14-stage-l14-mission')).toBeTruthy();
 
   await jump(page,5,'l14-source-scale');
-  await page.locator('.cat-mentor-actions').getByRole('button',{name:/Подсказка/}).click();
+  await clickCatMentorAction(page,/Подсказка/);
   await expect.poll(()=>log.ids.some(id=>id==='mentor-l14-scale-hint')).toBeTruthy();
   await expect(page.locator('.cat-mentor-bubble')).toContainText('физическую длину одного единичного отрезка');
 

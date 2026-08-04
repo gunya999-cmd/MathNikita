@@ -2,6 +2,7 @@ import { expect,test,type Page } from '@playwright/test';
 import { extendedPracticeLesson13 } from '../src/data/extendedPracticeLesson13';
 import { lessonThirteenMastery } from '../src/data/lessonThirteenMastery';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
 const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson13.tasks,...lessonThirteenMastery];
 type MainActivity={stageIndex:number;stageId:string;type:'choice'|'input'|'order';answer:string|string[]};
@@ -30,7 +31,7 @@ async function mockNarration(page:Page,log:NarrationLog){
 async function openLesson(page:Page){await page.goto('/',{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:/Открыть урок 13:/}).click();await page.locator('.lesson-opening-start').click();await expect(page.locator('[data-stage-id="l13-story"]')).toBeVisible()}
 async function jump(page:Page,stageIndex:number,stageId:string){await page.evaluate(({stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:13,stageIndex}})),{stageIndex});await expect(page.locator(`[data-stage-id="${stageId}"]`)).toBeVisible()}
 async function solveMain(page:Page,e:MainActivity){await jump(page,e.stageIndex,e.stageId);if(e.type==='choice')await page.locator('.choice-grid').getByRole('button',{name:String(e.answer),exact:true}).click();else if(e.type==='input')await page.locator('.inline-answer input').fill(String(e.answer));else for(const item of e.answer as string[])await page.locator('.order-bank').getByRole('button',{name:item,exact:true}).click();await page.locator('.check-button').click();await expect(page.locator('.instant-feedback.good')).toBeVisible()}
-async function solveMandatory(page:Page,task:ExtendedPracticeTask){const p=page.locator('.extended-practice');await expect(p).toHaveAttribute('data-practice-task',task.id);if(task.type==='choice')await p.locator('.extended-practice-options').getByRole('button',{name:task.answer,exact:true}).click();else if(task.type==='multi-input'){const inputs=p.locator('.extended-practice-multi input');await expect(inputs).toHaveCount(task.fields.length);for(let i=0;i<task.fields.length;i++)await inputs.nth(i).fill(task.fields[i].answers[0])}else await p.locator('.extended-practice-input input').fill(task.answers[0]);await p.locator('.extended-practice-check').click();await expect(p.locator('.extended-practice-feedback.is-correct')).toBeVisible();await p.locator('.extended-practice-next').click()}
+async function solveMandatory(page:Page,task:ExtendedPracticeTask){await answerMandatoryPractice(page.locator('.extended-practice'),task)}
 
 test('lesson 13 scale math, visuals and all 14 main activities are correct',async({page})=>{
   await mockNarration(page,{ids:[]});await openLesson(page);
@@ -68,7 +69,7 @@ test('lesson 13 completes all 18 mandatory cards, reflection and persistent rese
 
 test('lesson 13 uses Sulafat in core, mandatory practice and both Pythagoras layers',async({page})=>{
   const log:NarrationLog={ids:[]};await mockNarration(page,log);await openLesson(page);await expect.poll(()=>log.ids.some(id=>id==='lesson-13-stage-l13-story')).toBeTruthy();
-  await jump(page,2,'l13-diagnostic');await page.locator('.cat-mentor-actions').getByRole('button',{name:/Подсказка/}).click();await expect.poll(()=>log.ids.some(id=>id==='mentor-l13-scale-hint')).toBeTruthy();await expect(page.locator('.cat-mentor-bubble')).toContainText('разность подписанных значений');
+  await jump(page,2,'l13-diagnostic');await clickCatMentorAction(page,/Подсказка/);await expect.poll(()=>log.ids.some(id=>id==='mentor-l13-scale-hint')).toBeTruthy();await expect(page.locator('.cat-mentor-bubble')).toContainText('разность подписанных значений');
   await jump(page,21,'l13-summary');await expect(page.locator('.cat-mentor-bubble')).not.toContainText('Урок завершён');await expect(page.locator('.extended-practice-voice')).toContainText('Sulafat');await expect.poll(()=>log.ids.some(id=>id==='lesson-13-practice-l13-extra-1')).toBeTruthy();
   await page.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();await expect.poll(()=>log.ids.some(id=>id==='mentor-practice-13-l13-extra-1-hint')).toBeTruthy();await expect(page.locator('.practice-pythagoras > small')).toContainText('Sulafat');
 });

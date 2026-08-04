@@ -3,7 +3,7 @@ import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { extendedPracticeSetResponseCount } from '../src/data/extendedPracticeTypes';
 
 async function clickCss(page:Page,selector:string){const clicked=await page.evaluate(selector=>{const element=document.querySelector<HTMLElement>(selector);if(!element)return false;element.click();return true},selector);expect(clicked,`Expected ${selector} to be clickable`).toBe(true)}
-async function openLessonSix(page:Page){const opened=await page.evaluate(()=>{const buttons=Array.from(document.querySelectorAll<HTMLButtonElement>('.course-lesson-grid > button.is-interactive'));const button=buttons[5];if(!button)return false;button.click();return true});expect(opened).toBe(true);await expect(page.getByRole('heading',{name:'Отрезок. Длина отрезка'}).first()).toBeVisible();await clickCss(page,'.lesson-opening-start')}
+async function openLessonSix(page:Page){const button=page.getByRole('button',{name:/Открыть урок 6:/});await expect(button).toBeVisible();await button.click();await expect(page.getByRole('heading',{name:'Отрезок. Длина отрезка'}).first()).toBeVisible();await clickCss(page,'.lesson-opening-start')}
 
 const mainResults={
   'l6-a1':true,'l6-a2':true,'l6-a3':true,'l6-a4':true,'l6-a5':true,
