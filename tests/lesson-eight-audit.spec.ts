@@ -2,6 +2,7 @@ import { expect,test,type Page } from '@playwright/test';
 import { extendedPracticeLesson8 } from '../src/data/extendedPracticeLesson8';
 import { buildMasteryPractice } from '../src/data/masteryPracticeGenerator';
 import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
 const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson8.tasks,...buildMasteryPractice(8)];
 
@@ -28,20 +29,7 @@ async function jump(page:Page,stageIndex:number,stageId:string){
 }
 
 async function solveMandatoryTask(page:Page,task:ExtendedPracticeTask){
-  const practice=page.locator('.extended-practice');
-  await expect(practice).toHaveAttribute('data-practice-task',task.id);
-  if(task.type==='choice'){
-    await practice.locator('.extended-practice-options').getByRole('button',{name:task.answer,exact:true}).click();
-  }else if(task.type==='multi-input'){
-    const inputs=practice.locator('.extended-practice-multi input');
-    await expect(inputs).toHaveCount(task.fields.length);
-    for(let index=0;index<task.fields.length;index++)await inputs.nth(index).fill(task.fields[index].answers[0]);
-  }else{
-    await practice.locator('.extended-practice-input input').fill(task.answers[0]);
-  }
-  await practice.locator('.extended-practice-check').click();
-  await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
-  await practice.locator('.extended-practice-next').click();
+  await answerMandatoryPractice(page.locator('.extended-practice'),task);
 }
 
 test('lesson 8 definition, source tasks and diagrams are mathematically correct',async({page})=>{
@@ -66,7 +54,7 @@ test('lesson 8 definition, source tasks and diagrams are mathematically correct'
   await expect(page.locator('.instant-feedback.good')).toContainText('AB = AC − BC = 8 − 2 = 6 см');
   await expect(page.locator('.instant-feedback.good')).toContainText('AD = AB + BD = 6 + 6 = 12 см');
 
-  await page.locator('.cat-mentor-actions').getByRole('button',{name:/Дай пример/}).click();
+  await clickCatMentorAction(page,/Дай пример/);
   await expect(page.locator('.cat-mentor-bubble')).toContainText('AB = AC − BC = 8 − 2 = 6');
 
   await jump(page,11,'l8-practice3');
@@ -151,7 +139,7 @@ test('lesson 8 prepares Sulafat narration for lesson, practice and both Pythagor
   await expect.poll(()=>log.ids.some(id=>id==='lesson-08-stage-l8-story')).toBeTruthy();
 
   await jump(page,10,'l8-practice2');
-  await page.locator('.cat-mentor-actions').getByRole('button',{name:/Подсказка/}).click();
+  await clickCatMentorAction(page,/Подсказка/);
   await expect.poll(()=>log.ids.some(id=>id==='mentor-l8-practice-hint')).toBeTruthy();
 
   await jump(page,22,'l8-summary');
