@@ -10,6 +10,7 @@ on:
       - 'src/ExtendedPracticeLab.tsx'
       - 'src/LessonCourseShell.tsx'
       - 'tests/lessons-one-to-five-*.spec.ts'
+      - 'tests/lessons-one-to-four-*.spec.ts'
       - '.github/workflows/lessons1-5-hard-retest.yml'
   workflow_dispatch:
 
@@ -18,9 +19,9 @@ permissions:
 
 jobs:
   chromium-voice:
-    name: Chromium · Sulafat every stage 1-5
+    name: Chromium · Sulafat + Pythagoras 1-5
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,8 +29,12 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps chromium
-      - name: Verify actual Sulafat playback on every stage
-        run: npx playwright test tests/lessons-one-to-five-every-stage-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Verify actual Sulafat playback on every stage and Practice Pythagoras
+        run: >-
+          npx playwright test
+          tests/lessons-one-to-five-every-stage-voice.spec.ts
+          tests/lessons-one-to-four-pythagoras-voice.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -39,9 +44,9 @@ jobs:
           retention-days: 7
 
   webkit-voice:
-    name: iPad WebKit · Sulafat every stage 1-5
+    name: iPad WebKit · Sulafat + Pythagoras 1-5
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -49,8 +54,12 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps webkit
-      - name: Verify actual Sulafat playback on every stage
-        run: npx playwright test tests/lessons-one-to-five-every-stage-voice.spec.ts --workers=1
+      - name: Verify actual Sulafat playback on every stage and Practice Pythagoras
+        run: >-
+          npx playwright test
+          tests/lessons-one-to-five-every-stage-voice.spec.ts
+          tests/lessons-one-to-four-pythagoras-voice.spec.ts
+          --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
