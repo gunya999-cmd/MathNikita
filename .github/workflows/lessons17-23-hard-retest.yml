@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - 'src/VoiceNarrator.tsx'
+      - 'src/CatMentor.tsx'
+      - 'src/PracticePythagoras.tsx'
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'src/LessonCourseShell.tsx'
       - 'tests/lesson-seventeen-ipad.spec.ts'
       - 'tests/lesson-eighteen-ipad.spec.ts'
       - 'tests/lesson-nineteen-ipad.spec.ts'
