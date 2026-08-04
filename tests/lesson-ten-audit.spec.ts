@@ -1,10 +1,11 @@
 import { expect,test,type Page } from '@playwright/test';
-import { extendedPracticeLesson10 } from '../src/data/extendedPracticeLesson10';
-import { lessonTenMastery } from '../src/data/lessonTenMastery';
-import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
-const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson10.tasks,...lessonTenMastery];
+const mandatoryPractice=extendedPracticeByLesson[10];
+const mandatoryTasks:ExtendedPracticeTask[]=mandatoryPractice.tasks;
+const mandatoryResponseCount=extendedPracticeSetResponseCount(mandatoryPractice);
 
 type MainActivity={stageIndex:number;stageId:string;type:'choice'|'input'|'order';answer:string|string[]};
 const mainActivities:MainActivity[]=[
@@ -107,7 +108,7 @@ test('lesson 10 ignores stale v1 lesson and practice completion state',async({pa
 
   await jump(page,22,'l10-summary');
   await expect(page.locator('.summary-card')).toContainText('Основная часть ✓');
-  await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice-header')).toContainText(`${mandatoryTasks.length} заданий · ${mandatoryResponseCount} проверяемых ответов`);
   await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l10-p1');
 });
 
@@ -116,10 +117,10 @@ test('lesson 10 completes every mandatory task, final reflection, and persistent
   await openLessonTen(page);
   await jump(page,22,'l10-summary');
 
-  expect(mandatoryTasks).toHaveLength(18);
+  expect(mandatoryTasks).toHaveLength(20);
   for(const task of mandatoryTasks)await solveMandatoryTask(page,task);
 
-  await expect(page.locator('.extended-practice.is-finished')).toContainText('Решены все 18 заданий и заполнены 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice.is-finished')).toContainText(`Решены все ${mandatoryTasks.length} заданий и заполнены ${mandatoryResponseCount} проверяемых ответов`);
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Плоскость бесконечна. Прямая продолжается в обе стороны и не имеет концов, а луч имеет начало и продолжается только в одном направлении. Через две различные точки проходит ровно одна прямая, а в названии луча первая буква обозначает его начало.');

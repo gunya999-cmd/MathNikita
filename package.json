@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/clean-audio-manifest.mjs",
+    "prebuild": "node scripts/clean-audio-manifest.mjs && node scripts/write-build-version.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test:ipad": "playwright test",
     "cf:deploy": "npm run build && npx wrangler deploy",
-    "cf:deploy:api": "npx wrangler deploy"
+    "cf:deploy:api": "node scripts/write-build-version.mjs && npx wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",

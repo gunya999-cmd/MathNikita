@@ -1,10 +1,11 @@
 import { expect,test,type Page } from '@playwright/test';
-import { extendedPracticeLesson15 } from '../src/data/extendedPracticeLesson15';
-import { lessonFifteenMastery } from '../src/data/lessonFifteenMastery';
-import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
-const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson15.tasks,...lessonFifteenMastery];
+const mandatoryPractice=extendedPracticeByLesson[15];
+const mandatoryTasks:ExtendedPracticeTask[]=mandatoryPractice.tasks;
+const mandatoryResponseCount=extendedPracticeSetResponseCount(mandatoryPractice);
 
 type MainActivity={stageIndex:number;stageId:string;type:'choice'|'input';answer:string};
 const mainActivities:MainActivity[]=[
@@ -188,7 +189,7 @@ test('lesson 15 migrates stale v1 lesson, practice, completion, reflection and o
   await expect(summary).toContainText('Повторить');
   await expect(summary).not.toContainText('Основная часть ✓');
   await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
-  await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice-header')).toContainText(`${mandatoryTasks.length} заданий · ${mandatoryResponseCount} проверяемых ответов`);
   await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l15-extra-1');
 });
 
@@ -197,10 +198,10 @@ test('lesson 15 completes all mandatory work, final reflection, and persistent r
   await openLessonFifteen(page);
   await jump(page,24,'l15-summary');
 
-  expect(mandatoryTasks).toHaveLength(18);
+  expect(mandatoryTasks).toHaveLength(20);
   for(const task of mandatoryTasks)await solveMandatoryTask(page,task);
 
-  await expect(page.locator('.extended-practice.is-finished')).toContainText('Решены все 18 заданий и заполнены 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice.is-finished')).toContainText(`Решены все ${mandatoryTasks.length} заданий и заполнены ${mandatoryResponseCount} проверяемых ответов`);
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Я различаю единичный отрезок, крупное деление и физическую длину рисунка. Умею читать и ставить точки, искать x плюс-минус расстояние и восстанавливать начало или конец стрелки.');

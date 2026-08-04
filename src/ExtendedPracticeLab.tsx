@@ -20,7 +20,7 @@ function loadDraft(lessonNumber:number,taskId:string):PracticeDraft|null{
 }
 function saveDraft(lessonNumber:number,draft:PracticeDraft){localStorage.setItem(draftStorageKey(lessonNumber),JSON.stringify(draft))}
 function clearDraft(lessonNumber:number){localStorage.removeItem(draftStorageKey(lessonNumber))}
-function summaryStageActive(){const stage=typeof document==='undefined'?null:document.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');return Boolean(stage?.dataset.stageId?.endsWith('-summary'))}
+function summaryStageActive(){const stage=typeof document==='undefined'?null:document.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');const stageId=stage?.dataset.stageId;return stageId==='summary'||Boolean(stageId?.endsWith('-summary'))}
 
 export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
   const practice=extendedPracticeByLesson[lessonNumber];

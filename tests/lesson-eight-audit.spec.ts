@@ -1,10 +1,11 @@
 import { expect,test,type Page } from '@playwright/test';
-import { extendedPracticeLesson8 } from '../src/data/extendedPracticeLesson8';
-import { buildMasteryPractice } from '../src/data/masteryPracticeGenerator';
-import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
-const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson8.tasks,...buildMasteryPractice(8)];
+const mandatoryPractice=extendedPracticeByLesson[8];
+const mandatoryTasks:ExtendedPracticeTask[]=mandatoryPractice.tasks;
+const mandatoryResponseCount=extendedPracticeSetResponseCount(mandatoryPractice);
 
 type NarrationLog={ids:string[]};
 
@@ -95,7 +96,7 @@ test('lesson 8 ignores stale wrong v1 progress and does not falsely complete at 
   await expect(page.locator('.summary-card')).toContainText('Основная часть ✓');
   await expect(page.locator('.summary-card')).toContainText('дальше — обязательная практика');
   await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
-  await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice-header')).toContainText(`${mandatoryTasks.length} заданий · ${mandatoryResponseCount} проверяемых ответов`);
 });
 
 test('lesson 8 completes every mandatory task, final reflection, and persistent reset',async({page})=>{
@@ -103,10 +104,10 @@ test('lesson 8 completes every mandatory task, final reflection, and persistent 
   await openLessonEight(page);
   await jump(page,22,'l8-summary');
 
-  expect(mandatoryTasks).toHaveLength(18);
+  expect(mandatoryTasks).toHaveLength(20);
   for(const task of mandatoryTasks)await solveMandatoryTask(page,task);
 
-  await expect(page.locator('.extended-practice.is-finished')).toContainText('Решены все 18 заданий и заполнены 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice.is-finished')).toContainText(`Решены все ${mandatoryTasks.length} заданий и заполнены ${mandatoryResponseCount} проверяемых ответов`);
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Ломаная состоит из последовательно соединённых звеньев, соседние звенья меняют направление. Длина ломаной равна сумме длин всех её звеньев.');

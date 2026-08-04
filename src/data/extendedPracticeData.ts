@@ -1,5 +1,6 @@
 import type { ExtendedPracticeSet } from './extendedPracticeTypes';
 import { buildMasteryPractice } from './masteryPracticeGenerator';
+import { buildPracticeTopUp } from './practiceTopUpGenerator';
 import { lessonFiveMastery } from './lessonFiveMastery';
 import { lessonSixMastery } from './lessonSixMastery';
 import { lessonNineMastery } from './lessonNineMastery';
@@ -95,7 +96,15 @@ export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = Obj
   Object.entries(basePracticeByLesson).map(([key,practice])=>{
     const lessonNumber=Number(key);
     const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:lessonNumber===9?lessonNineMastery:lessonNumber===10?lessonTenMastery:lessonNumber===11?lessonElevenMastery:lessonNumber===12?lessonTwelveMastery:lessonNumber===13?lessonThirteenMastery:lessonNumber===14?lessonFourteenMastery:lessonNumber===15?lessonFifteenMastery:lessonNumber===16?lessonSixteenMastery:buildMasteryPractice(lessonNumber);
-    return [lessonNumber,{...practice,tasks:[...practice.tasks,...masteryTasks]}];
+    if(lessonNumber===20)return [lessonNumber,{...practice,tasks:[...practice.tasks,...masteryTasks]}];
+    const target=20;
+    const primaryNeeded=Math.max(0,target-practice.tasks.length);
+    const primary=masteryTasks.slice(0,primaryNeeded);
+    const topUpNeeded=Math.max(0,target-practice.tasks.length-primary.length);
+    const topUp=buildPracticeTopUp(lessonNumber).slice(0,topUpNeeded);
+    const tasks=[...practice.tasks,...primary,...topUp];
+    if(tasks.length!==target)throw new Error(`Lesson ${lessonNumber}: mandatory practice must contain ${target} tasks, got ${tasks.length}`);
+    return [lessonNumber,{...practice,tasks}];
   }),
 );
 

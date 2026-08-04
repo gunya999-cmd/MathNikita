@@ -1,10 +1,11 @@
 import { expect,test,type Page } from '@playwright/test';
-import { extendedPracticeLesson9 } from '../src/data/extendedPracticeLesson9';
-import { lessonNineMastery } from '../src/data/lessonNineMastery';
-import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
-const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson9.tasks,...lessonNineMastery];
+const mandatoryPractice=extendedPracticeByLesson[9];
+const mandatoryTasks:ExtendedPracticeTask[]=mandatoryPractice.tasks;
+const mandatoryResponseCount=extendedPracticeSetResponseCount(mandatoryPractice);
 
 type NarrationLog={ids:string[]};
 
@@ -53,6 +54,10 @@ test('lesson 9 definitions, equal pairs, source tasks and diagrams are mathemati
   await jump(page,9,'l9-practice2');
   await expect(page.locator('.l7-chain-model > span')).toHaveText(['A','B','C','D']);
   await expect(page.locator('.l7-chain-model strong')).toContainText('AC = AB + BC');
+  const mentorBubble=page.locator('.cat-mentor-bubble');
+  await clickCatMentorAction(page,/Дай пример/);
+  await expect(mentorBubble).toContainText(/AB = AC − BC = 8 − 2 = 6 см\. Затем AD = AB \+ BD = 6 \+ 6 = 12 см\./);
+
   const task71=page.locator('.inline-answer input');
   await task71.fill('16');
   await page.locator('.check-button').click();
@@ -61,10 +66,6 @@ test('lesson 9 definitions, equal pairs, source tasks and diagrams are mathemati
   await page.locator('.check-button').click();
   await expect(page.locator('.instant-feedback.good')).toContainText('AB = AC − BC = 8 − 2 = 6 см');
   await expect(page.locator('.instant-feedback.good')).toContainText('AD = AB + BD = 6 + 6 = 12 см');
-
-  const mentorBubble=page.locator('.cat-mentor-bubble');
-  await clickCatMentorAction(page,/Дай пример/);
-  await expect(mentorBubble).toContainText(/AB = AC − BC = 8 − 2 = 6 см\. Затем AD = AB \+ BD = 6 \+ 6 = 12 см\./);
 
   await jump(page,20,'l9-challenge');
   await expect(page.locator('.polyline-ruler strong')).toContainText('3 = 13 − 5 − 5');
@@ -89,7 +90,7 @@ test('lesson 9 ignores stale wrong v1 lesson and practice progress and does not 
   await expect(page.locator('.summary-card')).toContainText('Основная часть ✓');
   await expect(page.locator('.summary-card')).toContainText('дальше — обязательная практика');
   await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
-  await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice-header')).toContainText(`${mandatoryTasks.length} заданий · ${mandatoryResponseCount} проверяемых ответов`);
   await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l9-p1');
 });
 
@@ -98,10 +99,10 @@ test('lesson 9 completes every mandatory task, final reflection, and persistent 
   await openLessonNine(page);
   await jump(page,22,'l9-summary');
 
-  expect(mandatoryTasks).toHaveLength(18);
+  expect(mandatoryTasks).toHaveLength(20);
   for(const task of mandatoryTasks)await solveMandatoryTask(page,task);
 
-  await expect(page.locator('.extended-practice.is-finished')).toContainText('Решены все 18 заданий и заполнены 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice.is-finished')).toContainText(`Решены все ${mandatoryTasks.length} заданий и заполнены ${mandatoryResponseCount} проверяемых ответов`);
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Для отрезка я сначала определяю целое и части, а для ломаной — все звенья и повороты. Перед вычислением привожу длины к одной единице и только потом выбираю действие.');
