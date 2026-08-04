@@ -1,0 +1,51 @@
+name: Lessons 6-16 iPad WebKit matrix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/lessons6-16-webkit-matrix.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lesson:
+    name: iPad WebKit · lesson ${{ matrix.lesson }} strict audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        lesson: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Run strict lesson audit on iPad WebKit
+        shell: bash
+        run: |
+          case "${{ matrix.lesson }}" in
+            6) npx playwright test tests/lesson-six-ipad.spec.ts tests/lesson-six-mastery.spec.ts tests/lesson-six-marin-smoke.spec.ts --workers=1 ;;
+            7) npx playwright test tests/lesson-seven-audit.spec.ts --workers=1 ;;
+            8) npx playwright test tests/lesson-eight-audit.spec.ts --workers=1 ;;
+            9) npx playwright test tests/lesson-nine-audit.spec.ts --workers=1 ;;
+            10) npx playwright test tests/lesson-ten-audit.spec.ts --workers=1 ;;
+            11) npx playwright test tests/lesson-eleven-audit.spec.ts --workers=1 ;;
+            12) npx playwright test tests/lesson-twelve-audit.spec.ts --workers=1 ;;
+            13) npx playwright test tests/lesson-thirteen-audit.spec.ts --workers=1 ;;
+            14) npx playwright test tests/lesson-fourteen-audit.spec.ts --workers=1 ;;
+            15) npx playwright test tests/lesson-fifteen-audit.spec.ts --workers=1 ;;
+            16) npx playwright test tests/lesson-sixteen-audit.spec.ts tests/lesson-sixteen-feedback-audit.spec.ts --workers=1 ;;
+          esac
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-lesson-${{ matrix.lesson }}-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
