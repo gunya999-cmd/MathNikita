@@ -91,16 +91,18 @@ export function LessonPlayer(){
 
   useEffect(()=>{const payload:SavedProgress={version:2,stageIndex,answer,ordered,checked,correct,modelValue,results,completedAt};localStorage.setItem(STORAGE_KEY,JSON.stringify(payload))},[stageIndex,answer,ordered,checked,correct,modelValue,results,completedAt]);
   useEffect(()=>{if(stage.kind==='summary'&&!completedAt)setCompletedAt(new Date().toISOString())},[stage.kind,completedAt]);
+  useEffect(()=>{const handler=(event:Event)=>{const detail=(event as CustomEvent<{lessonNumber:number;stageIndex:number}>).detail;if(detail?.lessonNumber===1)goTo(detail.stageIndex)};window.addEventListener('mathnikita-go-to-stage',handler);return()=>window.removeEventListener('mathnikita-go-to-stage',handler)},[]);
 
   function resetStage(){setAnswer('');setOrdered([]);setChecked(false);setCorrect(false)}
-  function go(delta:number){setStageIndex(index=>Math.min(Math.max(index+delta,0),lessonOneStages.length-1));resetStage();window.scrollTo({top:0,behavior:'smooth'})}
+  function goTo(index:number){setStageIndex(Math.min(Math.max(index,0),lessonOneStages.length-1));resetStage();window.scrollTo({top:0,behavior:'smooth'})}
+  function go(delta:number){goTo(stageIndex+delta)}
   function resetLesson(){localStorage.removeItem(STORAGE_KEY);setStageIndex(0);setAnswer('');setOrdered([]);setChecked(false);setCorrect(false);setModelValue(1);setResults({});setCompletedAt(undefined);setRestored(false);window.scrollTo({top:0,behavior:'smooth'})}
   function submit(value?:string){if(!activity)return;const isCorrect=activity.type==='order'?JSON.stringify(ordered)===JSON.stringify(activity.answer):normalize(value??answer)===normalize(String(activity.answer));setCorrect(isCorrect);setChecked(true);setResults(previous=>({...previous,[activity.id]:isCorrect}))}
 
   const visualModel=useMemo(()=>{
     if(stage.id==='story')return <div className="dual-question-model"><div><span>📚📚📚📚📚</span><b>Счёт</b><small>5 книг</small></div><div><span className="measure-bar"><i/><i/><i/><i/><i/></span><b>Измерение</b><small>5 мерок</small></div></div>;
     if(stage.id==='count-rule')return <div className="theory-scene"><div className="pifagor-bubble"><b>Кот Пифагор</b><span>Каждой книге — одно число. Последнее число отвечает на вопрос «сколько всего?»</span></div><div className="object-count" aria-label="Пять книг">{['📘','📗','📙','📕','📓'].map((item,index)=><span key={index} style={{animationDelay:`${index*90}ms`}}>{item}<small>{index+1}</small></span>)}</div></div>;
-    if(stage.id==='measure')return <div className="ruler-model"><div className="ruler-segments">{[1,2,3,4,5].map(number=><span key={number}>{number}</span>)}</div><b>AB = 5 см</b><small>Пять одинаковых мерок по 1 см</small></div>;
+    if(stage.id==='measure')return <div className="ruler-model"><div className="ruler-segments">{[1,2,3,4,5].map(number=><span key={number}>{number}</span>)}<b>…</b></div><b>AB = 5 см</b><small>Пять одинаковых мерок по 1 см</small></div>;
     if(stage.id==='natural-check')return <div className="set-model"><b>N</b><span>1</span><span>2</span><span>3</span><span>4</span><i>…</i></div>;
     if(stage.id==='row')return <div className="natural-row-model">{[1,2,3,4,5,6].map(number=><span key={number}>{number}</span>)}<b>…</b></div>;
     if(stage.id==='model')return <div className="successor-model"><button onClick={()=>setModelValue(value=>Math.max(1,value-1))}>−1</button><div><small>текущее число</small><b>{modelValue}</b><span>следующее: {modelValue+1}</span></div><button onClick={()=>setModelValue(value=>value+1)}>+1</button></div>;
