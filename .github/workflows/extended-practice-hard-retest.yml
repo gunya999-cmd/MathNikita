@@ -14,7 +14,7 @@ on:
       - 'src/data/masteryPracticeGenerator.ts'
       - 'src/data/practiceTopUpGenerator.ts'
       - 'src/data/lesson*Mastery.ts'
-      - 'tests/extended-practice-all-lessons.spec.ts'
+      - 'tests/extended-practice-*.spec.ts'
       - '.github/workflows/extended-practice-hard-retest.yml'
   workflow_dispatch:
 
@@ -22,6 +22,18 @@ permissions:
   contents: read
 
 jobs:
+  practice-contract:
+    name: Contract · exactly 20 mandatory tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright test tests/extended-practice-count.spec.ts --config=playwright.desktop.config.ts --workers=1
+
   hard-practice:
     name: ${{ matrix.label }}
     runs-on: ubuntu-latest
