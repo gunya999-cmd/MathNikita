@@ -85,6 +85,7 @@ test('explicit cloud login refreshes live storage even when the same profile own
   await register(page);
   await page.getByRole('button',{name:/Я сохранил коды/}).click();
   await expect(page.getByRole('button',{name:/Сменить ученика\. Сейчас Никита/})).toBeVisible();
+  await expect(page.getByLabel(/Облако: Прогресс сохранён/)).toBeVisible();
   await page.evaluate(()=>localStorage.setItem('mathnikita:profile-test-marker','stale-local'));
   cloud.setEntries({'mathnikita:profile-test-marker':'newer-cloud'});cloud.setRevision(9);
   await page.getByRole('button',{name:/Сменить ученика\. Сейчас Никита/}).click();
