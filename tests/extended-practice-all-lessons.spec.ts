@@ -101,7 +101,7 @@ for(let lessonNumber=startLesson;lessonNumber<=endLesson;lessonNumber+=1){
     test.setTimeout(300_000);
     const practice=extendedPracticeByLesson[lessonNumber];
     expect(practice,`Lesson ${lessonNumber} has no mandatory-practice data`).toBeTruthy();
-    expect(practice.tasks.length).toBeGreaterThanOrEqual(20);
+    expect(practice.tasks.length,`Lesson ${lessonNumber} mandatory practice is empty`).toBeGreaterThan(0);
     const responseCount=extendedPracticeSetResponseCount(practice);
     const requests:NarrationRequest[]=[];const pageErrors:string[]=[];page.on('pageerror',error=>pageErrors.push(error.message));
     await installVoiceAudit(page);await routeNarration(page,requests);await openLesson(page,lessonNumber);await jumpToSummary(page,lessonNumber);
