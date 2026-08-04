@@ -105,11 +105,21 @@ for(let lessonNumber=1;lessonNumber<=4;lessonNumber+=1){
     await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex:total-1});
     await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${total} из ${total}`,{timeout:6_000});
     await expect(page.locator('.lesson-reflection .extended-practice[data-practice-task]')).toBeVisible({timeout:6_000});
-    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-stop-narration')));
 
     const task=page.locator('.lesson-reflection .extended-practice[data-practice-task]');
     const taskId=await task.getAttribute('data-practice-task');
     expect(taskId).toBeTruthy();
+
+    // ExtendedPracticeLab schedules the first task's automatic narration shortly after
+    // the summary becomes active. Wait for that real Audio.play() and for its UI to
+    // return to idle before exercising Pythagoras, otherwise the later auto audio-request
+    // can legitimately stop the first mentor action and make this audit racey.
+    const practiceNarrationId=`lesson-${String(lessonNumber).padStart(2,'0')}-practice-${taskId}`;
+    await expect.poll(()=>requests.some(item=>item.id===practiceNarrationId),{timeout:8_000,message:`Lesson ${lessonNumber}: mandatory-practice auto narration was not requested`}).toBeTruthy();
+    await expect.poll(()=>playedCount(page,practiceNarrationId),{timeout:8_000,message:`Lesson ${lessonNumber}: mandatory-practice auto narration never reached Audio.play()`}).toBeGreaterThan(0);
+    await expect(task.locator('.extended-practice-voice button')).toHaveText('▶ Озвучить задание',{timeout:8_000});
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-stop-narration')));
+
     const pythagoras=task.locator('.practice-pythagoras');
     await expect(pythagoras).toBeVisible();
     await expect(pythagoras.locator('.practice-pythagoras-actions button')).toHaveCount(4);
@@ -124,7 +134,7 @@ for(let lessonNumber=1;lessonNumber<=4;lessonNumber+=1){
       const request=requests.find(item=>item.id===expectedId)!;
       expect(request.version).toBe('ru-teacher-gemini-sulafat-v2');
       expect(request.text.trim().length).toBeGreaterThan(20);
-      await page.waitForTimeout(60);
+      await expect(pythagoras.getByRole('button',{name:'Озвучить подсказку Пифагора'})).toBeVisible({timeout:8_000});
     }
 
     expect(pageErrors,`Runtime exception in lesson ${lessonNumber}: ${pageErrors.join(' | ')}`).toEqual([]);
