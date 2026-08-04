@@ -35,16 +35,5 @@ export function MentorResponsiveBehavior({ rootRef, lessonNumber, mode }: Props)
     return () => window.clearTimeout(timer);
   }, [rootRef, lessonNumber, mode]);
 
-  useEffect(() => {
-    if (mode !== 'lesson') return;
-    if (!window.matchMedia('(max-width: 1279px)').matches) return;
-    const timer = window.setTimeout(() => {
-      const root = rootRef.current;
-      const openButton = root?.querySelector<HTMLButtonElement>('button[aria-label="Открыть наставника Пифагора"]');
-      openButton?.click();
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [rootRef, lessonNumber, mode]);
-
   return null;
 }
