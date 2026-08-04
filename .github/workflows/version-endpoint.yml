@@ -1,3 +1,4 @@
+# Retrigger production deployment after provisioning the dedicated D1-capable token.
 name: Worker version endpoint
 
 on:
