@@ -12,6 +12,7 @@ on:
       - 'src/stageNarrationSequence.ts'
       - 'src/data/extendedPractice*.ts'
       - 'src/data/masteryPracticeGenerator.ts'
+      - 'src/data/practiceTopUpGenerator.ts'
       - 'src/data/lesson*Mastery.ts'
       - 'tests/extended-practice-all-lessons.spec.ts'
       - '.github/workflows/extended-practice-hard-retest.yml'
