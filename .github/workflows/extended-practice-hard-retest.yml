@@ -1,0 +1,87 @@
+name: Extended practice 1-23 hard retest
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/ExtendedPracticeLab.tsx'
+      - 'src/PracticePythagoras.tsx'
+      - 'src/LessonReflection.tsx'
+      - 'src/extendedPracticeEngine.ts'
+      - 'src/practiceNarration.ts'
+      - 'src/stageNarrationSequence.ts'
+      - 'src/data/extendedPractice*.ts'
+      - 'src/data/masteryPracticeGenerator.ts'
+      - 'src/data/lesson*Mastery.ts'
+      - 'tests/extended-practice-all-lessons.spec.ts'
+      - '.github/workflows/extended-practice-hard-retest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hard-practice:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Chromium · mandatory practice 1-6
+            browser: chromium
+            start: 1
+            end: 6
+          - label: Chromium · mandatory practice 7-12
+            browser: chromium
+            start: 7
+            end: 12
+          - label: Chromium · mandatory practice 13-18
+            browser: chromium
+            start: 13
+            end: 18
+          - label: Chromium · mandatory practice 19-23
+            browser: chromium
+            start: 19
+            end: 23
+          - label: iPad WebKit · mandatory practice 1-6
+            browser: webkit
+            start: 1
+            end: 6
+          - label: iPad WebKit · mandatory practice 7-12
+            browser: webkit
+            start: 7
+            end: 12
+          - label: iPad WebKit · mandatory practice 13-18
+            browser: webkit
+            start: 13
+            end: 18
+          - label: iPad WebKit · mandatory practice 19-23
+            browser: webkit
+            start: 19
+            end: 23
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Complete every mandatory-practice task, voice, persistence and final gate
+        env:
+          PRACTICE_START: ${{ matrix.start }}
+          PRACTICE_END: ${{ matrix.end }}
+        run: |
+          if [ "${{ matrix.browser }}" = "chromium" ]; then
+            npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+          else
+            npx playwright test tests/extended-practice-all-lessons.spec.ts --workers=1
+          fi
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: extended-practice-${{ matrix.browser }}-${{ matrix.start }}-${{ matrix.end }}-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
