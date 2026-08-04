@@ -79,11 +79,14 @@ for(let lessonNumber=17;lessonNumber<=23;lessonNumber+=1){
       await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
       const scope=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');
       await expect(scope).toBeVisible({timeout:5_000});
+      const special=specialStageIds[lessonNumber];
+      if(special){
+        await expect(scope).toHaveAttribute('data-stage-id',special[stageIndex],{timeout:5_000});
+      }else{
+        await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из ${total}`,{timeout:5_000});
+      }
       const stageId=await scope.getAttribute('data-stage-id');
       expect(stageId,`Missing data-stage-id in lesson ${lessonNumber}, stage ${stageIndex+1}`).toBeTruthy();
-      const special=specialStageIds[lessonNumber];
-      if(special)expect(stageId).toBe(special[stageIndex]);
-      else await expect(page.locator('.lesson-runtime:not([hidden]) .stage-counter')).toContainText(`Этап ${stageIndex+1} из ${total}`,{timeout:5_000});
       seenStageIds.add(stageId!);
 
       const expectedId=`lesson-${String(lessonNumber).padStart(2,'0')}-stage-${stageId}`;
