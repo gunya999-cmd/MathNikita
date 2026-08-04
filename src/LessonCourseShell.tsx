@@ -63,6 +63,7 @@ export function LessonCourseShell(){
   const[mentorSignal,setMentorSignal]=useState<MentorSignal>(emptyMentorSignal);
   const shellRef=useRef<HTMLDivElement>(null);
   const feedbackTimerRef=useRef<number|null>(null);
+  const mentorManualActionVersionRef=useRef(0);
   const lesson=allRichLessons.find(item=>item.lessonNumber===selectedLesson)??allRichLessons[0];
   const officialLesson=yearLessonByNumber.get(selectedLesson);
   const isControlWork=selectedLesson===20;
@@ -119,15 +120,17 @@ export function LessonCourseShell(){
   function scheduleFeedbackAssessment(){
     if(isControlWork)return;
     if(feedbackTimerRef.current!==null)window.clearTimeout(feedbackTimerRef.current);
+    const manualActionVersionAtCheck=mentorManualActionVersionRef.current;
     feedbackTimerRef.current=window.setTimeout(()=>{
       const root=shellRef.current;
       if(!root)return;
+      const manualHelpChosenAfterCheck=mentorManualActionVersionRef.current>manualActionVersionAtCheck;
       const good=root.querySelector<HTMLElement>('.instant-feedback.good');
-      if(good){clearHints();signalMentor('correct');return}
+      if(good){clearHints();if(!manualHelpChosenAfterCheck)signalMentor('correct');return}
       const bad=root.querySelector<HTMLElement>('.instant-feedback.bad');
       const stage=root.querySelector<HTMLElement>('.interactive-stage');
       if(!bad||!stage)return;
-      signalMentor('wrong');
+      if(!manualHelpChosenAfterCheck)signalMentor('wrong');
       const prompt=stage.querySelector<HTMLElement>('.activity-area h3')?.textContent?.trim()??'Текущее задание';
       const stageTitle=stage.querySelector<HTMLElement>('.stage-copy h2')?.textContent?.trim()??'Задание';
       const fullExplanation=bad.dataset.explanation??bad.querySelector<HTMLElement>('span')?.textContent?.trim()??'Вернись к правилу урока и проверь каждый шаг.';
@@ -165,6 +168,7 @@ export function LessonCourseShell(){
   function handleCourseClick(event:MouseEvent<HTMLDivElement>){
     if(isControlWork)return;
     const target=event.target as HTMLElement;
+    if(target.closest('.cat-mentor-actions button'))mentorManualActionVersionRef.current+=1;
     if(target.closest('.check-button'))scheduleFeedbackAssessment();
     if(target.closest('.lesson-controls button')){stopVoice();clearHints();resetMentor()}
   }
