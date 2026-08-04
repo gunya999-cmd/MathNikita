@@ -1,10 +1,11 @@
 import { expect,test,type Page } from '@playwright/test';
-import { extendedPracticeLesson13 } from '../src/data/extendedPracticeLesson13';
-import { lessonThirteenMastery } from '../src/data/lessonThirteenMastery';
-import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
-const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson13.tasks,...lessonThirteenMastery];
+const mandatoryPractice=extendedPracticeByLesson[13];
+const mandatoryTasks:ExtendedPracticeTask[]=mandatoryPractice.tasks;
+const mandatoryResponseCount=extendedPracticeSetResponseCount(mandatoryPractice);
 type MainActivity={stageIndex:number;stageId:string;type:'choice'|'input'|'order';answer:string|string[]};
 const mainActivities:MainActivity[]=[
   {stageIndex:2,stageId:'l13-diagnostic',type:'input',answer:'5'},
@@ -57,12 +58,12 @@ test('lesson 13 migrates stale v1 state without blocking fresh analytics timing'
   await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:/Открыть урок 13:/}).click();await page.locator('.lesson-opening-start').click();await expect(page.locator('[data-stage-id="l13-story"]')).toBeVisible();
   const m=await page.evaluate(()=>({marker:localStorage.getItem('mathnikita:lesson-13-revision-v2-migrated'),legacyLesson:localStorage.getItem('mathnikita-lesson-13-progress-v1'),legacyPractice:localStorage.getItem('mathnikita:extended-practice:13:v1'),legacyDraft:localStorage.getItem('mathnikita:extended-practice:13:v1:draft'),completion:localStorage.getItem('mathnikita:lesson-complete:13'),reflection:localStorage.getItem('mathnikita:reflection:13'),timing:localStorage.getItem('mathnikita:lesson-timing:13:v1')}));
   expect(m.marker).toBe('1');expect(m.legacyLesson).toBeNull();expect(m.legacyPractice).toBeNull();expect(m.legacyDraft).toBeNull();expect(m.completion).toBeNull();expect(m.reflection).toBeNull();expect(m.timing).not.toBeNull();expect(m.timing).not.toContain('activeMs');expect(JSON.parse(m.timing!)).toMatchObject({version:1});
-  await jump(page,21,'l13-summary');const s=page.locator('.summary-card');await expect(s).toContainText('0/5');await expect(s).toContainText('0/6');await expect(s).toContainText('Повторить');await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l13-extra-1');
+  await jump(page,21,'l13-summary');const s=page.locator('.summary-card');await expect(s).toContainText('0/5');await expect(s).toContainText('0/6');await expect(s).toContainText('Повторить');await expect(page.locator('.extended-practice-header')).toContainText(`${mandatoryTasks.length} заданий · ${mandatoryResponseCount} проверяемых ответов`);await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l13-extra-1');
 });
 
-test('lesson 13 completes all 18 mandatory cards, reflection and persistent reset',async({page})=>{
-  await mockNarration(page,{ids:[]});await openLesson(page);await jump(page,21,'l13-summary');expect(mandatoryTasks).toHaveLength(18);for(const task of mandatoryTasks)await solveMandatory(page,task);
-  await expect(page.locator('.extended-practice.is-finished')).toContainText('Решены все 18 заданий и заполнены 48 проверяемых ответов');const final=page.locator('.reflection-final-step');await final.locator('textarea').fill('Для шкалы считаю промежутки и цену деления, а на координатном луче начинаю с O(0), единичного отрезка и направления.');await final.getByRole('button',{name:'Завершить урок'}).click();await expect(final).toContainText('Урок завершён ✓');expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-complete:13'))).not.toBeNull();
+test('lesson 13 completes all 20 mandatory cards, reflection and persistent reset',async({page})=>{
+  await mockNarration(page,{ids:[]});await openLesson(page);await jump(page,21,'l13-summary');expect(mandatoryTasks).toHaveLength(20);for(const task of mandatoryTasks)await solveMandatory(page,task);
+  await expect(page.locator('.extended-practice.is-finished')).toContainText(`Решены все ${mandatoryTasks.length} заданий и заполнены ${mandatoryResponseCount} проверяемых ответов`);const final=page.locator('.reflection-final-step');await final.locator('textarea').fill('Для шкалы считаю промежутки и цену деления, а на координатном луче начинаю с O(0), единичного отрезка и направления.');await final.getByRole('button',{name:'Завершить урок'}).click();await expect(final).toContainText('Урок завершён ✓');expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-complete:13'))).not.toBeNull();
   await page.getByRole('button',{name:'Начать заново'}).click();await expect(page.locator('[data-stage-id="l13-story"]')).toBeVisible();let p=await page.evaluate(()=>({completion:localStorage.getItem('mathnikita:lesson-complete:13'),reflection:localStorage.getItem('mathnikita:reflection:13'),practice:localStorage.getItem('mathnikita:extended-practice:13:v2')}));expect(p.completion).toBeNull();expect(p.reflection).toBeNull();expect(p.practice).toBe('0');
   await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:/Открыть урок 13:/}).click();await page.locator('.lesson-opening-start').click();await jump(page,21,'l13-summary');await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task',mandatoryTasks[0].id);p=await page.evaluate(()=>({completion:localStorage.getItem('mathnikita:lesson-complete:13'),reflection:localStorage.getItem('mathnikita:reflection:13'),practice:localStorage.getItem('mathnikita:extended-practice:13:v2')}));expect(p.completion).toBeNull();expect(p.reflection).toBeNull();expect(p.practice).toBe('0');
 });

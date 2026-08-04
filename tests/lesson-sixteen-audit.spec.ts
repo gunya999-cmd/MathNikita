@@ -1,10 +1,11 @@
 import { expect,test,type Locator,type Page } from '@playwright/test';
-import { extendedPracticeLesson16 } from '../src/data/extendedPracticeLesson16';
-import { lessonSixteenMastery } from '../src/data/lessonSixteenMastery';
-import type { ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from '../src/data/extendedPracticeTypes';
+import { extendedPracticeByLesson } from '../src/data/extendedPracticeData';
 import { answerMandatoryPractice,clickCatMentorAction } from './strictAuditUiHelpers';
 
-const mandatoryTasks:ExtendedPracticeTask[]=[...extendedPracticeLesson16.tasks,...lessonSixteenMastery];
+const mandatoryPractice=extendedPracticeByLesson[16];
+const mandatoryTasks:ExtendedPracticeTask[]=mandatoryPractice.tasks;
+const mandatoryResponseCount=extendedPracticeSetResponseCount(mandatoryPractice);
 
 type MainActivity={stageIndex:number;stageId:string;type:'choice'|'input'|'order';answer:string|string[]};
 const mainActivities:MainActivity[]=[
@@ -194,19 +195,19 @@ test('lesson 16 migrates stale v1 state without false completion',async({page})=
   await expect(summary).toContainText('Повторить');
   await expect(summary).not.toContainText('Основная часть ✓');
   await expect(page.locator('.reflection-completion-gate')).toContainText('Урок ещё не завершён');
-  await expect(page.locator('.extended-practice-header')).toContainText('18 заданий · 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice-header')).toContainText(`${mandatoryTasks.length} заданий · ${mandatoryResponseCount} проверяемых ответов`);
   await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l16-extra-1');
 });
 
-test('lesson 16 completes all 18 mandatory tasks, 48 responses, reflection and persistent reset',async({page})=>{
+test('lesson 16 completes all 20 mandatory tasks, 56 responses, reflection and persistent reset',async({page})=>{
   await mockNarration(page,{ids:[]});
   await openLessonSixteen(page);
   await jump(page,24,'l16-summary');
 
-  expect(mandatoryTasks).toHaveLength(18);
+  expect(mandatoryTasks).toHaveLength(20);
   for(const task of mandatoryTasks)await solveMandatoryTask(page,task);
 
-  await expect(page.locator('.extended-practice.is-finished')).toContainText('Решены все 18 заданий и заполнены 48 проверяемых ответов');
+  await expect(page.locator('.extended-practice.is-finished')).toContainText(`Решены все ${mandatoryTasks.length} заданий и заполнены ${mandatoryResponseCount} проверяемых ответов`);
   const finalStep=page.locator('.reflection-final-step');
   await expect(finalStep).toBeVisible();
   await finalStep.locator('textarea').fill('Я сначала сравниваю количество цифр, а при равенстве иду слева направо до первой различающейся цифры. Умею читать и записывать неравенства, сортировать числа и не включать строгие границы.');
