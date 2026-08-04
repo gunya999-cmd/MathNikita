@@ -54,6 +54,10 @@ test('lesson 9 definitions, equal pairs, source tasks and diagrams are mathemati
   await jump(page,9,'l9-practice2');
   await expect(page.locator('.l7-chain-model > span')).toHaveText(['A','B','C','D']);
   await expect(page.locator('.l7-chain-model strong')).toContainText('AC = AB + BC');
+  const mentorBubble=page.locator('.cat-mentor-bubble');
+  await clickCatMentorAction(page,/Дай пример/);
+  await expect(mentorBubble).toContainText(/AB = AC − BC = 8 − 2 = 6 см\. Затем AD = AB \+ BD = 6 \+ 6 = 12 см\./);
+
   const task71=page.locator('.inline-answer input');
   await task71.fill('16');
   await page.locator('.check-button').click();
@@ -62,10 +66,6 @@ test('lesson 9 definitions, equal pairs, source tasks and diagrams are mathemati
   await page.locator('.check-button').click();
   await expect(page.locator('.instant-feedback.good')).toContainText('AB = AC − BC = 8 − 2 = 6 см');
   await expect(page.locator('.instant-feedback.good')).toContainText('AD = AB + BD = 6 + 6 = 12 см');
-
-  const mentorBubble=page.locator('.cat-mentor-bubble');
-  await clickCatMentorAction(page,/Дай пример/);
-  await expect(mentorBubble).toContainText(/AB = AC − BC = 8 − 2 = 6 см\. Затем AD = AB \+ BD = 6 \+ 6 = 12 см\./);
 
   await jump(page,20,'l9-challenge');
   await expect(page.locator('.polyline-ruler strong')).toContainText('3 = 13 − 5 − 5');
