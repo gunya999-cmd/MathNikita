@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mathnikita-production
+  group: mathnikita-production-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
@@ -36,6 +36,22 @@ jobs:
       - run: npm run build
       - run: npx -y wrangler@4.114.0 deploy --dry-run --outdir .wrangler-version-dry-run
       - run: node scripts/version-api-smoke.mjs
+
+  deployment-credentials:
+    if: github.event_name == 'pull_request'
+    name: Production · Cloudflare credentials configured
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      HAS_API_TOKEN: ${{ (secrets.CLOUDFLARE_API_TOKEN != '' || secrets.CF_API_TOKEN != '') && 'yes' || 'no' }}
+      HAS_ACCOUNT_ID: ${{ (secrets.CLOUDFLARE_ACCOUNT_ID != '' || secrets.CF_ACCOUNT_ID != '') && 'yes' || 'no' }}
+    steps:
+      - name: Check secret presence only
+        run: |
+          echo "Cloudflare API token configured: $HAS_API_TOKEN"
+          echo "Cloudflare account ID configured: $HAS_ACCOUNT_ID"
+          test "$HAS_API_TOKEN" = "yes"
+          test "$HAS_ACCOUNT_ID" = "yes"
 
   deploy-production:
     if: github.event_name == 'push'
@@ -97,3 +113,28 @@ jobs:
           done
           echo "Production did not reach expected SHA $EXPECTED_SHA"
           exit 1
+
+  production-main-visible:
+    if: github.event_name == 'pull_request'
+    needs: version-api
+    name: Production · current main is deployed
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Compare live Worker to PR base main SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.base.sha }}
+          VERSION_URL: https://mathnikita.gunya999.workers.dev/api/version
+        run: |
+          body="$(curl --silent --show-error --fail --max-time 15 "$VERSION_URL" 2>/dev/null || true)"
+          actual="$(BODY="$body" node -e 'try{const b=JSON.parse(process.env.BODY||"{}");if(!b.workerVersion?.id||!b.workerVersion?.timestamp)process.exit(2);process.stdout.write(String(b.gitSha||""))}catch{process.exit(3)}' 2>/dev/null || true)"
+          if [ "$actual" != "$EXPECTED_SHA" ]; then
+            echo "Production SHA: ${actual:-unavailable}"
+            echo "Expected main SHA: $EXPECTED_SHA"
+            exit 1
+          fi
+          echo "Production is serving current main SHA: $actual"
+          BODY="$body" node -e 'const b=JSON.parse(process.env.BODY);console.log(`Worker version: ${b.workerVersion.id}`);console.log(`Worker timestamp: ${b.workerVersion.timestamp}`);console.log(`Build UUID: ${b.buildUuid}`)'
