@@ -21,5 +21,9 @@ jobs:
       - name: Generate 256-bit pepper and store only as Cloudflare Worker Secret
         run: |
           set -eu
-          openssl rand -hex 32 | npx -y wrangler@4.118.0 secret put PROFILE_PIN_PEPPER --name mathnikita
-          echo 'PROFILE_PIN_PEPPER created in Cloudflare; secret value was not printed.'
+          PEPPER="$(openssl rand -hex 32)"
+          BODY="$(PEPPER="$PEPPER" node -e 'process.stdout.write(JSON.stringify({name:"PROFILE_PIN_PEPPER",text:process.env.PEPPER,type:"secret_text"}))')"
+          status="$(curl -sS -o /tmp/secret-response.json -w '%{http_code}' -X PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/mathnikita/secrets" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' --data "$BODY")"
+          unset PEPPER BODY
+          test "$status" = "200" || { echo "Cloudflare secret API returned HTTP $status"; exit 1; }
+          node -e 'const fs=require("fs");const b=JSON.parse(fs.readFileSync("/tmp/secret-response.json","utf8"));if(!b.success)process.exit(1);console.log("PROFILE_PIN_PEPPER stored successfully; value was not printed.")'
