@@ -45,12 +45,12 @@ export function PracticePythagoras({lessonNumber,task,checkState,attempts}:Props
     const settings=loadVoiceSettings();const audio=new Audio(source);audioRef.current=audio;audio.preload='auto';audio.playbackRate=settings.rate;audio.onended=()=>{if(token===tokenRef.current)setSpeaking(false);audioRef.current=null};const fail=(error?:unknown)=>{if(token===tokenRef.current){audioRef.current=null;setSpeaking(false);setVoiceIssue(issueFromError(error))}};audio.onerror=()=>fail();void audio.play().catch(fail);
   }
   function speak(text=message,voiceAction=action){
-    if(speaking){stop();return}
+    // Mentor action buttons are replace actions: a new choice must cut the old
+    // clip and start the requested one immediately. The dedicated ▶/■ control
+    // below remains the explicit stop/start toggle.
     stop();setVoiceIssue('');const token=++tokenRef.current;const settings=loadVoiceSettings();window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'practice-mentor'}}));
     if(settings.engine!=='studio'){systemSpeak(text,token);return}
     const id=narrationId(voiceAction);const ready=peekStudioAudioUrl(id,text);setSpeaking(true);if(ready){playSource(ready,token);return}
-    // This call is learner/auto-guide foreground. Explicit priority prevents a
-    // queued background hint warmup from stealing the foreground allowance.
     void getStudioAudioUrl(id,text,true).then(source=>{if(token===tokenRef.current)playSource(source,token)}).catch(error=>{if(token===tokenRef.current){setSpeaking(false);setVoiceIssue(issueFromError(error))}});
   }
   function choose(next:MentorAction){setAction(next);const nextMessage=messageFor(task,checkState,attempts,next);speak(nextMessage,next)}
@@ -73,7 +73,7 @@ export function PracticePythagoras({lessonNumber,task,checkState,attempts}:Props
 
   const voiceIssueText=voiceIssue==='busy'?`AI-голос ${STUDIO_VOICE_LABEL} сейчас перегружен. Нажми ▶ ещё раз через несколько секунд.`:voiceIssue==='autoplay'?`Браузер не запустил звук автоматически. Нажми ▶, чтобы услышать ${STUDIO_VOICE_LABEL}.`:voiceIssue==='unavailable'?`AI-голос ${STUDIO_VOICE_LABEL} временно недоступен. Текст подсказки остаётся на экране.`:'';
   return <aside className={`practice-pythagoras is-${checkState}`} aria-label="Пифагор — наставник обязательной практики">
-    <div className="practice-pythagoras-head"><div className="practice-pythagoras-badge" aria-hidden="true">π</div><div><span>Пифагор · практика</span><b>{checkState==='wrong'?'Разберём без готового ответа':checkState==='correct'?'Разбор решения':'Я рядом, если понадобится помощь'}</b></div><button type="button" className={speaking?'is-speaking':''} onClick={()=>speak()} aria-label={speaking?'Остановить Пифагора':'Озвучить подсказку Пифагора'}>{speaking?'■':'▶'}</button></div>
+    <div className="practice-pythagoras-head"><div className="practice-pythagoras-badge" aria-hidden="true">π</div><div><span>Пифагор · практика</span><b>{checkState==='wrong'?'Разберём без готового ответа':checkState==='correct'?'Разбор решения':'Я рядом, если понадобится помощь'}</b></div><button type="button" className={speaking?'is-speaking':''} onClick={()=>speaking?stop():speak()} aria-label={speaking?'Остановить Пифагора':'Озвучить подсказку Пифагора'}>{speaking?'■':'▶'}</button></div>
     <p className="practice-pythagoras-message">{message}</p>
     {voiceIssue?<small className="practice-pythagoras-voice-error">{voiceIssueText}</small>:<small>Подсказки озвучивает тот же AI-голос {STUDIO_VOICE_LABEL}.</small>}
     <div className="practice-pythagoras-actions">
