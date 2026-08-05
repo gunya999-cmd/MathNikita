@@ -51,7 +51,7 @@ function byteLength(value:string){return encoder.encode(value).byteLength}
 
 async function sha256(value:string){const digest=await crypto.subtle.digest('SHA-256',encoder.encode(value));return bytesToHex(new Uint8Array(digest))}
 async function pinHash(pin:string,saltHex:string){
-  const material=await crypto.subtle.importKey('raw',encoder.encode(pin),'PBKDF2',false,['deriveBits']);
+  const material=await crypto.subtle.importKey('raw',encoder.encode(pin),{name:'PBKDF2'},false,['deriveBits']);
   const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexToBytes(saltHex),iterations:PIN_ITERATIONS,hash:'SHA-256'},material,256);
   return bytesToHex(new Uint8Array(bits));
 }
