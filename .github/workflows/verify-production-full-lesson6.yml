@@ -1,0 +1,95 @@
+name: Verify production full lesson 6
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-production-full-lesson6.yml'
+      - 'tests/production-full-lesson6.spec.ts'
+      - 'playwright.production.lesson6.config.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-full-lesson6-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-live-lesson:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/prod-full-lesson6-a494'
+    name: Production Chromium · full lesson 6 + real D1 restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      EXPECTED_SHA: a4944b152d3aec8f42a9431c856aa016314ce427
+      QA_IDS_FILE: /tmp/qa-full-lesson6-ids.json
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - name: Wait for exact canonical production SHA
+        run: |
+          set -eu
+          for attempt in $(seq 1 30); do
+            body="$(curl -sS --fail --max-time 15 "$BASE_URL/api/version" 2>/dev/null || true)"
+            actual="$(BODY="$body" node -e 'try{const b=JSON.parse(process.env.BODY||"{}");process.stdout.write(String(b.gitSha||""))}catch{}')"
+            if [ "$actual" = "$EXPECTED_SHA" ]; then
+              echo "Production exact SHA is live: $actual"
+              exit 0
+            fi
+            echo "Attempt $attempt: production SHA ${actual:-unavailable}; expected $EXPECTED_SHA"
+            sleep 5
+          done
+          echo "Exact production SHA did not propagate"
+          exit 1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Complete full real production lesson and restore it from D1
+        run: npx playwright test tests/production-full-lesson6.spec.ts --config=playwright.production.lesson6.config.ts --workers=1
+      - name: Upload trace if product test fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-full-lesson6-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Remove temporary lesson-6 QA profile from production D1
+        if: always()
+        run: |
+          set -eu
+          if [ ! -s "$QA_IDS_FILE" ]; then
+            echo 'No production QA student was created.'
+            exit 0
+          fi
+          node <<'NODE'
+          const fs=require('fs');
+          const ids=JSON.parse(fs.readFileSync(process.env.QA_IDS_FILE,'utf8'));
+          if(!Array.isArray(ids)||!ids.length)process.exit(0);
+          for(const id of ids)if(!/^[A-Za-z0-9_-]{8,80}$/.test(id))throw new Error(`Unsafe QA id: ${id}`);
+          const q=ids.map(id=>`'${id}'`).join(',');
+          fs.writeFileSync('/tmp/qa-full-lesson6-cleanup.sql',[
+            `DELETE FROM progress_history WHERE student_id IN (${q});`,
+            `DELETE FROM student_sessions WHERE student_id IN (${q});`,
+            `DELETE FROM student_progress WHERE student_id IN (${q});`,
+            `DELETE FROM students WHERE id IN (${q});`,
+          ].join('\n'));
+          fs.writeFileSync('/tmp/qa-full-lesson6-verify.sql',`SELECT COUNT(*) AS remaining FROM students WHERE id IN (${q});\n`);
+          NODE
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-full-lesson6-cleanup.sql
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-full-lesson6-verify.sql --json > /tmp/qa-full-lesson6-verify.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const body=JSON.parse(fs.readFileSync('/tmp/qa-full-lesson6-verify.json','utf8'));
+          const groups=Array.isArray(body)?body:[];
+          const rows=groups.flatMap(group=>group?.results??group?.result?.[0]?.results??[]);
+          const remaining=Number(rows[0]?.remaining??0);
+          if(remaining!==0)throw new Error(`QA cleanup left ${remaining} student row(s)`);
+          console.log('Production lesson-6 QA student, sessions, progress and history removed.');
+          NODE
