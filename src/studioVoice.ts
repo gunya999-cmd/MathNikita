@@ -1,3 +1,4 @@
+import { STAGE_NARRATION_STATE_EVENT,isStageNarrationActive } from './stageNarrationSequence';
 import { prepareRussianSpeechText } from './voiceQuality';
 
 export type VoiceEngine='studio'|'system';
@@ -16,10 +17,22 @@ type PrefetchItem={key:string;id:string;text:string};
 const prefetchQueue:PrefetchItem[]=[];
 const queuedPrefetchKeys=new Set<string>();
 const PREFETCH_QUEUE_LIMIT=24;
-const STUDIO_NETWORK_LIMIT=2;
+// Gemini TTS is sensitive to bursts. One upstream generation at a time is
+// enough because completed audio is cached and keeps learner-visible speech
+// ahead of speculative warmup traffic.
+const STUDIO_NETWORK_LIMIT=1;
 const studioSlotWaiters:Array<()=>void>=[];
 let prefetchRunning=false;
 let activeStudioRequests=0;
+let prefetchTimer:number|null=null;
+let foregroundIntent=false;
+
+if(typeof window!=='undefined'){
+  window.addEventListener('mathnikita-audio-request',()=>{
+    foregroundIntent=true;
+    queueMicrotask(()=>{foregroundIntent=false});
+  });
+}
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 function persistVoiceSettings(settings:StoredVoiceSettings){
@@ -47,16 +60,38 @@ export function studioNarrationText(value:string){return prepareRussianSpeechTex
 function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${studioNarrationText(text)}`}
 export function peekStudioAudioUrl(id:string,text:string){return readyAudioUrlCache.get(cacheKey(id,text))}
 
+function wait(ms:number){return new Promise(resolve=>window.setTimeout(resolve,ms))}
+async function waitForBackgroundWindow(){
+  // Give an auto-stage narration (scheduled at ~70 ms) first chance to declare
+  // itself foreground before any speculative TTS request reaches Gemini.
+  await wait(260);
+  if(!isStageNarrationActive())return;
+  await new Promise<void>(resolve=>{
+    let settled=false;
+    const finish=()=>{if(settled)return;settled=true;window.removeEventListener(STAGE_NARRATION_STATE_EVENT,handler);resolve()};
+    const handler=(event:Event)=>{const active=Boolean((event as CustomEvent<{active?:boolean}>).detail?.active);if(!active)finish()};
+    window.addEventListener(STAGE_NARRATION_STATE_EVENT,handler);
+    // Never leave a background warmer hanging forever if a browser misses an
+    // event. It is still low priority and may safely retry on a later scene.
+    window.setTimeout(finish,45_000);
+  });
+  await wait(220);
+}
+
+function schedulePrefetchDrain(delay=260){
+  if(prefetchTimer!==null)return;
+  prefetchTimer=window.setTimeout(()=>{prefetchTimer=null;drainPrefetchQueue()},delay);
+}
 function drainPrefetchQueue(){
   if(prefetchRunning)return;
   const next=prefetchQueue.shift();
   if(!next)return;
   queuedPrefetchKeys.delete(next.key);
-  if(readyAudioUrlCache.has(next.key)||audioUrlCache.has(next.key)){drainPrefetchQueue();return}
+  if(readyAudioUrlCache.has(next.key)||audioUrlCache.has(next.key)){schedulePrefetchDrain(80);return}
   prefetchRunning=true;
-  void getStudioAudioUrl(next.id,next.text).catch(()=>undefined).finally(()=>{
+  void waitForBackgroundWindow().then(()=>getStudioAudioUrlInternal(next.id,next.text,false)).catch(()=>undefined).finally(()=>{
     prefetchRunning=false;
-    window.setTimeout(drainPrefetchQueue,120);
+    schedulePrefetchDrain(220);
   });
 }
 export function prefetchStudioAudioUrl(id:string,text:string){
@@ -64,10 +99,9 @@ export function prefetchStudioAudioUrl(id:string,text:string){
   const key=cacheKey(id,text);
   if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
-  queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
+  queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});schedulePrefetchDrain();
 }
 
-function wait(ms:number){return new Promise(resolve=>window.setTimeout(resolve,ms))}
 function retryDelayMs(response:Response,attempt:number){
   const retryAfter=Number(response.headers.get('retry-after'));
   if(Number.isFinite(retryAfter)&&retryAfter>0)return Math.min(Math.max(retryAfter*1000,1000),12_000);
@@ -96,8 +130,6 @@ async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<B
   }));
   if(!response.ok){
     if(attempt<2&&RETRYABLE_STATUS.has(response.status)){
-      // The network slot is already released here, so Retry-After never blocks
-      // another learner-triggered or auto-narration request from using a slot.
       await wait(retryDelayMs(response,attempt));
       return requestStudioAudio(id,prepared,attempt+1);
     }
@@ -108,16 +140,33 @@ async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<B
   return response.blob();
 }
 
-export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
+async function getStudioAudioUrlInternal(id:string,text:string,isForeground:boolean):Promise<string>{
   const prepared=studioNarrationText(text);
   const key=cacheKey(id,prepared);
   const ready=readyAudioUrlCache.get(key);
   if(ready)return ready;
   const cached=audioUrlCache.get(key);
   if(cached)return cached;
+
+  // CatMentor historically warmed seven possible answers at once via the same
+  // foreground helper. If there was no preceding audio-request event this is a
+  // speculative mentor warmup, not something the learner asked to hear.
+  if(!isForeground&&id.startsWith('mentor-')){
+    if(!/(?:-hint|-welcome)$/.test(id))throw new Error('Background mentor warmup deferred');
+    await waitForBackgroundWindow();
+    const warmed=readyAudioUrlCache.get(key);if(warmed)return warmed;
+    const warmedPending=audioUrlCache.get(key);if(warmedPending)return warmedPending;
+  }
+
   const request=requestStudioAudio(id,prepared)
     .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url})
     .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error});
   audioUrlCache.set(key,request);
   return request;
+}
+
+export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
+  const isForeground=foregroundIntent||!id.startsWith('mentor-');
+  if(foregroundIntent)foregroundIntent=false;
+  return getStudioAudioUrlInternal(id,text,isForeground);
 }
