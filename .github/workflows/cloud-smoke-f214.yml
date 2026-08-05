@@ -1,0 +1,53 @@
+name: Full production cloud profile smoke after PBKDF2 fix
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cloud-smoke-f214.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/cloud-smoke-f214'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      QA_STUDENT_ID: qa-full-${{ github.run_id }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Register, snapshot, sync and login against live production
+        run: |
+          node <<'NODE'
+          const base=process.env.BASE_URL;
+          const studentId=process.env.QA_STUDENT_ID;
+          const pin='2468';
+          const json=async(path,options={})=>{
+            const response=await fetch(base+path,{...options,headers:{'content-type':'application/json',...(options.headers||{})}});
+            const text=await response.text();
+            let body={};try{body=text?JSON.parse(text):{}}catch{body={raw:text}}
+            if(!response.ok)throw new Error(`${path} ${response.status}: ${JSON.stringify(body)}`);
+            return body;
+          };
+          const version=await json('/api/version');
+          if(version.gitSha!=='f214a8e45bb2a0ea0c799be41396ec4aea967259')throw new Error(`Unexpected production SHA: ${version.gitSha}`);
+          const status=await json('/api/cloud/status');
+          if(status.configured!==true)throw new Error('Production cloud status is not configured');
+          const registered=await json('/api/cloud/register',{method:'POST',body:JSON.stringify({studentId,name:'QA Production',pin,entries:{'mathnikita:qa':'before'}})});
+          if(!registered.ok||!registered.token||!registered.student?.code||!registered.recoveryCode)throw new Error('Register response is incomplete');
+          const auth={authorization:`Bearer ${registered.token}`};
+          const first=await json('/api/cloud/snapshot',{headers:auth});
+          if(first.student?.id!==studentId||first.entries?.['mathnikita:qa']!=='before')throw new Error('Initial snapshot mismatch');
+          const synced=await json('/api/cloud/sync',{method:'POST',headers:auth,body:JSON.stringify({baseRevision:first.revision,changes:{'mathnikita:qa':'after','mathnikita:qa2':'ok'}})});
+          if(synced.revision!==first.revision+1)throw new Error('Revision did not advance after sync');
+          const second=await json('/api/cloud/snapshot',{headers:auth});
+          if(second.entries?.['mathnikita:qa']!=='after'||second.entries?.['mathnikita:qa2']!=='ok')throw new Error('Synced entries are missing');
+          const logged=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code:registered.student.code,pin})});
+          if(!logged.ok||logged.student?.id!==studentId||logged.entries?.['mathnikita:qa']!=='after'||logged.entries?.['mathnikita:qa2']!=='ok')throw new Error('Fresh login did not restore cloud progress');
+          console.log(`LIVE CLOUD PASS for ${studentId}: register -> snapshot -> sync -> snapshot -> fresh login.`);
+          NODE
