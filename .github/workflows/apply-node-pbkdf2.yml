@@ -1,0 +1,47 @@
+name: Apply node crypto PBKDF2 fix
+
+on:
+  push:
+    branches:
+      - fix/cloud-pin-node-pbkdf2
+    paths:
+      - '.github/workflows/apply-node-pbkdf2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cloud-pin-node-pbkdf2
+      - name: Replace WebCrypto PBKDF2 deriveBits with node crypto PBKDF2
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='worker/cloudProfiles.ts';
+          let source=fs.readFileSync(path,'utf8');
+          const marker="type D1ResultLike=";
+          if(!source.startsWith(marker))throw new Error('Unexpected cloudProfiles.ts header');
+          source="// @ts-expect-error Cloudflare Workers provides node:crypto when nodejs_compat is enabled.\nimport {pbkdf2 as nodePbkdf2} from 'node:crypto';\n\n"+source;
+          const before=`async function pinHash(pin:string,saltHex:string){\n  let material:CryptoKey;\n  try{material=await crypto.subtle.importKey('raw',encoder.encode(pin),{name:'PBKDF2'},false,['deriveBits'])}\n  catch{const error=new Error('PIN hash import failed');error.name='PinHashImportError';throw error}\n  let bits:ArrayBuffer;\n  try{bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexToBytes(saltHex),iterations:PIN_ITERATIONS,hash:{name:'SHA-256'}},material,256)}\n  catch{const error=new Error('PIN hash derive failed');error.name='PinHashDeriveError';throw error}\n  return bytesToHex(new Uint8Array(bits));\n}`;
+          const after=`async function pinHash(pin:string,saltHex:string){\n  const derived=await new Promise<Uint8Array>((resolve,reject)=>{\n    nodePbkdf2(pin,hexToBytes(saltHex),PIN_ITERATIONS,32,'sha256',(error:Error|null,key:Uint8Array)=>{\n      if(error){reject(error);return}\n      resolve(new Uint8Array(key))\n    })\n  });\n  return bytesToHex(derived);\n}`;
+          if(!source.includes(before))throw new Error('Expected WebCrypto pinHash implementation was not found');
+          source=source.replace(before,after);
+          fs.writeFileSync(path,source);
+
+          const configPath='wrangler.jsonc';
+          const config=JSON.parse(fs.readFileSync(configPath,'utf8'));
+          config.compatibility_flags=[...new Set([...(config.compatibility_flags||[]),'nodejs_compat'])];
+          fs.writeFileSync(configPath,JSON.stringify(config,null,2)+'\n');
+          NODE
+      - name: Remove one-shot workflow and commit product fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-node-pbkdf2.yml
+          git add worker/cloudProfiles.ts wrangler.jsonc
+          git commit -m "Use native node crypto PBKDF2 for cloud profile PINs"
+          git push origin HEAD:fix/cloud-pin-node-pbkdf2
