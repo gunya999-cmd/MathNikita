@@ -20,16 +20,6 @@ const STUDIO_NETWORK_LIMIT=2;
 const studioSlotWaiters:Array<()=>void>=[];
 let prefetchRunning=false;
 let activeStudioRequests=0;
-let mentorForegroundIntent=false;
-
-if(typeof window!=='undefined'){
-  window.addEventListener('mathnikita-audio-request',event=>{
-    const source=(event as CustomEvent<{source?:string}>).detail?.source;
-    if(source!=='mentor'&&source!=='practice-mentor')return;
-    mentorForegroundIntent=true;
-    queueMicrotask(()=>{mentorForegroundIntent=false});
-  });
-}
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 function persistVoiceSettings(settings:StoredVoiceSettings){
@@ -118,7 +108,7 @@ async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<B
   return response.blob();
 }
 
-export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
+export async function getStudioAudioUrl(id:string,text:string,mentorForeground=false):Promise<string>{
   const prepared=studioNarrationText(text);
   const key=cacheKey(id,prepared);
   const ready=readyAudioUrlCache.get(key);
@@ -126,18 +116,14 @@ export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
   const cached=audioUrlCache.get(key);
   if(cached)return cached;
 
-  if(id.startsWith('mentor-')){
-    const foreground=mentorForegroundIntent;
-    if(foreground)mentorForegroundIntent=false;
-    if(!foreground){
-      // Speculative mentor speech used to generate every possible answer on
-      // every scene. Keep only the two useful warmups and give the current
-      // lesson/practice narration the first chance to reach the provider.
-      if(!/(?:-hint|-welcome)$/.test(id))throw new Error('Background mentor warmup deferred');
-      await wait(300);
-      const warmed=readyAudioUrlCache.get(key);if(warmed)return warmed;
-      const pending=audioUrlCache.get(key);if(pending)return pending;
-    }
+  if(id.startsWith('mentor-')&&!mentorForeground){
+    // Speculative mentor speech used to generate every possible answer on
+    // every scene. Keep only useful hint/welcome warmups and leave all other
+    // mentor responses for an explicit learner action or auto-guide speech.
+    if(!/(?:-hint|-welcome)$/.test(id))throw new Error('Background mentor warmup deferred');
+    await wait(300);
+    const warmed=readyAudioUrlCache.get(key);if(warmed)return warmed;
+    const pending=audioUrlCache.get(key);if(pending)return pending;
   }
 
   const request=requestStudioAudio(id,prepared)
