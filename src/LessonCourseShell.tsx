@@ -49,6 +49,13 @@ type CourseMode='catalog'|'opening'|'lesson';
 const emptyHintState:ProgressiveHintState={prompt:'',stageTitle:'',activityType:'',attempts:0,revealedLevel:0,fullExplanation:'',mountNode:null};
 const emptyMentorSignal:MentorSignal={kind:'idle',version:0};
 const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23];
+const narrationContextControlSelector=[
+  '.lesson-opening-start:not(:disabled)',
+  '.lesson-controls button:not(:disabled)',
+  '.extended-practice-next:not(:disabled)',
+  '.stage-counter button:not(:disabled)',
+  '.lesson-mode-toolbar > button:not(:disabled)',
+].join(',');
 
 function loadSelectedLesson(){
   const saved=Number(localStorage.getItem('mathnikita-selected-lesson'));
@@ -97,7 +104,7 @@ export function LessonCourseShell(){
   function clearHints(){setHintState(emptyHintState)}
   function resetMentor(){setMentorSignal(previous=>({kind:'idle',version:previous.version+1}))}
   function signalMentor(kind:MentorSignal['kind']){setMentorSignal(previous=>({kind,version:previous.version+1}))}
-  function stopVoice(){if('speechSynthesis'in window)window.speechSynthesis.cancel();window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'))}
+  function stopVoice(){window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));if('speechSynthesis'in window)window.speechSynthesis.cancel()}
   function openLesson(lessonNumber:number){
     if(!readyLessons.includes(lessonNumber))return;
     stopVoice();
@@ -164,13 +171,23 @@ export function LessonCourseShell(){
     window.addEventListener('mathnikita-go-to-stage',handleStageJump);
     return()=>window.removeEventListener('mathnikita-go-to-stage',handleStageJump);
   },[]);
+  useEffect(()=>{
+    const stopWhenLeavingCourse=(event:globalThis.MouseEvent)=>{
+      const root=shellRef.current;const target=event.target;
+      if(root&&target instanceof Node&&!root.contains(target))stopVoice();
+    };
+    document.addEventListener('click',stopWhenLeavingCourse,true);
+    return()=>document.removeEventListener('click',stopWhenLeavingCourse,true);
+  },[]);
 
   function handleCourseClick(event:MouseEvent<HTMLDivElement>){
-    if(isControlWork)return;
     const target=event.target as HTMLElement;
+    const changesNarrationContext=Boolean(target.closest(narrationContextControlSelector));
+    if(changesNarrationContext)stopVoice();
+    if(isControlWork)return;
     if(target.closest('.cat-mentor-actions button'))mentorManualActionVersionRef.current+=1;
     if(target.closest('.check-button'))scheduleFeedbackAssessment();
-    if(target.closest('.lesson-controls button')){stopVoice();clearHints();resetMentor()}
+    if(target.closest('.lesson-controls button')){clearHints();resetMentor()}
   }
   function handleCourseKeyDown(event:KeyboardEvent<HTMLDivElement>){
     if(isControlWork)return;
@@ -220,7 +237,7 @@ export function LessonCourseShell(){
         <div className="opening-screen" hidden={!showOpening}><LessonOpening data={opening} onStart={()=>setMode('lesson')}/></div>
         <div className="lesson-runtime" hidden={mode!=='lesson'}>{runtime}</div>
         {!isControlWork?<ProgressiveHintCoach state={hintState} onRevealNext={()=>setHintState(previous=>({...previous,revealedLevel:Math.min(previous.revealedLevel+1,4)}))}/>:null}
-        {mode==='lesson'&&showReflection&&!isControlWork?<LessonReflection key={selectedLesson} lessonNumber={selectedLesson} lessonTitle={officialLesson?.title??lesson.title} openingQuestion={opening.question} goals={opening.goals} onReviewOpening={()=>{setShowReflection(false);setMode('opening');clearHints();resetMentor();window.scrollTo({top:0,behavior:'smooth'})}}/>:null}
+        {mode==='lesson'&&showReflection&&!isControlWork?<LessonReflection key={selectedLesson} lessonNumber={selectedLesson} lessonTitle={officialLesson?.title??lesson.title} openingQuestion={opening.question} goals={opening.goals} onReviewOpening={()=>{stopVoice();setShowReflection(false);setMode('opening');clearHints();resetMentor();window.scrollTo({top:0,behavior:'smooth'})}}/>:null}
       </div>
       {!isControlWork?<CatMentor rootRef={shellRef} lessonNumber={selectedLesson} mode={showOpening?'opening':'lesson'} signal={mentorSignal}/>:null}
     </div>
