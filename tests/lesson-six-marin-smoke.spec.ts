@@ -17,7 +17,7 @@ async function installStudioMocks(page:Page){
   });
 }
 
-test('lesson 6 opening and first stage prefetch unified AI voice on iPad WebKit',async({page})=>{
+test('lesson 6 opening and first stage use unified AI voice on iPad WebKit without speculative TTS',async({page})=>{
   test.setTimeout(35_000);
   const requests:NarrationRequest[]=[];
   await installStudioMocks(page);
@@ -28,6 +28,12 @@ test('lesson 6 opening and first stage prefetch unified AI voice on iPad WebKit'
   await domClick(page.getByRole('button',{name:/Открыть урок 6:/}));
   const narrator=page.locator('.voice-narrator > button').first();
   await expect(narrator).toContainText('Слушать · AI',{timeout:5_000});
+
+  // Opening audio must not spend Gemini quota until the learner actually asks to hear it.
+  await page.waitForTimeout(400);
+  expect(requests.some(item=>item.id==='lesson-06-opening')).toBe(false);
+
+  await domClick(narrator);
   await expect.poll(()=>requests.some(item=>item.id==='lesson-06-opening'),{timeout:5_000}).toBe(true);
   const opening=requests.find(item=>item.id==='lesson-06-opening')!;
   expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');
