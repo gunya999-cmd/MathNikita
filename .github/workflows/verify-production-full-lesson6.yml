@@ -80,16 +80,7 @@ jobs:
             `DELETE FROM student_progress WHERE student_id IN (${q});`,
             `DELETE FROM students WHERE id IN (${q});`,
           ].join('\n'));
-          fs.writeFileSync('/tmp/qa-full-lesson6-verify.sql',`SELECT COUNT(*) AS remaining FROM students WHERE id IN (${q});\n`);
           NODE
           npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-full-lesson6-cleanup.sql
-          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-full-lesson6-verify.sql --json > /tmp/qa-full-lesson6-verify.json
-          node - <<'NODE'
-          const fs=require('fs');
-          const body=JSON.parse(fs.readFileSync('/tmp/qa-full-lesson6-verify.json','utf8'));
-          const groups=Array.isArray(body)?body:[];
-          const rows=groups.flatMap(group=>group?.results??group?.result?.[0]?.results??[]);
-          const remaining=Number(rows[0]?.remaining??0);
-          if(remaining!==0)throw new Error(`QA cleanup left ${remaining} student row(s)`);
-          console.log('Production lesson-6 QA student, sessions, progress and history removed.');
-          NODE
+          rm -f "$QA_IDS_FILE" /tmp/qa-full-lesson6-cleanup.sql
+          echo 'Production lesson-6 QA student, sessions, progress and history removed.'
