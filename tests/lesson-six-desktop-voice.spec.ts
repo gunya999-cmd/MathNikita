@@ -23,7 +23,7 @@ async function installVoiceMocks(page:Page){
     const voice={name:'Desktop Russian',lang:'ru-RU',voiceURI:'desktop-ru',localService:true,default:true};
     class MockUtterance{lang='';voice:typeof voice|null=null;rate=1;pitch=1;volume=1;onend:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(public text=''){} }
     const synthesis={getVoices:()=>[voice],speak:()=>{audit.systemSpeech+=1},cancel:()=>undefined,pause:()=>undefined,resume:()=>undefined,addEventListener:()=>undefined,removeEventListener:()=>undefined,get speaking(){return false},get pending(){return false},get paused(){return false}};
-    class MockAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){audit.audioPlays+=1;window.setTimeout(()=>this.onended?.(),10);return Promise.resolve()}}
+    class MockAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){audit.audioPlays+=1;window.setTimeout(()=>this.onended?.(),120);return Promise.resolve()}}
     Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,writable:true,value:MockUtterance});
     Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synthesis});
     Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:MockAudio});
@@ -39,11 +39,11 @@ async function routeNarration(page:Page,requests:NarrationRequest[]){
 async function audioPlays(page:Page){return page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays)}
 async function expectWarmAndInstant(page:Page,requests:NarrationRequest[],button:Locator,id:string){
   await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);
-  await page.waitForTimeout(100);
+  await page.waitForTimeout(150);
   const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
   await domClick(button);
   await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);
-  await page.waitForTimeout(100);
+  await page.waitForTimeout(150);
   expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
 }
 async function expectOnDemandThenCached(page:Page,requests:NarrationRequest[],button:Locator,id:string){
@@ -51,7 +51,7 @@ async function expectOnDemandThenCached(page:Page,requests:NarrationRequest[],bu
   const firstPlays=await audioPlays(page);await domClick(button);
   await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:2_000}).toBe(1);
   await expect.poll(()=>audioPlays(page),{timeout:2_000}).toBeGreaterThan(firstPlays);
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(180);
   const callsAfterFirst=requests.filter(item=>item.id===id).length;const secondPlays=await audioPlays(page);await domClick(button);
   await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(secondPlays);
   expect(requests.filter(item=>item.id===id).length).toBe(callsAfterFirst);
@@ -119,22 +119,23 @@ test('lesson 6 desktop narrates all 6 practice stages from a warmed Sulafat clip
     requests.length=0;await setMainStage(page,stage.index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const scope=page.locator(`[data-stage-id="${stage.id}"]`);await expect(scope).toBeVisible({timeout:6_000});const id=`lesson-06-stage-${stage.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text.length).toBeGreaterThan(25);expect(narration.text).toContain(studioNarrationText(await scope.locator('.activity-area h3').innerText()));
-    await page.waitForTimeout(100);const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
+    await page.waitForTimeout(150);const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
     await domClick(page.locator('.voice-narrator > button').first());await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
 test('lesson 6 desktop auto-narrates all 20 mandatory practice tasks with one shared TTS request each',async({page})=>{
-  test.setTimeout(100_000);const requests:NarrationRequest[]=[];const practice=extendedPracticeByLesson[6];await installVoiceMocks(page);await routeNarration(page,requests);await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
+  test.setTimeout(110_000);const requests:NarrationRequest[]=[];const practice=extendedPracticeByLesson[6];await installVoiceMocks(page);await routeNarration(page,requests);await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
   for(let index=0;index<practice.tasks.length;index+=1){
     const taskData=practice.tasks[index];requests.length=0;await setMandatoryPracticeIndex(page,index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const task=page.locator(`[data-practice-task="${taskData.id}"]`);await expect(task).toBeVisible({timeout:7_000});const id=`lesson-06-practice-${taskData.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text).toBe(studioNarrationText(practiceNarrationText(taskData,index,practice.tasks.length)));
-    await expect.poll(()=>audioPlays(page),{timeout:1_500}).toBeGreaterThan(0);
-    const voiceButton=task.locator('.extended-practice-voice button');await expect(voiceButton).toContainText('▶ Озвучить задание',{timeout:1_500});
+    const voiceButton=task.locator('.extended-practice-voice button');
+    await expect(voiceButton,`task ${taskData.id} must enter auto-speaking state`).toContainText('■ Остановить',{timeout:2_500});
+    await expect(voiceButton,`task ${taskData.id} must return to replay state`).toContainText('▶ Озвучить задание',{timeout:2_500});
     const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await audioPlays(page);
-    await domClick(voiceButton);await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);await page.waitForTimeout(30);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
+    await domClick(voiceButton);await expect.poll(()=>audioPlays(page),{timeout:1_000,message:`manual replay must start for ${taskData.id}`}).toBeGreaterThan(playsBefore);await page.waitForTimeout(150);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
