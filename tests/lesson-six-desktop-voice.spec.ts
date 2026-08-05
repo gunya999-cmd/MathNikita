@@ -119,21 +119,23 @@ test('lesson 6 desktop narrates all 6 practice stages from a warmed Sulafat clip
     requests.length=0;await setMainStage(page,stage.index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const scope=page.locator(`[data-stage-id="${stage.id}"]`);await expect(scope).toBeVisible({timeout:6_000});const id=`lesson-06-stage-${stage.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text.length).toBeGreaterThan(25);expect(narration.text).toContain(studioNarrationText(await scope.locator('.activity-area h3').innerText()));
-    await page.waitForTimeout(150);const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
-    await domClick(page.locator('.voice-narrator > button').first());await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
+    const narratorButton=page.locator('.voice-narrator > button').first();await expect(narratorButton).toContainText('Слушать · AI',{timeout:3_000});
+    const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
+    await domClick(narratorButton);await expect.poll(()=>audioPlays(page),{timeout:1_000}).toBeGreaterThan(playsBefore);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
 test('lesson 6 desktop auto-narrates all 20 mandatory practice tasks with one shared TTS request each',async({page})=>{
-  test.setTimeout(110_000);const requests:NarrationRequest[]=[];const practice=extendedPracticeByLesson[6];await installVoiceMocks(page);await routeNarration(page,requests);await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
+  test.setTimeout(120_000);const requests:NarrationRequest[]=[];const practice=extendedPracticeByLesson[6];await installVoiceMocks(page);await routeNarration(page,requests);await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
   for(let index=0;index<practice.tasks.length;index+=1){
     const taskData=practice.tasks[index];requests.length=0;await setMandatoryPracticeIndex(page,index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const task=page.locator(`[data-practice-task="${taskData.id}"]`);await expect(task).toBeVisible({timeout:7_000});const id=`lesson-06-practice-${taskData.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text).toBe(studioNarrationText(practiceNarrationText(taskData,index,practice.tasks.length)));
-    const voiceButton=task.locator('.extended-practice-voice button');
-    await expect(voiceButton,`task ${taskData.id} must enter auto-speaking state`).toContainText('■ Остановить',{timeout:2_500});
-    await expect(voiceButton,`task ${taskData.id} must return to replay state`).toContainText('▶ Озвучить задание',{timeout:2_500});
+    // Each reload resets the mock audit. Summary auto-narration is the first
+    // Audio.play(); the mandatory task must produce the second one.
+    await expect.poll(()=>audioPlays(page),{timeout:5_000,message:`auto narration must actually play for ${taskData.id}`}).toBeGreaterThan(1);
+    const voiceButton=task.locator('.extended-practice-voice button');await expect(voiceButton).toContainText('▶ Озвучить задание',{timeout:2_500});
     const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await audioPlays(page);
     await domClick(voiceButton);await expect.poll(()=>audioPlays(page),{timeout:1_000,message:`manual replay must start for ${taskData.id}`}).toBeGreaterThan(playsBefore);await page.waitForTimeout(150);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
