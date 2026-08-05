@@ -47,7 +47,7 @@ jobs:
           const id=db.uuid||db.id;if(!id)throw new Error('mathnikita-db id missing');
           const config=JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));
           config.d1_databases=[{binding:'DB',database_name:'mathnikita-db',database_id:id}];
-          fs.writeFileSync('/tmp/wrangler.hmac.json',JSON.stringify(config,null,2));
+          fs.writeFileSync('.wrangler.hmac.json',JSON.stringify(config,null,2));
           console.log('Existing mathnikita-db resolved.');
           NODE
       - name: Generate production pepper file without printing its value
@@ -59,7 +59,7 @@ jobs:
           chmod 600 /tmp/hmac-secrets.json
           echo 'Generated 256-bit pepper in ephemeral runner file.'
       - name: Deploy HMAC product with existing D1 and pepper atomically
-        run: npx -y wrangler@4.118.0 deploy --config /tmp/wrangler.hmac.json --no-x-provision --secrets-file /tmp/hmac-secrets.json
+        run: npx -y wrangler@4.118.0 deploy --config .wrangler.hmac.json --no-x-provision --secrets-file /tmp/hmac-secrets.json
       - name: Verify exact HMAC production SHA and full cloud lifecycle
         run: |
           node <<'NODE'
@@ -105,5 +105,5 @@ jobs:
           DELETE FROM students WHERE id='${QA_STUDENT_ID}';
           SQL
           npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-hmac-cleanup.sql
-          rm -f /tmp/hmac-secrets.json /tmp/wrangler.hmac.json
+          rm -f /tmp/hmac-secrets.json .wrangler.hmac.json
           echo 'QA HMAC profile cleaned.'
