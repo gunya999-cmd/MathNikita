@@ -3,7 +3,7 @@ import {setTimeout as sleep} from 'node:timers/promises';
 
 const port=8791;
 const base=`http://127.0.0.1:${port}`;
-const child=spawn('npx',['-y','wrangler@4.114.0','dev','--local','--ip','127.0.0.1','--port',String(port)],{stdio:['ignore','pipe','pipe'],env:{...process.env},detached:process.platform!=='win32'});
+const child=spawn('npx',['-y','wrangler@4.114.0','dev','--local','--ip','127.0.0.1','--port',String(port),'--var','PROFILE_PIN_PEPPER:local-cloud-smoke-pepper-2026'],{stdio:['ignore','pipe','pipe'],env:{...process.env},detached:process.platform!=='win32'});
 let output='';
 child.stdout.on('data',chunk=>{output+=chunk.toString();process.stdout.write(chunk)});
 child.stderr.on('data',chunk=>{output+=chunk.toString();process.stderr.write(chunk)});
