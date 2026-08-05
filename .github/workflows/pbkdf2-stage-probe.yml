@@ -1,0 +1,48 @@
+name: Probe production PBKDF2 failure stage
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/pbkdf2-stage-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/pbkdf2-stage-probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      QA_STUDENT_ID: qa-stage-${{ github.run_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify exact production SHA then probe register
+        run: |
+          set -eu
+          version=$(curl -sS --fail "$BASE_URL/api/version")
+          actual=$(BODY="$version" node -e 'const b=JSON.parse(process.env.BODY);process.stdout.write(String(b.gitSha||""))')
+          test "$actual" = "7f67263a74f1dcad9d677f047f9dd752bdeb4a6a"
+          code=$(curl -sS -o /tmp/register-body.txt -w '%{http_code}' -X POST "$BASE_URL/api/cloud/register" -H 'content-type: application/json' --data "{\"studentId\":\"$QA_STUDENT_ID\",\"name\":\"QA Stage\",\"pin\":\"2468\",\"entries\":{}}")
+          echo "Registration HTTP status: $code"
+          echo -n 'Registration body: '
+          cat /tmp/register-body.txt
+          echo
+          test "$code" = "500"
+      - name: Remove QA profile if any row exists
+        if: always()
+        run: |
+          set -eu
+          cat > /tmp/qa-stage-cleanup.sql <<SQL
+          DELETE FROM progress_history WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_sessions WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_progress WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM students WHERE id='${QA_STUDENT_ID}';
+          SQL
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-stage-cleanup.sql
