@@ -95,10 +95,15 @@ async function installProductionVoiceAudit(page:Page){
 async function audit(page:Page){return page.evaluate(()=>window.__prodVoiceAudit?.events??[])}
 async function clearAudit(page:Page){await page.evaluate(()=>{if(window.__prodVoiceAudit)window.__prodVoiceAudit.events=[]})}
 async function waitForAudit(page:Page,kind:AuditEvent['kind'],id:string,timeout=60_000){
-  await expect.poll(async()=>{const events=await audit(page);return events.some(event=>event.kind===kind&&event.id===id)},{timeout}).toBeTruthy();
+  try{
+    await expect.poll(async()=>{const events=await audit(page);return events.some(event=>event.kind===kind&&event.id===id)},{timeout}).toBeTruthy();
+  }catch(error){
+    console.log(`[production-voice] timeout waiting for ${kind} ${id}; recent events=${JSON.stringify((await audit(page)).slice(-40))}`);
+    throw error;
+  }
 }
-async function assertRealAudioResponse(page:Page,id:string){
-  await waitForAudit(page,'playing',id,90_000);
+async function assertRealAudioResponse(page:Page,id:string,timeout=90_000){
+  await waitForAudit(page,'playing',id,timeout);
   const events=(await audit(page)).filter(item=>item.id===id);
   const successfulAudio=events.find(item=>item.kind==='response'&&item.status===200&&/^audio\//i.test(item.contentType??''));
   expect(successfulAudio,`${id} must eventually return 200 audio/* after any retryable responses`).toBeTruthy();
@@ -212,23 +217,27 @@ test('production lesson 6: real voice -> 24 stages -> Pythagoras -> 20 tasks -> 
   await expect(page.locator('[data-stage-id="l6-summary"]')).toBeVisible();
   await expect(page.locator('.extended-practice-header')).toContainText('20 заданий');
 
+  // Summary narration is intentionally first; practice auto-narration waits on
+  // stageNarrationSequence so the two natural voices never overlap.
+  await assertRealAudioResponse(page,'lesson-06-stage-l6-summary',120_000);
+
   const practice=extendedPracticeByLesson[6];
   expect(practice.tasks).toHaveLength(20);
   const firstTask=practice.tasks[0];
   const secondTask=practice.tasks[1];
   await expect(page.locator('.extended-practice[data-practice-task]')).toHaveAttribute('data-practice-task',firstTask.id);
-  await assertRealAudioResponse(page,practiceNarrationId(6,firstTask));
+  await assertRealAudioResponse(page,practiceNarrationId(6,firstTask),240_000);
 
   await page.getByRole('button',{name:'✦ Подсказка'}).click();
   const mentorId=`mentor-practice-6-${safeToken(firstTask.id)}-hint`;
-  await assertRealAudioResponse(page,mentorId);
+  await assertRealAudioResponse(page,mentorId,120_000);
   await solvePracticeTask(page,firstTask);
   await clearAudit(page);
   await page.locator('.extended-practice-next').click();
   const mentorHandoff=await audit(page);
   expect(mentorHandoff.some(event=>event.kind==='pause'&&event.id===mentorId),'Pythagoras must pause immediately when learner advances').toBeTruthy();
   await expect(page.locator('.extended-practice[data-practice-task]')).toHaveAttribute('data-practice-task',secondTask.id);
-  await assertRealAudioResponse(page,practiceNarrationId(6,secondTask));
+  await assertRealAudioResponse(page,practiceNarrationId(6,secondTask),120_000);
 
   for(let index=1;index<practice.tasks.length;index+=1){
     const task=practice.tasks[index];
