@@ -28,16 +28,19 @@ jobs:
           - label: Chromium · immediate narration handoff
             browser: chromium
             config: playwright.desktop.config.ts
+            install: npx playwright install chromium
           - label: iPad WebKit · immediate narration handoff
             browser: webkit
             config: playwright.config.ts
+            install: npx playwright install --with-deps webkit
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: npm install
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Install test browser
+        run: ${{ matrix.install }}
       - name: Old voice must stop before the next context speaks
         run: npx playwright test tests/voice-navigation-interruption.spec.ts --config=${{ matrix.config }} --workers=1
       - if: failure()
