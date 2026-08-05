@@ -88,7 +88,12 @@ test('explicit cloud login refreshes live storage even when the same profile own
   await expect(page.getByLabel(/Облако: Прогресс сохранён/)).toBeVisible();
   await page.evaluate(()=>localStorage.setItem('mathnikita:profile-test-marker','stale-local'));
   cloud.setEntries({'mathnikita:profile-test-marker':'newer-cloud'});cloud.setRevision(9);
-  await page.getByRole('button',{name:/Сменить ученика\. Сейчас Никита/}).click();
+  // Simulate an expired/new browser session while deliberately keeping the same
+  // local workspace owner. The normal "Сменить ученика" action now flushes local
+  // edits by design, so it must not be used to manufacture a stale workspace.
+  await page.evaluate(()=>sessionStorage.removeItem('mathnikita:accounts:session:v1'));
+  await page.reload({waitUntil:'domcontentloaded'});
+  await expect(page.getByRole('heading',{name:'Выбери свой профиль'})).toBeVisible();
   await page.getByRole('button',{name:/Войти по коду ученика с другого устройства/}).click();
   await page.getByLabel('Код ученика').fill('MN-7K4P2Q');
   await page.getByLabel('PIN облачного профиля').fill('1234');
