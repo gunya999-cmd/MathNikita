@@ -1,0 +1,79 @@
+name: Verify propagated HMAC production preview
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/hmac-preview-live-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/hmac-preview-live'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PRODUCT_SHA: d458e9fc7038687366a0ee2cfe4bbeb6557f3049
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      QA_STUDENT_ID: qa-hmac-live-${{ github.run_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Wait for exact HMAC production SHA
+        run: |
+          set -eu
+          for attempt in $(seq 1 30); do
+            body="$(curl -sS --fail --max-time 15 "$BASE_URL/api/version" 2>/dev/null || true)"
+            actual="$(BODY="$body" node -e 'try{const b=JSON.parse(process.env.BODY||"{}");process.stdout.write(String(b.gitSha||""))}catch{}')"
+            if [ "$actual" = "$PRODUCT_SHA" ]; then
+              echo "HMAC production SHA is live: $actual"
+              exit 0
+            fi
+            echo "Attempt $attempt: production SHA ${actual:-unavailable}; waiting for $PRODUCT_SHA"
+            sleep 5
+          done
+          exit 1
+      - name: Verify full live cloud lifecycle
+        run: |
+          node <<'NODE'
+          const base=process.env.BASE_URL;
+          const studentId=process.env.QA_STUDENT_ID;
+          const pin='2468';
+          async function response(path,options={}){
+            return fetch(base+path,{...options,headers:{'content-type':'application/json',...(options.headers||{})}});
+          }
+          async function json(path,options={}){
+            const r=await response(path,options);const text=await r.text();let body={};try{body=text?JSON.parse(text):{}}catch{body={raw:text}}
+            if(!r.ok)throw new Error(`${path} ${r.status}: ${JSON.stringify(body)}`);return body;
+          }
+          const status=await json('/api/cloud/status');if(status.configured!==true)throw new Error('Cloud status not configured');
+          const registered=await json('/api/cloud/register',{method:'POST',body:JSON.stringify({studentId,name:'QA HMAC Live',pin,entries:{'mathnikita:qa':'before'}})});
+          if(!registered.ok||!registered.token||!registered.student?.code||!registered.recoveryCode)throw new Error('Incomplete registration');
+          const code=registered.student.code;const recovery=registered.recoveryCode;const token=registered.token;const revision=registered.revision;
+          const wrong=await response('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin:'9999'})});if(wrong.status!==401)throw new Error(`Wrong PIN expected 401, got ${wrong.status}`);
+          const login=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin})});if(login.entries?.['mathnikita:qa']!=='before')throw new Error('Initial progress not restored');
+          const sync=await json('/api/cloud/sync',{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({baseRevision:revision,changes:{'mathnikita:qa':'after','mathnikita:qa2':'ok'}})});
+          const stale=await response('/api/cloud/sync',{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({baseRevision:revision,changes:{'mathnikita:qa':'stale'}})});if(stale.status!==409)throw new Error(`Stale sync expected 409, got ${stale.status}`);
+          const snap=await json('/api/cloud/snapshot',{headers:{authorization:`Bearer ${token}`}});if(snap.entries?.['mathnikita:qa']!=='after'||snap.entries?.['mathnikita:qa2']!=='ok')throw new Error('Synced progress missing');
+          const recovered=await json('/api/cloud/recover',{method:'POST',body:JSON.stringify({code,recoveryCode:recovery,newPin:'5678'})});if(!recovered.recoveryCode||recovered.recoveryCode===recovery)throw new Error('Recovery code did not rotate');
+          const oldPin=await response('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin})});if(oldPin.status!==401)throw new Error('Old PIN still works after recovery');
+          const fresh=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin:'5678'})});if(fresh.entries?.['mathnikita:qa']!=='after'||fresh.entries?.['mathnikita:qa2']!=='ok')throw new Error('Progress lost after recovery');
+          console.log(`LIVE HMAC CLOUD PASS revision=${sync.revision}: register -> wrong PIN -> login -> sync -> stale 409 -> snapshot -> recovery -> new PIN login`);
+          NODE
+      - name: Remove QA profile from production D1
+        if: always()
+        run: |
+          set -eu
+          cat > /tmp/qa-hmac-live-cleanup.sql <<SQL
+          DELETE FROM progress_history WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_sessions WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_progress WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM students WHERE id='${QA_STUDENT_ID}';
+          SQL
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-hmac-live-cleanup.sql
+          echo 'QA HMAC live profile cleaned.'
