@@ -57,6 +57,7 @@ export function App() {
   const [attemptsOnTask, setAttemptsOnTask] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [routeBuilt, setRouteBuilt] = useState(false);
+  const [switchingStudent, setSwitchingStudent] = useState(false);
 
   useEffect(() => {
     if (PROFILE_E2E_BYPASS || !profile) return;
@@ -115,9 +116,16 @@ export function App() {
     if (finishingDiagnostic) setRouteBuilt(true);
   }
 
-  function changeStudent() {
-    switchStudentProfile();
-    window.location.reload();
+  async function changeStudent() {
+    if (switchingStudent) return;
+    setSwitchingStudent(true);
+    backupStudentProfileOnPageHide();
+    try {
+      if (profile?.cloud) await syncStudentCloudNow(profile.id);
+    } finally {
+      switchStudentProfile();
+      window.location.reload();
+    }
   }
 
   if (!PROFILE_E2E_BYPASS && !profile) return <StudentAccountGate />;
@@ -136,7 +144,7 @@ export function App() {
         <div className="topbar-profile-actions">
           <div className="xp-pill">⭐ <b>{state.xp}</b> XP</div>
           {profile&&<CloudSyncBadge profile={profile}/>}          
-          {profile && <button className="student-profile-pill" onClick={changeStudent} aria-label={`Сменить ученика. Сейчас ${profile.name}`}><span>{profile.avatar}</span><div><b>{profile.name}</b><small>{profile.cloud?.studentCode??'Сменить ученика'}</small></div></button>}
+          {profile && <button className="student-profile-pill" onClick={() => { void changeStudent(); }} disabled={switchingStudent} aria-label={`Сменить ученика. Сейчас ${profile.name}`}><span>{profile.avatar}</span><div><b>{profile.name}</b><small>{switchingStudent?'Сохраняю…':profile.cloud?.studentCode??'Сменить ученика'}</small></div></button>}
         </div>
       </header>
 
