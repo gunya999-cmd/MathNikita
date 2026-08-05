@@ -28,22 +28,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Show production D1 schema
-        run: |
-          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --command "SELECT name, sql FROM sqlite_master WHERE type IN ('table','index') AND name IN ('students','student_progress','student_sessions','progress_history','idx_students_login_code','idx_student_sessions_token') ORDER BY name;"
+      - name: Install Wrangler before opening tail
+        run: npm install --no-save wrangler@4.118.0
+      - name: Confirm production D1 schema exists
+        run: ./node_modules/.bin/wrangler d1 execute mathnikita-db --remote --command "SELECT COUNT(*) AS schema_objects FROM sqlite_master WHERE type IN ('table','index') AND name IN ('students','student_progress','student_sessions','progress_history','idx_students_login_code','idx_student_sessions_token');"
       - name: Capture Worker outcome while registration fails
         run: |
           set +e
-          timeout 25s npx -y wrangler@4.118.0 tail mathnikita --format=json > /tmp/mathnikita-tail.log 2>&1 &
+          timeout 35s ./node_modules/.bin/wrangler tail mathnikita --format=json > /tmp/mathnikita-tail.log 2>&1 &
           TAIL_PID=$!
-          sleep 6
+          sleep 12
+          echo 'Tail process status before request:'
+          ps -p "$TAIL_PID" -o pid=,stat=,cmd= || true
+          echo 'Tail startup output before request:'
+          cat /tmp/mathnikita-tail.log || true
           HTTP_CODE=$(curl -sS -o /tmp/register-body.txt -w '%{http_code}' -X POST "$BASE_URL/api/cloud/register" -H 'content-type: application/json' --data "{\"studentId\":\"$QA_STUDENT_ID\",\"name\":\"QA Tail\",\"pin\":\"2468\",\"entries\":{}}")
           echo "Registration HTTP status: $HTTP_CODE"
-          sleep 8
+          sleep 10
           kill "$TAIL_PID" 2>/dev/null || true
           wait "$TAIL_PID" 2>/dev/null || true
           echo '--- Worker tail ---'
-          cat /tmp/mathnikita-tail.log
+          cat /tmp/mathnikita-tail.log || true
           echo '--- end tail ---'
           test "$HTTP_CODE" = "500"
       - name: Remove diagnostic profile if any row was created
@@ -56,4 +61,4 @@ jobs:
           DELETE FROM student_progress WHERE student_id='${QA_STUDENT_ID}';
           DELETE FROM students WHERE id='${QA_STUDENT_ID}';
           SQL
-          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/mathnikita-tail-cleanup.sql
+          ./node_modules/.bin/wrangler d1 execute mathnikita-db --remote --file=/tmp/mathnikita-tail-cleanup.sql
