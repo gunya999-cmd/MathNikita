@@ -55,7 +55,7 @@ async function pinHash(pin:string,saltHex:string){
   try{material=await crypto.subtle.importKey('raw',encoder.encode(pin),{name:'PBKDF2'},false,['deriveBits'])}
   catch{const error=new Error('PIN hash import failed');error.name='PinHashImportError';throw error}
   let bits:ArrayBuffer;
-  try{bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexToBytes(saltHex),iterations:PIN_ITERATIONS,hash:'SHA-256'},material,256)}
+  try{bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexToBytes(saltHex),iterations:PIN_ITERATIONS,hash:{name:'SHA-256'}},material,256)}
   catch{const error=new Error('PIN hash derive failed');error.name='PinHashDeriveError';throw error}
   return bytesToHex(new Uint8Array(bits));
 }
