@@ -1,0 +1,59 @@
+name: Diagnose production cloud registration
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/production-cloud-tail.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/production-cloud-smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      QA_STUDENT_ID: qa-tail-${{ github.run_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - name: Checkout exact production main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Show production D1 schema
+        run: |
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --command "SELECT name, sql FROM sqlite_master WHERE type IN ('table','index') AND name IN ('students','student_progress','student_sessions','progress_history','idx_students_login_code','idx_student_sessions_token') ORDER BY name;"
+      - name: Capture Worker outcome while registration fails
+        run: |
+          set +e
+          timeout 25s npx -y wrangler@4.118.0 tail mathnikita --format=json > /tmp/mathnikita-tail.log 2>&1 &
+          TAIL_PID=$!
+          sleep 6
+          HTTP_CODE=$(curl -sS -o /tmp/register-body.txt -w '%{http_code}' -X POST "$BASE_URL/api/cloud/register" -H 'content-type: application/json' --data "{\"studentId\":\"$QA_STUDENT_ID\",\"name\":\"QA Tail\",\"pin\":\"2468\",\"entries\":{}}")
+          echo "Registration HTTP status: $HTTP_CODE"
+          sleep 8
+          kill "$TAIL_PID" 2>/dev/null || true
+          wait "$TAIL_PID" 2>/dev/null || true
+          echo '--- Worker tail ---'
+          cat /tmp/mathnikita-tail.log
+          echo '--- end tail ---'
+          test "$HTTP_CODE" = "500"
+      - name: Remove diagnostic profile if any row was created
+        if: always()
+        run: |
+          set -eu
+          cat > /tmp/mathnikita-tail-cleanup.sql <<SQL
+          DELETE FROM progress_history WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_sessions WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_progress WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM students WHERE id='${QA_STUDENT_ID}';
+          SQL
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/mathnikita-tail-cleanup.sql
