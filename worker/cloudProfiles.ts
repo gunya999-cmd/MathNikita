@@ -1,3 +1,6 @@
+// @ts-expect-error Cloudflare Workers provides node:crypto when nodejs_compat is enabled.
+import {pbkdf2 as nodePbkdf2} from 'node:crypto';
+
 type D1ResultLike={meta?:{changes?:number};results?:unknown[]};
 type D1StatementLike={bind:(...values:unknown[])=>D1StatementLike;run:()=>Promise<D1ResultLike>;first:<T=Record<string,unknown>>()=>Promise<T|null>;all:<T=Record<string,unknown>>()=>Promise<{results:T[]}>};
 type D1DatabaseLike={prepare:(sql:string)=>D1StatementLike;batch:(statements:D1StatementLike[])=>Promise<D1ResultLike[]>};
@@ -51,13 +54,13 @@ function byteLength(value:string){return encoder.encode(value).byteLength}
 
 async function sha256(value:string){const digest=await crypto.subtle.digest('SHA-256',encoder.encode(value));return bytesToHex(new Uint8Array(digest))}
 async function pinHash(pin:string,saltHex:string){
-  let material:CryptoKey;
-  try{material=await crypto.subtle.importKey('raw',encoder.encode(pin),{name:'PBKDF2'},false,['deriveBits'])}
-  catch{const error=new Error('PIN hash import failed');error.name='PinHashImportError';throw error}
-  let bits:ArrayBuffer;
-  try{bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexToBytes(saltHex),iterations:PIN_ITERATIONS,hash:{name:'SHA-256'}},material,256)}
-  catch{const error=new Error('PIN hash derive failed');error.name='PinHashDeriveError';throw error}
-  return bytesToHex(new Uint8Array(bits));
+  const derived=await new Promise<Uint8Array>((resolve,reject)=>{
+    nodePbkdf2(pin,hexToBytes(saltHex),PIN_ITERATIONS,32,'sha256',(error:Error|null,key:Uint8Array)=>{
+      if(error){reject(error);return}
+      resolve(new Uint8Array(key))
+    })
+  });
+  return bytesToHex(derived);
 }
 async function safeEqualHex(left:string,right:string){
   if(left.length!==right.length)return false;let result=0;for(let i=0;i<left.length;i+=1)result|=left.charCodeAt(i)^right.charCodeAt(i);return result===0;
