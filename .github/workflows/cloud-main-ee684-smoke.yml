@@ -1,0 +1,57 @@
+name: Verify cloud profiles on canonical main
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cloud-main-ee684-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/cloud-main-ee684'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      EXPECTED_SHA: ee6847af783fed44128ff6ede71f8bb7d70add25
+      QA_STUDENT_ID: qa-main-${{ github.run_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify exact main and full cloud lifecycle
+        run: |
+          node <<'NODE'
+          const base=process.env.BASE_URL,id=process.env.QA_STUDENT_ID,pin='2468';
+          async function raw(path,options={}){return fetch(base+path,{...options,headers:{'content-type':'application/json',...(options.headers||{})}})}
+          async function json(path,options={}){const r=await raw(path,options),t=await r.text();let b={};try{b=t?JSON.parse(t):{}}catch{b={raw:t}}if(!r.ok)throw new Error(`${path} ${r.status}: ${JSON.stringify(b)}`);return b}
+          const version=await json('/api/version');if(version.gitSha!==process.env.EXPECTED_SHA)throw new Error(`Unexpected SHA ${version.gitSha}`);
+          const status=await json('/api/cloud/status');if(status.configured!==true)throw new Error('Cloud status not configured after canonical deploy');
+          const reg=await json('/api/cloud/register',{method:'POST',body:JSON.stringify({studentId:id,name:'QA Main',pin,entries:{'mathnikita:qa':'before'}})});
+          const code=reg.student?.code,recovery=reg.recoveryCode,token=reg.token;if(!code||!recovery||!token)throw new Error('Registration incomplete');
+          const wrong=await raw('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin:'9999'})});if(wrong.status!==401)throw new Error(`wrong PIN ${wrong.status}`);
+          const login=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin})});if(login.entries?.['mathnikita:qa']!=='before')throw new Error('Login did not restore initial progress');
+          const sync=await json('/api/cloud/sync',{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({baseRevision:reg.revision,changes:{'mathnikita:qa':'after','mathnikita:qa2':'ok'}})});
+          const stale=await raw('/api/cloud/sync',{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({baseRevision:reg.revision,changes:{'mathnikita:qa':'stale'}})});if(stale.status!==409)throw new Error(`stale sync ${stale.status}`);
+          const snap=await json('/api/cloud/snapshot',{headers:{authorization:`Bearer ${token}`}});if(snap.entries?.['mathnikita:qa']!=='after'||snap.entries?.['mathnikita:qa2']!=='ok')throw new Error('Snapshot mismatch');
+          const recovered=await json('/api/cloud/recover',{method:'POST',body:JSON.stringify({code,recoveryCode:recovery,newPin:'5678'})});if(!recovered.recoveryCode||recovered.recoveryCode===recovery)throw new Error('Recovery code not rotated');
+          const old=await raw('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin})});if(old.status!==401)throw new Error('Old PIN still works');
+          const fresh=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin:'5678'})});if(fresh.entries?.['mathnikita:qa']!=='after'||fresh.entries?.['mathnikita:qa2']!=='ok')throw new Error('Progress lost after recovery');
+          console.log(`CANONICAL MAIN CLOUD PASS revision=${sync.revision}`);
+          NODE
+      - name: Remove temporary QA rows
+        if: always()
+        run: |
+          set -eu
+          cat > /tmp/qa-main-cleanup.sql <<SQL
+          DELETE FROM progress_history WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_sessions WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_progress WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM students WHERE id='${QA_STUDENT_ID}';
+          SQL
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-main-cleanup.sql
