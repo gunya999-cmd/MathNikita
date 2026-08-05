@@ -31,7 +31,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Verify exact production SHA and two real cloud students through UI
         run: |
-          cat > /tmp/prod-multi-student.mjs <<'NODE'
+          node --input-type=module <<'NODE'
           import fs from 'node:fs';
           import {chromium} from '@playwright/test';
 
@@ -48,13 +48,8 @@ jobs:
           assert(version.gitSha===expected,`production SHA ${version.gitSha}; expected ${expected}`);
 
           const browser=await chromium.launch({headless:true});
-
-          async function waitActive(page,name){
-            await page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${name}`)}).waitFor({state:'visible',timeout:20000});
-          }
-          async function waitCloudSaved(page){
-            await page.getByLabel(/Облако: Прогресс сохранён/).waitFor({state:'visible',timeout:25000});
-          }
+          async function waitActive(page,name){await page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${name}`)}).waitFor({state:'visible',timeout:20000})}
+          async function waitCloudSaved(page){await page.getByLabel(/Облако: Прогресс сохранён/).waitFor({state:'visible',timeout:25000})}
           async function createProfile(page,name,pin){
             await page.getByLabel('Имя ученика').fill(name);
             await page.getByLabel('PIN · 4 цифры').fill(pin);
@@ -72,8 +67,7 @@ jobs:
             assert(/^[A-Za-z0-9_-]{8,80}$/.test(profile.id),`unsafe profile id ${profile.id}`);
             ids.push(profile.id);saveIds();
             await page.getByRole('button',{name:/Я сохранил коды/}).click();
-            await waitActive(page,name);
-            await waitCloudSaved(page);
+            await waitActive(page,name);await waitCloudSaved(page);
             return{id:profile.id,code};
           }
           async function seedData(page,{marker,lesson,correct,wrong,error}){
@@ -91,8 +85,7 @@ jobs:
             await page.getByRole('heading',{name:'Выбери свой профиль'}).waitFor({state:'visible',timeout:30000});
           }
           async function cloudLogin(student,pin){
-            const context=await browser.newContext();
-            const page=await context.newPage();
+            const context=await browser.newContext();const page=await context.newPage();
             await page.goto(base,{waitUntil:'domcontentloaded'});
             await page.getByRole('button',{name:/Уже есть код ученика/}).click();
             await page.getByLabel('Код ученика').fill(student.code);
@@ -103,44 +96,36 @@ jobs:
           async function localLogin(page,name,pin){
             await page.getByRole('button',{name:new RegExp(name)}).click();
             await page.getByLabel(`PIN для ${name}`).fill(pin);
-            await page.getByRole('button',{name:'Войти'}).click();
-            await waitActive(page,name);
+            await page.getByRole('button',{name:'Войти'}).click();await waitActive(page,name);
           }
           async function assertWorkspace(page,{marker,presentLesson,absentLesson,presentError,absentError}){
             const actual=await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'));
             assert(actual===marker,`marker ${actual}; expected ${marker}`);
             const present=await page.evaluate(lesson=>localStorage.getItem(`mathnikita:lesson-complete:${lesson}`),presentLesson);
             const absent=await page.evaluate(lesson=>localStorage.getItem(`mathnikita:lesson-complete:${lesson}`),absentLesson);
-            assert(present!==null,`lesson ${presentLesson} missing`);
-            assert(absent===null,`foreign lesson ${absentLesson} leaked`);
+            assert(present!==null,`lesson ${presentLesson} missing`);assert(absent===null,`foreign lesson ${absentLesson} leaked`);
             await page.getByRole('button',{name:'Родителям'}).click();
             await page.getByRole('heading',{name:'Обзор обучения'}).waitFor({state:'visible',timeout:15000});
             await page.getByText(presentError,{exact:true}).waitFor({state:'visible',timeout:15000});
             assert(await page.getByText(absentError,{exact:true}).count()===0,`foreign parent error leaked: ${absentError}`);
           }
 
-          const primary=await browser.newContext();
-          const page=await primary.newPage();
+          const primary=await browser.newContext();const page=await primary.newPage();
           try{
             await page.goto(base,{waitUntil:'domcontentloaded'});
             const a=await createProfile(page,'QA Никита','1357');
             await seedData(page,{marker:'qa-nikita-latest',lesson:6,correct:18,wrong:1,error:'QA Никита · только его ошибка'});
             await switchToChooser(page,'QA Никита');
-
-            const deviceA=await cloudLogin(a,'1357');
-            await waitActive(deviceA.page,'QA Никита');
+            const deviceA=await cloudLogin(a,'1357');await waitActive(deviceA.page,'QA Никита');
             await assertWorkspace(deviceA.page,{marker:'qa-nikita-latest',presentLesson:6,absentLesson:9,presentError:'QA Никита · только его ошибка',absentError:'QA Миша · только его ошибка'});
             await deviceA.context.close();
 
             await page.getByRole('button',{name:/Добавить ученика/}).click();
             const b=await createProfile(page,'QA Миша','2468');
-            const aMarkerOnB=await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'));
-            assert(aMarkerOnB===null,'new student inherited previous student marker');
+            assert(await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'))===null,'new student inherited previous student marker');
             await seedData(page,{marker:'qa-misha-latest',lesson:9,correct:9,wrong:2,error:'QA Миша · только его ошибка'});
             await switchToChooser(page,'QA Миша');
-
-            const deviceB=await cloudLogin(b,'2468');
-            await waitActive(deviceB.page,'QA Миша');
+            const deviceB=await cloudLogin(b,'2468');await waitActive(deviceB.page,'QA Миша');
             await assertWorkspace(deviceB.page,{marker:'qa-misha-latest',presentLesson:9,absentLesson:6,presentError:'QA Миша · только его ошибка',absentError:'QA Никита · только его ошибка'});
             await deviceB.context.close();
 
@@ -149,38 +134,22 @@ jobs:
             await switchToChooser(page,'QA Никита');
             await localLogin(page,'QA Миша','2468');
             await assertWorkspace(page,{marker:'qa-misha-latest',presentLesson:9,absentLesson:6,presentError:'QA Миша · только его ошибка',absentError:'QA Никита · только его ошибка'});
-
             console.log(`PRODUCTION MULTI-STUDENT UI PASS ${expected}: immediate switch -> real D1 -> clean-device restore -> same-device isolation -> parent isolation`);
-          } finally {
-            await primary.close();
-            await browser.close();
-          }
+          } finally {await primary.close();await browser.close()}
           NODE
-          node /tmp/prod-multi-student.mjs
       - name: Remove both temporary QA students from production D1
         if: always()
         run: |
           set -eu
-          if [ ! -s /tmp/qa-profile-ids.json ]; then
-            echo 'No QA profile ids were created.'
-            exit 0
-          fi
+          if [ ! -s /tmp/qa-profile-ids.json ]; then echo 'No QA profile ids were created.'; exit 0; fi
           node <<'NODE'
-          const fs=require('fs');
-          const ids=JSON.parse(fs.readFileSync('/tmp/qa-profile-ids.json','utf8'));
+          const fs=require('fs');const ids=JSON.parse(fs.readFileSync('/tmp/qa-profile-ids.json','utf8'));
           if(!Array.isArray(ids)||!ids.length)process.exit(0);
           for(const id of ids)if(!/^[A-Za-z0-9_-]{8,80}$/.test(id))throw new Error(`Unsafe QA id: ${id}`);
           const quoted=ids.map(id=>`'${id}'`).join(',');
-          fs.writeFileSync('/tmp/qa-multi-cleanup.sql',[
-            `DELETE FROM progress_history WHERE student_id IN (${quoted});`,
-            `DELETE FROM student_sessions WHERE student_id IN (${quoted});`,
-            `DELETE FROM student_progress WHERE student_id IN (${quoted});`,
-            `DELETE FROM students WHERE id IN (${quoted});`,
-          ].join('\n'));
+          fs.writeFileSync('/tmp/qa-multi-cleanup.sql',[`DELETE FROM progress_history WHERE student_id IN (${quoted});`,`DELETE FROM student_sessions WHERE student_id IN (${quoted});`,`DELETE FROM student_progress WHERE student_id IN (${quoted});`,`DELETE FROM students WHERE id IN (${quoted});`].join('\n'));
           console.log(`Prepared cleanup for ${ids.length} QA students.`);
           NODE
-          if [ -s /tmp/qa-multi-cleanup.sql ]; then
-            npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-multi-cleanup.sql
-          fi
-          rm -f /tmp/qa-profile-ids.json /tmp/qa-multi-cleanup.sql /tmp/prod-multi-student.mjs
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-multi-cleanup.sql
+          rm -f /tmp/qa-profile-ids.json /tmp/qa-multi-cleanup.sql
           echo 'Production multi-student QA rows cleaned.'
