@@ -1,0 +1,57 @@
+name: Measure production PBKDF2 CPU limits
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/production-pbkdf2-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/production-cloud-smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+      PROBE_NAME: mathnikita-pbkdf2-${{ github.run_id }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Create and deploy isolated crypto probe Worker
+        run: |
+          mkdir -p /tmp/mathnikita-crypto
+          cat > /tmp/mathnikita-crypto/worker.mjs <<'JS'
+          export default { async fetch(request) {
+            const url=new URL(request.url);
+            const iterations=Math.max(1,Math.min(200000,Number(url.searchParams.get('i')||1)));
+            const encoder=new TextEncoder();
+            const salt=crypto.getRandomValues(new Uint8Array(16));
+            const started=Date.now();
+            const material=await crypto.subtle.importKey('raw',encoder.encode('2468'),'PBKDF2',false,['deriveBits']);
+            await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations,hash:'SHA-256'},material,256);
+            return Response.json({ok:true,iterations,wallMs:Date.now()-started});
+          }};
+          JS
+          cat > /tmp/mathnikita-crypto/wrangler.jsonc <<JSON
+          {"name":"$PROBE_NAME","main":"./worker.mjs","compatibility_date":"2026-08-01","workers_dev":true}
+          JSON
+          cd /tmp/mathnikita-crypto
+          npx -y wrangler@4.118.0 deploy --config wrangler.jsonc
+      - name: Measure iteration counts
+        run: |
+          set +e
+          URL="https://${PROBE_NAME}.gunya999.workers.dev"
+          for iterations in 1 100 500 1000 2000 5000 10000 20000 40000 80000 120000; do
+            body=$(curl -sS --max-time 15 -w '\nHTTP:%{http_code}' "$URL/?i=$iterations" 2>&1)
+            echo "PBKDF2 iterations=$iterations => $body"
+          done
+          exit 0
+      - name: Delete isolated crypto probe Worker
+        if: always()
+        run: npx -y wrangler@4.118.0 delete "$PROBE_NAME" --force
