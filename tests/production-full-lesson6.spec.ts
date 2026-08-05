@@ -98,13 +98,16 @@ async function waitForAudit(page:Page,kind:AuditEvent['kind'],id:string,timeout=
   await expect.poll(async()=>{const events=await audit(page);return events.some(event=>event.kind===kind&&event.id===id)},{timeout}).toBeTruthy();
 }
 async function assertRealAudioResponse(page:Page,id:string){
-  await waitForAudit(page,'response',id);
-  const event=(await audit(page)).find(item=>item.kind==='response'&&item.id===id);
-  expect(event?.status,`${id} production narration status`).toBe(200);
-  expect(event?.contentType??'',`${id} must return actual audio`).toMatch(/^audio\//i);
-  await waitForAudit(page,'playing',id);
-  const errors=(await audit(page)).filter(item=>item.kind==='play-error'&&item.id===id);
+  // 429 is explicitly retryable in studioVoice. A production E2E must judge the
+  // final learner-visible outcome, not fail on the first transient provider response.
+  await waitForAudit(page,'playing',id,90_000);
+  const events=(await audit(page)).filter(item=>item.id===id);
+  const successfulAudio=events.find(item=>item.kind==='response'&&item.status===200&&/^audio\//i.test(item.contentType??''));
+  expect(successfulAudio,`${id} must eventually return 200 audio/* after any retryable responses`).toBeTruthy();
+  const errors=events.filter(item=>item.kind==='play-error');
   expect(errors,`${id} real Chromium media playback must not reject`).toHaveLength(0);
+  const transient429s=events.filter(item=>item.kind==='response'&&item.status===429).length;
+  if(transient429s)console.log(`[production-voice] ${id}: recovered after ${transient429s} transient 429 response(s)`);
 }
 
 async function createCloudProfile(page:Page){
