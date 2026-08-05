@@ -35,82 +35,40 @@ async function prepareTaskFive(page:Page){
 }
 
 async function openTaskFive(page:Page,audit:RequestAudit){
-  await prepareTaskFive(page);
-  await routeNarrationAudit(page,audit);
-  await page.goto('/',{waitUntil:'domcontentloaded'});
-  await page.getByRole('button',{name:/Открыть урок 6:/}).click();
-  await page.locator('.lesson-opening-start').click();
-  await expect(page.locator('[data-practice-task="l6-p5"]')).toBeVisible({timeout:8_000});
+  await prepareTaskFive(page);await routeNarrationAudit(page,audit);await page.goto('/',{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:/Открыть урок 6:/}).click();await page.locator('.lesson-opening-start').click();await expect(page.locator('[data-practice-task="l6-p5"]')).toBeVisible({timeout:8_000});
 }
 
 test('lesson 6 task 5 rejects adjacent-only answer and teaches all point pairs',async({page})=>{
-  const audit:RequestAudit={active:0,maxActive:0,ids:[]};
-  await openTaskFive(page,audit);
-  const task=page.locator('[data-practice-task="l6-p5"]');
-  await expect(task).toContainText('любые две из этих точек');
-
-  const input=task.locator('.extended-practice-input input');
-  await input.fill('3');
-  await task.locator('.extended-practice-check').click();
-  await expect(task.locator('.extended-practice-feedback.is-wrong')).toContainText('Не считай только соседние точки');
-  await expect(task.locator('.practice-pythagoras-message')).toContainText('Не считай только соседние точки');
-
-  await task.locator('.extended-practice-check').click();
-  const mentorText=await task.locator('.practice-pythagoras-message').innerText();
-  expect(mentorText.indexOf('Не считай только соседние точки')).toBeGreaterThanOrEqual(0);
-  expect(mentorText.indexOf('Не считай только соседние точки')).toBeLessThan(mentorText.indexOf('Запиши решение на бумаге'));
-
-  await input.fill('6');
-  await task.locator('.extended-practice-check').click();
-  await expect(task.locator('.extended-practice-feedback.is-correct')).toContainText('AB, AC, AD, BC, BD и CD');
+  const audit:RequestAudit={active:0,maxActive:0,ids:[]};await openTaskFive(page,audit);const task=page.locator('[data-practice-task="l6-p5"]');await expect(task).toContainText('любые две из этих точек');
+  const input=task.locator('.extended-practice-input input');await input.fill('3');await task.locator('.extended-practice-check').click();
+  await expect(task.locator('.extended-practice-feedback.is-wrong')).toContainText('Не считай только соседние точки');await expect(task.locator('.practice-pythagoras-message')).toContainText('Не считай только соседние точки');
+  await task.locator('.extended-practice-check').click();const mentorText=await task.locator('.practice-pythagoras-message').innerText();expect(mentorText.indexOf('Не считай только соседние точки')).toBeGreaterThanOrEqual(0);expect(mentorText.indexOf('Не считай только соседние точки')).toBeLessThan(mentorText.indexOf('Запиши решение на бумаге'));
+  await input.fill('6');await task.locator('.extended-practice-check').click();await expect(task.locator('.extended-practice-feedback.is-correct')).toContainText('AB, AC, AD, BC, BD и CD');
 });
 
-test('lesson 6 practice throttles background Sulafat warmup instead of bursting TTS',async({page})=>{
-  const audit:RequestAudit={active:0,maxActive:0,ids:[]};
-  await openTaskFive(page,audit);
-  await page.waitForTimeout(1500);
+test('lesson 6 practice bounds speculative Sulafat warmup instead of bursting TTS',async({page})=>{
+  const audit:RequestAudit={active:0,maxActive:0,ids:[]};await openTaskFive(page,audit);await page.waitForTimeout(1500);
   expect(audit.ids.some(id=>id==='lesson-06-practice-l6-p5')).toBeTruthy();
-  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-status')).toBeTruthy();
   expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-hint')).toBeTruthy();
-  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-different')).toBeFalsy();
-  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-example')).toBeFalsy();
-  expect(audit.ids.some(id=>id==='mentor-practice-6-l6-p5-why')).toBeFalsy();
+  for(const suffix of ['status','different','example','why'])expect(audit.ids.some(id=>id===`mentor-practice-6-l6-p5-${suffix}`),`unexpected speculative ${suffix}`).toBeFalsy();
   expect(audit.maxActive).toBeLessThanOrEqual(2);
 });
 
-test('lesson 6 core CatMentor warmups also obey the global Sulafat request limit',async({page})=>{
-  const audit:RequestAudit={active:0,maxActive:0,ids:[]};
-  await installAudioMock(page);
-  await page.addInitScript(()=>{
-    localStorage.setItem('mathnikita-selected-lesson','6');
-    localStorage.setItem('mathnikita:lesson-6-revision-v2-migrated','1');
-    localStorage.setItem('mathnikita:lesson-6-practice-v3-migrated','1');
-    localStorage.removeItem('mathnikita-lesson-6-progress-v2');
-  });
-  await routeNarrationAudit(page,audit);
-  await page.goto('/',{waitUntil:'domcontentloaded'});
-  await page.getByRole('button',{name:/Открыть урок 6:/}).click();
-  await page.locator('.lesson-opening-start').click();
-  await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible({timeout:8_000});
-
-  for(const id of ['mentor-l6-intro-hint','mentor-l6-intro-different','mentor-l6-intro-example','mentor-l6-intro-why']){
-    await expect.poll(()=>audit.ids.filter(item=>item===id).length,{timeout:8_000}).toBe(1);
-  }
-  await page.waitForTimeout(350);
-  expect(audit.maxActive).toBeLessThanOrEqual(2);
+test('lesson 6 core CatMentor warms only hint/welcome and stays within Sulafat request limit',async({page})=>{
+  const audit:RequestAudit={active:0,maxActive:0,ids:[]};await installAudioMock(page);
+  await page.addInitScript(()=>{localStorage.setItem('mathnikita-selected-lesson','6');localStorage.setItem('mathnikita:lesson-6-revision-v2-migrated','1');localStorage.setItem('mathnikita:lesson-6-practice-v3-migrated','1');localStorage.removeItem('mathnikita-lesson-6-progress-v2')});
+  await routeNarrationAudit(page,audit);await page.goto('/',{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:/Открыть урок 6:/}).click();await page.locator('.lesson-opening-start').click();await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible({timeout:8_000});
+  await expect.poll(()=>audit.ids.filter(item=>item==='lesson-06-stage-l6-story').length,{timeout:8_000}).toBe(1);
+  await expect.poll(()=>audit.ids.filter(item=>item==='mentor-l6-intro-hint').length,{timeout:8_000}).toBe(1);
+  await expect.poll(()=>audit.ids.filter(item=>item==='mentor-l6-intro-welcome').length,{timeout:8_000}).toBe(1);
+  for(const suffix of ['different','example','why','retry','success'])expect(audit.ids.some(id=>id===`mentor-l6-intro-${suffix}`),`unexpected speculative ${suffix}`).toBeFalsy();
+  await page.waitForTimeout(350);expect(audit.maxActive).toBeLessThanOrEqual(2);
 });
 
 test('lesson 6 mentor distinguishes browser autoplay block from Sulafat outage',async({page})=>{
-  const audit:RequestAudit={active:0,maxActive:0,ids:[]};
-  await openTaskFive(page,audit);
-  const task=page.locator('[data-practice-task="l6-p5"]');
-  await expect.poll(()=>audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length,{timeout:4_000}).toBe(1);
-  await page.waitForTimeout(1200);
-  await page.evaluate(()=>{
-    class BlockedAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){const error=new Error('play blocked');error.name='NotAllowedError';return Promise.reject(error)}}
-    Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:BlockedAudio});
-  });
-  await task.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();
-  await expect(task.locator('.practice-pythagoras-voice-error')).toContainText('Браузер не запустил звук автоматически');
-  await expect(task.locator('.practice-pythagoras-voice-error')).not.toContainText('временно недоступен');
+  const audit:RequestAudit={active:0,maxActive:0,ids:[]};await openTaskFive(page,audit);const task=page.locator('[data-practice-task="l6-p5"]');
+  await expect.poll(()=>audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length,{timeout:4_000}).toBe(1);await page.waitForTimeout(1200);
+  await page.evaluate(()=>{class BlockedAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){const error=new Error('play blocked');error.name='NotAllowedError';return Promise.reject(error)}}Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:BlockedAudio})});
+  await task.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();await expect(task.locator('.practice-pythagoras-voice-error')).toContainText('Браузер не запустил звук автоматически');await expect(task.locator('.practice-pythagoras-voice-error')).not.toContainText('временно недоступен');
 });
