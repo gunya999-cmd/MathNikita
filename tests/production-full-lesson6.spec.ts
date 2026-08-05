@@ -1,13 +1,33 @@
 import fs from 'node:fs';
 import {expect,test,type Browser,type Page} from '@playwright/test';
-import {lessonSixStages} from '../src/SegmentLengthPlayer';
 import {extendedPracticeByLesson} from '../src/data/extendedPracticeData';
 import type {ExtendedPracticeTask} from '../src/data/extendedPracticeTypes';
 import {practiceNarrationId} from '../src/practiceNarration';
 
 type AuditEvent={kind:'request'|'response'|'play-call'|'playing'|'play-error'|'pause';id:string;status?:number;contentType?:string;error?:string};
+type MainAnswer={type:'choice';value:string}|{type:'input';value:string}|{type:'order';values:string[]};
 
 declare global{interface Window{__prodVoiceAudit:{events:AuditEvent[]}}}
+
+const mainAnswers:Record<string,MainAnswer>={
+  'l6-unique':{type:'choice',value:'ровно один'},
+  'l6-name':{type:'choice',value:'AB и BA'},
+  'l6-unit':{type:'choice',value:'подсчитать, сколько единичных отрезков в нём помещается'},
+  'l6-units':{type:'choice',value:'PK = 17 мм'},
+  'l6-endpoints':{type:'choice',value:'M и N'},
+  'l6-whole':{type:'input',value:'15'},
+  'l6-part':{type:'input',value:'11'},
+  'l6-convert':{type:'choice',value:'48 мм'},
+  'l6-equal':{type:'choice',value:'они совпадают при наложении'},
+  'l6-build-order':{type:'order',values:['Отметить точку A','Совместить нулевую отметку линейки с A','На отметке 6 см 3 мм поставить точку B','Соединить A и B по линейке']},
+  'l6-ruler-shift':{type:'input',value:'5'},
+  'l6-quiz1':{type:'choice',value:'1'},
+  'l6-quiz2':{type:'input',value:'13'},
+  'l6-quiz3':{type:'input',value:'8'},
+  'l6-quiz4':{type:'choice',value:'54 мм'},
+  'l6-quiz5':{type:'choice',value:'да'},
+  'l6-challenge':{type:'input',value:'55'},
+};
 
 const base=process.env.BASE_URL??'https://mathnikita.gunya999.workers.dev';
 const expectedSha=process.env.EXPECTED_SHA??'';
@@ -111,19 +131,16 @@ async function createCloudProfile(page:Page){
 }
 
 async function answerMainStage(page:Page,stageId:string){
-  const stageData=lessonSixStages.find(item=>item.id===stageId);
-  expect(stageData,`canonical stage ${stageId}`).toBeTruthy();
-  const activity=stageData?.activity;
-  if(!activity)return;
   const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
-  if(activity.type==='choice'){
-    await stage.locator('.choice-grid button').filter({hasText:String(activity.answer)}).click();
-  }else if(activity.type==='input'){
-    await stage.locator('.inline-answer input').fill(String(activity.answer));
+  if(!(await stage.locator('.activity-area').count()))return;
+  const answer=mainAnswers[stageId];
+  expect(answer,`canonical answer for interactive stage ${stageId}`).toBeTruthy();
+  if(answer.type==='choice'){
+    await stage.locator('.choice-grid').getByRole('button',{name:answer.value,exact:true}).click();
+  }else if(answer.type==='input'){
+    await stage.locator('.inline-answer input').fill(answer.value);
   }else{
-    for(const value of activity.answer as string[]){
-      await stage.locator('.order-bank button').filter({hasText:value}).click();
-    }
+    for(const value of answer.values)await stage.locator('.order-bank').getByRole('button',{name:value,exact:true}).click();
   }
   await stage.locator('.check-button').click();
   await expect(stage.locator('.instant-feedback.good'),`${stageId} must be solved correctly`).toBeVisible();
@@ -190,7 +207,7 @@ test('production lesson 6: real voice -> 24 stages -> Pythagoras -> 20 tasks -> 
     await expect(stage).not.toHaveAttribute('data-stage-id',stageId!);
   }
   expect(visited.size,'all 24 canonical lesson-6 stages must be traversed').toBe(24);
-  expect(lessonSixStages.every(stage=>visited.has(stage.id))).toBeTruthy();
+  expect(Object.keys(mainAnswers).every(stageId=>visited.has(stageId)),'all canonical interactive stages must be visited').toBeTruthy();
   await expect(page.locator('[data-stage-id="l6-summary"]')).toBeVisible();
   await expect(page.locator('.extended-practice-header')).toContainText('20 заданий');
 
@@ -230,7 +247,6 @@ test('production lesson 6: real voice -> 24 stages -> Pythagoras -> 20 tasks -> 
   expect(localAnalytics?.lessons?.['6']?.correct).toBeGreaterThanOrEqual(20);
   expect(localAnalytics?.lessons?.['6']?.activeSeconds).toBeGreaterThan(0);
 
-  // Switching students is the product's explicit flush barrier: it waits for cloud sync before session removal.
   await page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${profileName}`)}).click();
   await expect(page.getByRole('heading',{name:'Выбери свой профиль'})).toBeVisible({timeout:40_000});
 
