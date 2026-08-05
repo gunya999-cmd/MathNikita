@@ -1,0 +1,39 @@
+name: Apply PBKDF2 stage diagnostics
+
+on:
+  push:
+    branches:
+      - diag/pbkdf2-stage
+    paths:
+      - '.github/workflows/apply-pbkdf2-stage-diag.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: diag/pbkdf2-stage
+      - name: Add sanitized PBKDF2 import/derive stage errors
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='worker/cloudProfiles.ts';
+          let source=fs.readFileSync(path,'utf8');
+          const before=`async function pinHash(pin:string,saltHex:string){\n  const material=await crypto.subtle.importKey('raw',encoder.encode(pin),{name:'PBKDF2'},false,['deriveBits']);\n  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexToBytes(saltHex),iterations:PIN_ITERATIONS,hash:'SHA-256'},material,256);\n  return bytesToHex(new Uint8Array(bits));\n}`;
+          const after=`async function pinHash(pin:string,saltHex:string){\n  let material:CryptoKey;\n  try{material=await crypto.subtle.importKey('raw',encoder.encode(pin),{name:'PBKDF2'},false,['deriveBits'])}\n  catch{const error=new Error('PIN hash import failed');error.name='PinHashImportError';throw error}\n  let bits:ArrayBuffer;\n  try{bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:hexToBytes(saltHex),iterations:PIN_ITERATIONS,hash:'SHA-256'},material,256)}\n  catch{const error=new Error('PIN hash derive failed');error.name='PinHashDeriveError';throw error}\n  return bytesToHex(new Uint8Array(bits));\n}`;
+          if(!source.includes(before))throw new Error('Expected pinHash implementation was not found');
+          source=source.replace(before,after);
+          fs.writeFileSync(path,source);
+          NODE
+      - name: Remove one-shot workflow and commit diagnostics
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-pbkdf2-stage-diag.yml
+          git add worker/cloudProfiles.ts
+          git commit -m "Distinguish PBKDF2 import and derive failures"
+          git push origin HEAD:diag/pbkdf2-stage
