@@ -22,8 +22,12 @@ jobs:
         run: |
           set -eu
           PEPPER="$(openssl rand -hex 32)"
-          BODY="$(PEPPER="$PEPPER" node -e 'process.stdout.write(JSON.stringify({name:"PROFILE_PIN_PEPPER",text:process.env.PEPPER,type:"secret_text"}))')"
-          status="$(curl -sS -o /tmp/secret-response.json -w '%{http_code}' -X PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/mathnikita/secrets" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' --data "$BODY")"
+          BODY="$(PEPPER="$PEPPER" node -e 'process.stdout.write(JSON.stringify({secrets:{PROFILE_PIN_PEPPER:{type:"secret_text",name:"PROFILE_PIN_PEPPER",text:process.env.PEPPER}}}))')"
+          status="$(curl -sS -o /tmp/secret-response.json -w '%{http_code}' -X PATCH "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/mathnikita/secrets-bulk" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json' --data "$BODY")"
           unset PEPPER BODY
-          test "$status" = "200" || { echo "Cloudflare secret API returned HTTP $status"; exit 1; }
+          if [ "$status" != "200" ]; then
+            echo "Cloudflare bulk secret API returned HTTP $status"
+            node -e 'const fs=require("fs");const b=JSON.parse(fs.readFileSync("/tmp/secret-response.json","utf8"));for(const e of b.errors||[])console.error(`Cloudflare ${e.code}: ${e.message}`)'
+            exit 1
+          fi
           node -e 'const fs=require("fs");const b=JSON.parse(fs.readFileSync("/tmp/secret-response.json","utf8"));if(!b.success)process.exit(1);console.log("PROFILE_PIN_PEPPER stored successfully; value was not printed.")'
