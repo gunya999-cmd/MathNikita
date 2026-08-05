@@ -20,6 +20,18 @@ const STUDIO_NETWORK_LIMIT=2;
 const studioSlotWaiters:Array<()=>void>=[];
 let prefetchRunning=false;
 let activeStudioRequests=0;
+let mentorForegroundTickets=0;
+let mentorTicketTimer:number|null=null;
+
+if(typeof window!=='undefined'){
+  window.addEventListener('mathnikita-audio-request',event=>{
+    const source=(event as CustomEvent<{source?:string}>).detail?.source;
+    if(source!=='mentor'&&source!=='practice-mentor')return;
+    mentorForegroundTickets=1;
+    if(mentorTicketTimer!==null)window.clearTimeout(mentorTicketTimer);
+    mentorTicketTimer=window.setTimeout(()=>{mentorForegroundTickets=0;mentorTicketTimer=null},1_000);
+  });
+}
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 function persistVoiceSettings(settings:StoredVoiceSettings){
@@ -29,17 +41,14 @@ function persistVoiceSettings(settings:StoredVoiceSettings){
 export function loadVoiceSettings():StoredVoiceSettings{
   try{
     const current=JSON.parse(localStorage.getItem(VOICE_SETTINGS_KEY)??'null') as Partial<StoredVoiceSettings>|null;
-    if(current&&(current.engine==='studio'||current.engine==='system')){
-      return{engine:current.engine,voiceURI:current.voiceURI,rate:clampRate(Number(current.rate)||DEFAULT_VOICE_RATE)};
-    }
+    if(current&&(current.engine==='studio'||current.engine==='system'))return{engine:current.engine,voiceURI:current.voiceURI,rate:clampRate(Number(current.rate)||DEFAULT_VOICE_RATE)};
   }catch{/* ignore malformed current settings */}
   let migrated:StoredVoiceSettings={engine:'studio',rate:DEFAULT_VOICE_RATE};
   try{
     const legacy=JSON.parse(localStorage.getItem(LEGACY_VOICE_SETTINGS_KEY)??'null') as {voiceURI?:string;rate?:number}|null;
     migrated={engine:'studio',voiceURI:legacy?.voiceURI,rate:clampRate(Number(legacy?.rate)||DEFAULT_VOICE_RATE)};
   }catch{/* keep studio defaults */}
-  persistVoiceSettings(migrated);
-  return migrated;
+  persistVoiceSettings(migrated);return migrated;
 }
 
 export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSettings(settings)}
@@ -48,76 +57,40 @@ function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:$
 export function peekStudioAudioUrl(id:string,text:string){return readyAudioUrlCache.get(cacheKey(id,text))}
 
 function drainPrefetchQueue(){
-  if(prefetchRunning)return;
-  const next=prefetchQueue.shift();
-  if(!next)return;
-  queuedPrefetchKeys.delete(next.key);
+  if(prefetchRunning)return;const next=prefetchQueue.shift();if(!next)return;queuedPrefetchKeys.delete(next.key);
   if(readyAudioUrlCache.has(next.key)||audioUrlCache.has(next.key)){drainPrefetchQueue();return}
-  prefetchRunning=true;
-  void getStudioAudioUrl(next.id,next.text).catch(()=>undefined).finally(()=>{
-    prefetchRunning=false;
-    window.setTimeout(drainPrefetchQueue,120);
-  });
+  prefetchRunning=true;void getStudioAudioUrl(next.id,next.text).catch(()=>undefined).finally(()=>{prefetchRunning=false;window.setTimeout(drainPrefetchQueue,120)});
 }
 export function prefetchStudioAudioUrl(id:string,text:string){
-  if(!id||!text)return;
-  const key=cacheKey(id,text);
-  if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
+  if(!id||!text)return;const key=cacheKey(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
 }
 
 function wait(ms:number){return new Promise(resolve=>window.setTimeout(resolve,ms))}
 function retryDelayMs(response:Response,attempt:number){
-  const retryAfter=Number(response.headers.get('retry-after'));
-  if(Number.isFinite(retryAfter)&&retryAfter>0)return Math.min(Math.max(retryAfter*1000,1000),12_000);
-  if(response.status===429)return 1600*(attempt+1);
-  return 600*(attempt+1);
+  const retryAfter=Number(response.headers.get('retry-after'));if(Number.isFinite(retryAfter)&&retryAfter>0)return Math.min(Math.max(retryAfter*1000,1000),12_000);
+  if(response.status===429)return 1600*(attempt+1);return 600*(attempt+1);
 }
-async function acquireStudioNetworkSlot(){
-  if(activeStudioRequests<STUDIO_NETWORK_LIMIT){activeStudioRequests+=1;return}
-  await new Promise<void>(resolve=>studioSlotWaiters.push(resolve));
-  // The releasing request transfers its occupied slot directly to this waiter.
-}
-function releaseStudioNetworkSlot(){
-  const next=studioSlotWaiters.shift();
-  if(next){next();return}
-  activeStudioRequests=Math.max(0,activeStudioRequests-1);
-}
-async function withStudioNetworkSlot<T>(work:()=>Promise<T>):Promise<T>{
-  await acquireStudioNetworkSlot();
-  try{return await work()}finally{releaseStudioNetworkSlot()}
-}
+async function acquireStudioNetworkSlot(){if(activeStudioRequests<STUDIO_NETWORK_LIMIT){activeStudioRequests+=1;return}await new Promise<void>(resolve=>studioSlotWaiters.push(resolve))}
+function releaseStudioNetworkSlot(){const next=studioSlotWaiters.shift();if(next){next();return}activeStudioRequests=Math.max(0,activeStudioRequests-1)}
+async function withStudioNetworkSlot<T>(work:()=>Promise<T>):Promise<T>{await acquireStudioNetworkSlot();try{return await work()}finally{releaseStudioNetworkSlot()}}
 async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<Blob>{
-  const response=await withStudioNetworkSlot(()=>fetch('/api/narration',{
-    method:'POST',
-    headers:{'content-type':'application/json'},
-    body:JSON.stringify({id,text:prepared,version:STUDIO_VOICE_VERSION}),
-  }));
-  if(!response.ok){
-    if(attempt<2&&RETRYABLE_STATUS.has(response.status)){
-      // The network slot is already released here, so Retry-After never blocks
-      // another learner-triggered or auto-narration request from using a slot.
-      await wait(retryDelayMs(response,attempt));
-      return requestStudioAudio(id,prepared,attempt+1);
-    }
-    throw new Error(`Studio narration unavailable: ${response.status}`);
-  }
-  const type=response.headers.get('content-type')??'';
-  if(!type.includes('audio/'))throw new Error('Studio narration returned non-audio response');
-  return response.blob();
+  const response=await withStudioNetworkSlot(()=>fetch('/api/narration',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id,text:prepared,version:STUDIO_VOICE_VERSION})}));
+  if(!response.ok){if(attempt<2&&RETRYABLE_STATUS.has(response.status)){await wait(retryDelayMs(response,attempt));return requestStudioAudio(id,prepared,attempt+1)}throw new Error(`Studio narration unavailable: ${response.status}`)}
+  const type=response.headers.get('content-type')??'';if(!type.includes('audio/'))throw new Error('Studio narration returned non-audio response');return response.blob();
 }
 
-export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
-  const prepared=studioNarrationText(text);
-  const key=cacheKey(id,prepared);
-  const ready=readyAudioUrlCache.get(key);
-  if(ready)return ready;
-  const cached=audioUrlCache.get(key);
-  if(cached)return cached;
-  const request=requestStudioAudio(id,prepared)
-    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url})
-    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error});
-  audioUrlCache.set(key,request);
-  return request;
+export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOverride=false):Promise<string>{
+  const prepared=studioNarrationText(text);const key=cacheKey(id,prepared);const ready=readyAudioUrlCache.get(key);if(ready)return ready;const cached=audioUrlCache.get(key);if(cached)return cached;
+  if(id.startsWith('mentor-')){
+    const foreground=mentorForegroundOverride||mentorForegroundTickets>0;
+    if(foreground&&mentorForegroundTickets>0){mentorForegroundTickets=0;if(mentorTicketTimer!==null){window.clearTimeout(mentorTicketTimer);mentorTicketTimer=null}}
+    if(!foreground){
+      if(!/(?:-hint|-welcome)$/.test(id))throw new Error('Background mentor warmup deferred');
+      await wait(300);const warmed=readyAudioUrlCache.get(key);if(warmed)return warmed;const pending=audioUrlCache.get(key);if(pending)return pending;
+    }
+  }
+  const request=requestStudioAudio(id,prepared).then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url}).catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error});
+  audioUrlCache.set(key,request);return request;
 }
