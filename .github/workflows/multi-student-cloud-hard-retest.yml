@@ -1,0 +1,37 @@
+name: Multi-student cloud hard retest
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: multi-student-cloud-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  desktop-chromium:
+    name: Desktop Chromium · multi-student cloud isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Verify immediate switch flush, second-device restore and parent isolation
+        run: npx playwright test tests/multi-student-cloud-isolation.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: Upload failure traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-student-cloud-traces-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
