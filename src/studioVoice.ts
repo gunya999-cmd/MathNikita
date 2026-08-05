@@ -20,6 +20,20 @@ const STUDIO_NETWORK_LIMIT=2;
 const studioSlotWaiters:Array<()=>void>=[];
 let prefetchRunning=false;
 let activeStudioRequests=0;
+let mentorForegroundTickets=0;
+let mentorTicketTimer:number|null=null;
+
+if(typeof window!=='undefined'){
+  window.addEventListener('mathnikita-audio-request',event=>{
+    const source=(event as CustomEvent<{source?:string}>).detail?.source;
+    if(source!=='mentor'&&source!=='practice-mentor')return;
+    mentorForegroundTickets=1;
+    if(mentorTicketTimer!==null)window.clearTimeout(mentorTicketTimer);
+    // A ticket exists only to bridge React/event scheduling for the explicit
+    // learner-triggered mentor request. It can never accumulate across clicks.
+    mentorTicketTimer=window.setTimeout(()=>{mentorForegroundTickets=0;mentorTicketTimer=null},1_000);
+  });
+}
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
 function persistVoiceSettings(settings:StoredVoiceSettings){
@@ -108,7 +122,7 @@ async function requestStudioAudio(id:string,prepared:string,attempt=0):Promise<B
   return response.blob();
 }
 
-export async function getStudioAudioUrl(id:string,text:string,mentorForeground=false):Promise<string>{
+export async function getStudioAudioUrl(id:string,text:string):Promise<string>{
   const prepared=studioNarrationText(text);
   const key=cacheKey(id,prepared);
   const ready=readyAudioUrlCache.get(key);
@@ -116,14 +130,21 @@ export async function getStudioAudioUrl(id:string,text:string,mentorForeground=f
   const cached=audioUrlCache.get(key);
   if(cached)return cached;
 
-  if(id.startsWith('mentor-')&&!mentorForeground){
-    // Speculative mentor speech used to generate every possible answer on
-    // every scene. Keep only useful hint/welcome warmups and leave all other
-    // mentor responses for an explicit learner action or auto-guide speech.
-    if(!/(?:-hint|-welcome)$/.test(id))throw new Error('Background mentor warmup deferred');
-    await wait(300);
-    const warmed=readyAudioUrlCache.get(key);if(warmed)return warmed;
-    const pending=audioUrlCache.get(key);if(pending)return pending;
+  if(id.startsWith('mentor-')){
+    const foreground=mentorForegroundTickets>0;
+    if(foreground){
+      mentorForegroundTickets=0;
+      if(mentorTicketTimer!==null){window.clearTimeout(mentorTicketTimer);mentorTicketTimer=null}
+    }
+    if(!foreground){
+      // Speculative mentor speech used to generate every possible answer on
+      // every scene. Keep only useful hint/welcome warmups. All other replies
+      // are generated only after an explicit learner/auto-guide request.
+      if(!/(?:-hint|-welcome)$/.test(id))throw new Error('Background mentor warmup deferred');
+      await wait(300);
+      const warmed=readyAudioUrlCache.get(key);if(warmed)return warmed;
+      const pending=audioUrlCache.get(key);if(pending)return pending;
+    }
   }
 
   const request=requestStudioAudio(id,prepared)
