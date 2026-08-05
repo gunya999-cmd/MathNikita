@@ -1,0 +1,26 @@
+name: Remove temporary PBKDF2 diagnostic Worker
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/remove-pbkdf2-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  remove:
+    if: github.event_name == 'pull_request' && github.head_ref == 'ops/remove-pbkdf2-probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+      SCRIPT_NAME: mathnikita-pbkdf2-30974938832
+    steps:
+      - name: Delete diagnostic Worker script directly
+        run: |
+          set -eu
+          body=$(curl -sS -X DELETE "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$SCRIPT_NAME" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H 'Content-Type: application/json')
+          echo "$body" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const b=JSON.parse(s);if(!b.success){console.error(JSON.stringify(b.errors||b));process.exit(1)}console.log('Temporary diagnostic Worker removed.')})"
