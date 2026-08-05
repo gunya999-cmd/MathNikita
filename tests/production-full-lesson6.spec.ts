@@ -98,8 +98,6 @@ async function waitForAudit(page:Page,kind:AuditEvent['kind'],id:string,timeout=
   await expect.poll(async()=>{const events=await audit(page);return events.some(event=>event.kind===kind&&event.id===id)},{timeout}).toBeTruthy();
 }
 async function assertRealAudioResponse(page:Page,id:string){
-  // 429 is explicitly retryable in studioVoice. A production E2E must judge the
-  // final learner-visible outcome, not fail on the first transient provider response.
   await waitForAudit(page,'playing',id,90_000);
   const events=(await audit(page)).filter(item=>item.id===id);
   const successfulAudio=events.find(item=>item.kind==='response'&&item.status===200&&/^audio\//i.test(item.contentType??''));
@@ -197,7 +195,7 @@ test('production lesson 6: real voice -> 24 stages -> Pythagoras -> 20 tasks -> 
   await expect(page.locator('[data-stage-id="l6-segment-definition"]')).toBeVisible();
   await assertRealAudioResponse(page,'lesson-06-stage-l6-segment-definition');
 
-  const visited=new Set<string>();
+  const visited=new Set<string>(['l6-story']);
   for(let guard=0;guard<30;guard+=1){
     const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
     const stageId=await stage.getAttribute('data-stage-id');
