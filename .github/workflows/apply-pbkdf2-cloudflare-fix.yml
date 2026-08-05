@@ -1,0 +1,40 @@
+name: Apply Cloudflare PBKDF2 import fix
+
+on:
+  push:
+    branches:
+      - fix/pbkdf2-cloudflare-import
+    paths:
+      - '.github/workflows/apply-pbkdf2-cloudflare-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pbkdf2-cloudflare-import
+      - name: Replace PBKDF2 string identifier with algorithm object
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='worker/cloudProfiles.ts';
+          let source=fs.readFileSync(path,'utf8');
+          const before="crypto.subtle.importKey('raw',encoder.encode(pin),'PBKDF2',false,['deriveBits'])";
+          const after="crypto.subtle.importKey('raw',encoder.encode(pin),{name:'PBKDF2'},false,['deriveBits'])";
+          if(!source.includes(before))throw new Error('Expected PBKDF2 importKey expression was not found');
+          source=source.replace(before,after);
+          if(source.includes(before))throw new Error('PBKDF2 string algorithm remains after replacement');
+          fs.writeFileSync(path,source);
+          NODE
+      - name: Remove one-shot workflow and commit product fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-pbkdf2-cloudflare-fix.yml
+          git add worker/cloudProfiles.ts
+          git commit -m "Use Cloudflare-compatible PBKDF2 algorithm identifier"
+          git push origin HEAD:fix/pbkdf2-cloudflare-import
