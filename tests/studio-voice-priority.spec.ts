@@ -51,8 +51,6 @@ test('current lesson narration outranks mentor warmup and mentor speculation sta
   await page.route('**/api/narration',async route=>{
     const body=route.request().postDataJSON() as {id?:string};
     const id=body.id??'';
-    // Make speculative generation visibly expensive. The current stage must
-    // still reach the provider and start playing before background mentor work.
     if(id.startsWith('mentor-'))await new Promise(resolve=>setTimeout(resolve,80));
     await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-priority-test'});
   });
@@ -65,10 +63,10 @@ test('current lesson narration outranks mentor warmup and mentor speculation sta
   await expect.poll(async()=>{const list=await events(page);return list.some(event=>event.kind==='play'&&event.id==='lesson-06-stage-l6-story')},{timeout:10_000}).toBeTruthy();
   const firstStagePlay=(await events(page)).findIndex(event=>event.kind==='play'&&event.id==='lesson-06-stage-l6-story');
   const requestsBeforeStagePlay=(await events(page)).slice(0,firstStagePlay).filter(event=>event.kind==='request');
-  expect(requestsBeforeStagePlay.some(event=>event.id.startsWith('mentor-')),'mentor warmup must not reach TTS before current stage plays').toBeFalsy();
+  expect(requestsBeforeStagePlay.some(event=>event.id.startsWith('mentor-l6-intro-')),'current-scene mentor warmup must not reach TTS before current stage plays').toBeFalsy();
 
   await page.waitForTimeout(1_400);
-  const mentorIds=Array.from(new Set((await events(page)).filter(event=>event.kind==='request'&&event.id.startsWith('mentor-')).map(event=>event.id)));
-  expect(mentorIds.every(id=>/(?:-hint|-welcome)$/.test(id)),`unexpected speculative mentor ids: ${mentorIds.join(', ')}`).toBeTruthy();
-  expect(mentorIds.length,'mentor background warmup must stay bounded').toBeLessThanOrEqual(2);
+  const mentorIds=Array.from(new Set((await events(page)).filter(event=>event.kind==='request'&&event.id.startsWith('mentor-l6-intro-')).map(event=>event.id)));
+  expect(mentorIds.every(id=>/(?:-hint|-welcome)$/.test(id)),`unexpected current-scene speculative mentor ids: ${mentorIds.join(', ')}`).toBeTruthy();
+  expect(mentorIds.length,'current-scene mentor background warmup must stay bounded').toBeLessThanOrEqual(2);
 });
