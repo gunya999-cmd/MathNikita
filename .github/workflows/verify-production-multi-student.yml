@@ -1,0 +1,186 @@
+name: Verify production multi-student cloud
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-production-multi-student.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  production-ui-smoke:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/prod-multi-student-6e50'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      EXPECTED_SHA: 6e50cb29b5f6564d284ddb715b7bac30e9e9d130
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_SHA }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Verify exact production SHA and two real cloud students through UI
+        run: |
+          cat > /tmp/prod-multi-student.mjs <<'NODE'
+          import fs from 'node:fs';
+          import {chromium} from '@playwright/test';
+
+          const base=process.env.BASE_URL;
+          const expected=process.env.EXPECTED_SHA;
+          const ids=[];
+          const idsFile='/tmp/qa-profile-ids.json';
+          const saveIds=()=>fs.writeFileSync(idsFile,JSON.stringify(ids));
+          const assert=(condition,message)=>{if(!condition)throw new Error(message)};
+
+          const versionResponse=await fetch(`${base}/api/version`,{headers:{'cache-control':'no-cache'}});
+          assert(versionResponse.ok,`/api/version failed ${versionResponse.status}`);
+          const version=await versionResponse.json();
+          assert(version.gitSha===expected,`production SHA ${version.gitSha}; expected ${expected}`);
+
+          const browser=await chromium.launch({headless:true});
+
+          async function waitActive(page,name){
+            await page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${name}`)}).waitFor({state:'visible',timeout:20000});
+          }
+          async function waitCloudSaved(page){
+            await page.getByLabel(/Облако: Прогресс сохранён/).waitFor({state:'visible',timeout:25000});
+          }
+          async function createProfile(page,name,pin){
+            await page.getByLabel('Имя ученика').fill(name);
+            await page.getByLabel('PIN · 4 цифры').fill(pin);
+            await page.getByLabel('Повтори PIN').fill(pin);
+            await page.getByRole('button',{name:'Создать профиль'}).click();
+            await page.getByRole('heading',{name:'Прогресс теперь защищён'}).waitFor({state:'visible',timeout:25000});
+            const bodyText=await page.locator('body').innerText();
+            const code=bodyText.match(/\bMN-[A-Z0-9]{7}\b/)?.[0];
+            assert(code,`student code missing for ${name}`);
+            const profile=await page.evaluate(profileName=>{
+              const registry=JSON.parse(localStorage.getItem('mathnikita:accounts:registry:v1')??'null');
+              return registry?.profiles?.find(profile=>profile.name===profileName)??null;
+            },name);
+            assert(profile?.id,`local profile id missing for ${name}`);
+            assert(/^[A-Za-z0-9_-]{8,80}$/.test(profile.id),`unsafe profile id ${profile.id}`);
+            ids.push(profile.id);saveIds();
+            await page.getByRole('button',{name:/Я сохранил коды/}).click();
+            await waitActive(page,name);
+            await waitCloudSaved(page);
+            return{id:profile.id,code};
+          }
+          async function seedData(page,{marker,lesson,correct,wrong,error}){
+            await page.evaluate(({marker,lesson,correct,wrong,error})=>{
+              const now=new Date();
+              const day=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+              const iso=now.toISOString();
+              localStorage.setItem('mathnikita:profile-test-marker',marker);
+              localStorage.setItem(`mathnikita:lesson-complete:${lesson}`,JSON.stringify({completedAt:iso,activeSeconds:1200+lesson}));
+              localStorage.setItem('mathnikita:student-analytics:v1',JSON.stringify({version:1,lessons:{[String(lesson)]:{lessonNumber:lesson,sessions:1,screenSeconds:1500,focusSeconds:1400,activeSeconds:1300,correct,wrong,firstTryCorrect:Math.max(0,correct-1),recoveredErrors:Math.min(1,wrong),hints:wrong?1:0,mentorActions:1,narrationPlays:2,practiceCorrect:Math.max(0,correct-2),practiceWrong:wrong,completedAt:iso,firstSeenAt:iso,lastSeenAt:iso}},daily:{[day]:{screenSeconds:1500,focusSeconds:1400,activeSeconds:1300,correct,wrong,completedLessons:1}},events:wrong?[{id:`qa-wrong-${lesson}`,at:iso,lessonNumber:lesson,type:'answer_wrong',area:'practice',key:`qa:${lesson}`,label:error}]:[]}));
+            },{marker,lesson,correct,wrong,error});
+          }
+          async function switchToChooser(page,name){
+            await page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${name}`)}).click();
+            await page.getByRole('heading',{name:'Выбери свой профиль'}).waitFor({state:'visible',timeout:30000});
+          }
+          async function cloudLogin(student,pin){
+            const context=await browser.newContext();
+            const page=await context.newPage();
+            await page.goto(base,{waitUntil:'domcontentloaded'});
+            await page.getByRole('button',{name:/Уже есть код ученика/}).click();
+            await page.getByLabel('Код ученика').fill(student.code);
+            await page.getByLabel('PIN облачного профиля').fill(pin);
+            await page.getByRole('button',{name:'Войти и загрузить прогресс'}).click();
+            return{context,page};
+          }
+          async function localLogin(page,name,pin){
+            await page.getByRole('button',{name:new RegExp(name)}).click();
+            await page.getByLabel(`PIN для ${name}`).fill(pin);
+            await page.getByRole('button',{name:'Войти'}).click();
+            await waitActive(page,name);
+          }
+          async function assertWorkspace(page,{marker,presentLesson,absentLesson,presentError,absentError}){
+            const actual=await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'));
+            assert(actual===marker,`marker ${actual}; expected ${marker}`);
+            const present=await page.evaluate(lesson=>localStorage.getItem(`mathnikita:lesson-complete:${lesson}`),presentLesson);
+            const absent=await page.evaluate(lesson=>localStorage.getItem(`mathnikita:lesson-complete:${lesson}`),absentLesson);
+            assert(present!==null,`lesson ${presentLesson} missing`);
+            assert(absent===null,`foreign lesson ${absentLesson} leaked`);
+            await page.getByRole('button',{name:'Родителям'}).click();
+            await page.getByRole('heading',{name:'Обзор обучения'}).waitFor({state:'visible',timeout:15000});
+            await page.getByText(presentError,{exact:true}).waitFor({state:'visible',timeout:15000});
+            assert(await page.getByText(absentError,{exact:true}).count()===0,`foreign parent error leaked: ${absentError}`);
+          }
+
+          const primary=await browser.newContext();
+          const page=await primary.newPage();
+          try{
+            await page.goto(base,{waitUntil:'domcontentloaded'});
+            const a=await createProfile(page,'QA Никита','1357');
+            await seedData(page,{marker:'qa-nikita-latest',lesson:6,correct:18,wrong:1,error:'QA Никита · только его ошибка'});
+            await switchToChooser(page,'QA Никита');
+
+            const deviceA=await cloudLogin(a,'1357');
+            await waitActive(deviceA.page,'QA Никита');
+            await assertWorkspace(deviceA.page,{marker:'qa-nikita-latest',presentLesson:6,absentLesson:9,presentError:'QA Никита · только его ошибка',absentError:'QA Миша · только его ошибка'});
+            await deviceA.context.close();
+
+            await page.getByRole('button',{name:/Добавить ученика/}).click();
+            const b=await createProfile(page,'QA Миша','2468');
+            const aMarkerOnB=await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'));
+            assert(aMarkerOnB===null,'new student inherited previous student marker');
+            await seedData(page,{marker:'qa-misha-latest',lesson:9,correct:9,wrong:2,error:'QA Миша · только его ошибка'});
+            await switchToChooser(page,'QA Миша');
+
+            const deviceB=await cloudLogin(b,'2468');
+            await waitActive(deviceB.page,'QA Миша');
+            await assertWorkspace(deviceB.page,{marker:'qa-misha-latest',presentLesson:9,absentLesson:6,presentError:'QA Миша · только его ошибка',absentError:'QA Никита · только его ошибка'});
+            await deviceB.context.close();
+
+            await localLogin(page,'QA Никита','1357');
+            await assertWorkspace(page,{marker:'qa-nikita-latest',presentLesson:6,absentLesson:9,presentError:'QA Никита · только его ошибка',absentError:'QA Миша · только его ошибка'});
+            await switchToChooser(page,'QA Никита');
+            await localLogin(page,'QA Миша','2468');
+            await assertWorkspace(page,{marker:'qa-misha-latest',presentLesson:9,absentLesson:6,presentError:'QA Миша · только его ошибка',absentError:'QA Никита · только его ошибка'});
+
+            console.log(`PRODUCTION MULTI-STUDENT UI PASS ${expected}: immediate switch -> real D1 -> clean-device restore -> same-device isolation -> parent isolation`);
+          } finally {
+            await primary.close();
+            await browser.close();
+          }
+          NODE
+          node /tmp/prod-multi-student.mjs
+      - name: Remove both temporary QA students from production D1
+        if: always()
+        run: |
+          set -eu
+          if [ ! -s /tmp/qa-profile-ids.json ]; then
+            echo 'No QA profile ids were created.'
+            exit 0
+          fi
+          node <<'NODE'
+          const fs=require('fs');
+          const ids=JSON.parse(fs.readFileSync('/tmp/qa-profile-ids.json','utf8'));
+          if(!Array.isArray(ids)||!ids.length)process.exit(0);
+          for(const id of ids)if(!/^[A-Za-z0-9_-]{8,80}$/.test(id))throw new Error(`Unsafe QA id: ${id}`);
+          const quoted=ids.map(id=>`'${id}'`).join(',');
+          fs.writeFileSync('/tmp/qa-multi-cleanup.sql',[
+            `DELETE FROM progress_history WHERE student_id IN (${quoted});`,
+            `DELETE FROM student_sessions WHERE student_id IN (${quoted});`,
+            `DELETE FROM student_progress WHERE student_id IN (${quoted});`,
+            `DELETE FROM students WHERE id IN (${quoted});`,
+          ].join('\n'));
+          console.log(`Prepared cleanup for ${ids.length} QA students.`);
+          NODE
+          if [ -s /tmp/qa-multi-cleanup.sql ]; then
+            npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-multi-cleanup.sql
+          fi
+          rm -f /tmp/qa-profile-ids.json /tmp/qa-multi-cleanup.sql /tmp/prod-multi-student.mjs
+          echo 'Production multi-student QA rows cleaned.'
