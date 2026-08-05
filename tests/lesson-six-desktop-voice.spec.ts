@@ -37,15 +37,6 @@ async function routeNarration(page:Page,requests:NarrationRequest[]){
   await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await new Promise(resolve=>setTimeout(resolve,70));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-desktop-mock'})});
 }
 async function audioPlays(page:Page){return page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{audioPlays:number}}).__lessonSixDesktopVoiceAudit.audioPlays)}
-async function expectWarmAndInstant(page:Page,requests:NarrationRequest[],button:Locator,id:string){
-  await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);
-  await page.waitForTimeout(150);
-  const playsBefore=await audioPlays(page);const callsBefore=requests.filter(item=>item.id===id).length;
-  await domClick(button);
-  await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);
-  await page.waitForTimeout(150);
-  expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
-}
 async function expectOnDemandThenCached(page:Page,requests:NarrationRequest[],button:Locator,id:string){
   expect(requests.filter(item=>item.id===id).length).toBe(0);
   const firstPlays=await audioPlays(page);await domClick(button);
@@ -75,19 +66,19 @@ async function setMandatoryPracticeIndex(page:Page,index:number){
   },{index,results:mainResults});
 }
 
-test('lesson 6 desktop CatMentor warms only useful audio and caches manual actions on demand',async({page})=>{
+test('lesson 6 desktop CatMentor generates every manual action only on demand and then caches it',async({page})=>{
   test.setTimeout(40_000);const requests:NarrationRequest[]=[];await installVoiceMocks(page);await routeNarration(page,requests);
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});await openLessonSix(page);await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible();
   const collapsed=page.locator('.cat-mentor-collapsed');if(await collapsed.isVisible().catch(()=>false))await domClick(collapsed);
   const actions=page.locator('.cat-mentor-actions');
-  await expectWarmAndInstant(page,requests,actions.getByRole('button').filter({hasText:'Подсказка'}),'mentor-l6-intro-hint');
+  await expectOnDemandThenCached(page,requests,actions.getByRole('button').filter({hasText:'Подсказка'}),'mentor-l6-intro-hint');
   await expectOnDemandThenCached(page,requests,actions.getByRole('button').filter({hasText:'Объясни иначе'}),'mentor-l6-intro-different');
   await expectOnDemandThenCached(page,requests,actions.getByRole('button').filter({hasText:'Дай пример'}),'mentor-l6-intro-example');
   await expectOnDemandThenCached(page,requests,actions.getByRole('button').filter({hasText:'Почему так?'}),'mentor-l6-intro-why');
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
-test('lesson 6 desktop mandatory practice warms hint only and caches on-demand Pythagoras actions',async({page})=>{
+test('lesson 6 desktop mandatory practice generates all Pythagoras actions only on demand and caches them',async({page})=>{
   test.setTimeout(45_000);const requests:NarrationRequest[]=[];await installVoiceMocks(page);
   await page.addInitScript(()=>{
     const results={'l6-a1':true,'l6-a2':true,'l6-a3':true,'l6-a4':true,'l6-a5':true,'l6-p1':true,'l6-p2':true,'l6-p3':true,'l6-p4':true,'l6-p5':true,'l6-p6':true,'l6-q1':true,'l6-q2':true,'l6-q3':true,'l6-q4':true,'l6-q5':true,'l6-star':true};
@@ -101,9 +92,9 @@ test('lesson 6 desktop mandatory practice warms hint only and caches on-demand P
   const task=page.locator('[data-practice-task="l6-source-47"]');await expect(task).toBeVisible({timeout:8_000});
   await expect.poll(()=>requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length,{timeout:6_000}).toBe(1);
   await page.waitForTimeout(500);
-  expect(requests.filter(item=>item.id==='mentor-practice-6-l6-source-47-status').length).toBe(0);
+  expect(requests.filter(item=>item.id.startsWith('mentor-practice-6-l6-source-47-')).length).toBe(0);
   const practiceActions=task.locator('.practice-pythagoras-actions');
-  await expectWarmAndInstant(page,requests,practiceActions.getByRole('button').filter({hasText:'Подсказка'}),'mentor-practice-6-l6-source-47-hint');
+  await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Подсказка'}),'mentor-practice-6-l6-source-47-hint');
   await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Объясни иначе'}),'mentor-practice-6-l6-source-47-different');
   await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Дай пример'}),'mentor-practice-6-l6-source-47-example');
   await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Почему так?'}),'mentor-practice-6-l6-source-47-why');
@@ -113,7 +104,7 @@ test('lesson 6 desktop mandatory practice warms hint only and caches on-demand P
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
-test('lesson 6 desktop narrates all 6 practice stages from a warmed Sulafat clip',async({page})=>{
+test('lesson 6 desktop narrates all 6 practice stages from a cached current Sulafat clip',async({page})=>{
   test.setTimeout(70_000);const requests:NarrationRequest[]=[];await installVoiceMocks(page);await routeNarration(page,requests);await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
   for(const stage of mainPracticeStages){
     requests.length=0;await setMainStage(page,stage.index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
@@ -132,8 +123,6 @@ test('lesson 6 desktop auto-narrates all 20 mandatory practice tasks with one sh
     const taskData=practice.tasks[index];requests.length=0;await setMandatoryPracticeIndex(page,index);await page.reload({waitUntil:'domcontentloaded'});await openLessonSix(page);
     const task=page.locator(`[data-practice-task="${taskData.id}"]`);await expect(task).toBeVisible({timeout:7_000});const id=`lesson-06-practice-${taskData.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text).toBe(studioNarrationText(practiceNarrationText(taskData,index,practice.tasks.length)));
-    // Each reload resets the mock audit. Summary auto-narration is the first
-    // Audio.play(); the mandatory task must produce the second one.
     await expect.poll(()=>audioPlays(page),{timeout:5_000,message:`auto narration must actually play for ${taskData.id}`}).toBeGreaterThan(1);
     const voiceButton=task.locator('.extended-practice-voice button');await expect(voiceButton).toContainText('▶ Озвучить задание',{timeout:2_500});
     const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await audioPlays(page);
