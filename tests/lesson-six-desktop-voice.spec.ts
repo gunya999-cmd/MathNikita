@@ -108,7 +108,8 @@ test('lesson 6 desktop mandatory practice warms hint only and caches on-demand P
   await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Дай пример'}),'mentor-practice-6-l6-source-47-example');
   await expectOnDemandThenCached(page,requests,practiceActions.getByRole('button').filter({hasText:'Почему так?'}),'mentor-practice-6-l6-source-47-why');
   const narratorPlaysBefore=await audioPlays(page);const narratorCalls=requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length;
-  await domClick(task.locator('.extended-practice-voice button'));await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(narratorPlaysBefore);expect(requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length).toBe(narratorCalls);
+  const voiceButton=task.locator('.extended-practice-voice button');await expect(voiceButton).toContainText('▶ Озвучить задание',{timeout:1_500});
+  await domClick(voiceButton);await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(narratorPlaysBefore);expect(requests.filter(item=>item.id==='lesson-06-practice-l6-source-47').length).toBe(narratorCalls);
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
@@ -131,8 +132,9 @@ test('lesson 6 desktop auto-narrates all 20 mandatory practice tasks with one sh
     const task=page.locator(`[data-practice-task="${taskData.id}"]`);await expect(task).toBeVisible({timeout:7_000});const id=`lesson-06-practice-${taskData.id}`;
     await expect.poll(()=>requests.filter(item=>item.id===id).length,{timeout:6_000}).toBe(1);const narration=requests.find(item=>item.id===id)!;expect(narration.version).toBe('ru-teacher-gemini-sulafat-v2');expect(narration.text).toBe(studioNarrationText(practiceNarrationText(taskData,index,practice.tasks.length)));
     await expect.poll(()=>audioPlays(page),{timeout:1_500}).toBeGreaterThan(0);
-    await page.waitForTimeout(40);const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await audioPlays(page);
-    await domClick(task.locator('.extended-practice-voice button'));await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);await page.waitForTimeout(30);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
+    const voiceButton=task.locator('.extended-practice-voice button');await expect(voiceButton).toContainText('▶ Озвучить задание',{timeout:1_500});
+    const callsBefore=requests.filter(item=>item.id===id).length;const playsBefore=await audioPlays(page);
+    await domClick(voiceButton);await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(playsBefore);await page.waitForTimeout(30);expect(requests.filter(item=>item.id===id).length).toBe(callsBefore);
   }
   const audit=await page.evaluate(()=>(window as unknown as {__lessonSixDesktopVoiceAudit:{systemSpeech:number}}).__lessonSixDesktopVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
