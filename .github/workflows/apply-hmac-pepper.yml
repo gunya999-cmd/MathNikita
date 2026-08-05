@@ -1,0 +1,73 @@
+name: Apply HMAC pepper PIN hashing fix
+
+on:
+  push:
+    branches:
+      - fix/cloud-pin-hmac-pepper
+    paths:
+      - '.github/workflows/apply-hmac-pepper.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cloud-pin-hmac-pepper
+      - name: Replace PBKDF2 with HMAC-SHA256 plus server-side pepper
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='worker/cloudProfiles.ts';
+          let source=fs.readFileSync(path,'utf8');
+
+          source=source.replace("// @ts-expect-error Cloudflare Workers provides node:crypto when nodejs_compat is enabled.\nimport {pbkdf2 as nodePbkdf2} from 'node:crypto';\n\n",'');
+          source=source.replace('export type CloudProfilesEnv={DB?:D1DatabaseLike};',"export type CloudProfilesEnv={DB?:D1DatabaseLike;PROFILE_PIN_PEPPER?:string};");
+          source=source.replace('const PIN_ITERATIONS=120_000;\n','');
+
+          const start=source.indexOf('async function pinHash(');
+          const end=source.indexOf('async function safeEqualHex',start);
+          if(start<0||end<0)throw new Error('pinHash block not found');
+          const hmac=`let cachedPinKey:{pepper:string;promise:Promise<CryptoKey>}|null=null;\nasync function pinHmacKey(pepper:string){\n  if(cachedPinKey?.pepper===pepper)return cachedPinKey.promise;\n  const promise=crypto.subtle.importKey('raw',encoder.encode(pepper),{name:'HMAC',hash:{name:'SHA-256'}},false,['sign']);\n  cachedPinKey={pepper,promise};\n  return promise.catch(error=>{if(cachedPinKey?.promise===promise)cachedPinKey=null;throw error});\n}\nasync function pinHash(pin:string,saltHex:string,pepper:string){\n  const key=await pinHmacKey(pepper);\n  const payload=encoder.encode(\`mathnikita-pin-v1:\${saltHex}:\${pin}\`);\n  const mac=await crypto.subtle.sign({name:'HMAC'},key,payload);\n  return bytesToHex(new Uint8Array(mac));\n}\n`;
+          source=source.slice(0,start)+hmac+source.slice(end);
+
+          const replacements=[
+            ['async function register(request:Request,db:D1DatabaseLike){','async function register(request:Request,db:D1DatabaseLike,pepper:string){'],
+            ['async function login(request:Request,db:D1DatabaseLike){','async function login(request:Request,db:D1DatabaseLike,pepper:string){'],
+            ['async function recover(request:Request,db:D1DatabaseLike){','async function recover(request:Request,db:D1DatabaseLike,pepper:string){'],
+            ['pinHash(pin,existing.pin_salt)','pinHash(pin,existing.pin_salt,pepper)'],
+            ['pinHash(pin,pinSalt)','pinHash(pin,pinSalt,pepper)'],
+            ['pinHash(pin,student.pin_salt)','pinHash(pin,student.pin_salt,pepper)'],
+            ['pinHash(newPin,salt)','pinHash(newPin,salt,pepper)'],
+            ["if(url.pathname==='/api/cloud/status')return json({ok:true,configured:Boolean(env.DB)});","if(url.pathname==='/api/cloud/status')return json({ok:true,configured:Boolean(env.DB&&env.PROFILE_PIN_PEPPER)});"],
+            ["if(!env.DB)return json({error:'Cloud storage is not configured'},{status:503});","if(!env.DB)return json({error:'Cloud storage is not configured'},{status:503});\n  if(!env.PROFILE_PIN_PEPPER)return json({error:'Cloud authentication is not configured'},{status:503});"],
+            ["return register(request,env.DB);","return register(request,env.DB,env.PROFILE_PIN_PEPPER);"],
+            ["return login(request,env.DB);","return login(request,env.DB,env.PROFILE_PIN_PEPPER);"],
+            ["return recover(request,env.DB);","return recover(request,env.DB,env.PROFILE_PIN_PEPPER);"],
+          ];
+          for(const [before,after] of replacements){
+            if(!source.includes(before))throw new Error(`Expected source fragment not found: ${before}`);
+            source=source.replaceAll(before,after);
+          }
+          if(source.includes('nodePbkdf2')||source.includes('PIN_ITERATIONS'))throw new Error('Legacy PBKDF2 code remains');
+          fs.writeFileSync(path,source);
+
+          const smokePath='scripts/cloud-api-smoke.mjs';
+          let smoke=fs.readFileSync(smokePath,'utf8');
+          const smokeBefore="'--port',String(port)],{stdio:";
+          const smokeAfter="'--port',String(port),'--var','PROFILE_PIN_PEPPER:local-cloud-smoke-pepper-2026'],{stdio:";
+          if(!smoke.includes(smokeBefore))throw new Error('Wrangler local smoke spawn arguments not found');
+          smoke=smoke.replace(smokeBefore,smokeAfter);
+          fs.writeFileSync(smokePath,smoke);
+          NODE
+      - name: Remove one-shot workflow and commit product fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/apply-hmac-pepper.yml
+          git add worker/cloudProfiles.ts scripts/cloud-api-smoke.mjs
+          git commit -m "Protect cloud profile PINs with HMAC pepper"
+          git push origin HEAD:fix/cloud-pin-hmac-pepper
