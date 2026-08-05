@@ -25,6 +25,7 @@ let mentorForegroundTickets=0;
 let mentorTicketTimer:number|null=null;
 
 function abortError(){const error=new Error('Studio narration aborted');error.name='AbortError';return error}
+function clearMentorForegroundTicket(){mentorForegroundTickets=0;if(mentorTicketTimer!==null){window.clearTimeout(mentorTicketTimer);mentorTicketTimer=null}}
 function cancelStaleStudioGeneration(){
   for(const[key,controller]of activeStudioControllers){controller.abort();audioUrlCache.delete(key)}
   activeStudioControllers.clear();prefetchQueue.length=0;queuedPrefetchKeys.clear();
@@ -53,7 +54,14 @@ export function loadVoiceSettings():StoredVoiceSettings{
 export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSettings(settings)}
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
 function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${studioNarrationText(text)}`}
-export function peekStudioAudioUrl(id:string,text:string){return readyAudioUrlCache.get(cacheKey(id,text))}
+export function peekStudioAudioUrl(id:string,text:string){
+  const ready=readyAudioUrlCache.get(cacheKey(id,text));
+  // A cached mentor clip consumes the foreground intent just like a network
+  // request would. Otherwise the unused one-shot ticket could accidentally
+  // authorize an obsolete background warmup after the requested clip starts.
+  if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
+  return ready;
+}
 function isSpeculativeDynamicId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)||id.startsWith('mentor-')}
 
 function drainPrefetchQueue(){
@@ -89,10 +97,10 @@ async function requestStudioAudio(id:string,prepared:string,signal:AbortSignal,a
 }
 
 export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOverride=false):Promise<string>{
-  const prepared=studioNarrationText(text);const key=cacheKey(id,prepared);const ready=readyAudioUrlCache.get(key);if(ready)return ready;const cached=audioUrlCache.get(key);if(cached)return cached;
+  const prepared=studioNarrationText(text);const key=cacheKey(id,prepared);const ready=readyAudioUrlCache.get(key);if(ready){if(id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
   if(id.startsWith('mentor-')){
     const foreground=mentorForegroundOverride||mentorForegroundTickets>0;
-    if(foreground&&mentorForegroundTickets>0){mentorForegroundTickets=0;if(mentorTicketTimer!==null){window.clearTimeout(mentorTicketTimer);mentorTicketTimer=null}}
+    if(foreground&&mentorForegroundTickets>0)clearMentorForegroundTicket();
     if(!foreground)throw new Error('Background mentor warmup deferred');
   }
   const controller=new AbortController();activeStudioControllers.set(key,controller);
