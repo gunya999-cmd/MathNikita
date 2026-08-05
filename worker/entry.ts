@@ -22,6 +22,15 @@ function versionResponse(env:Env){
   }),{headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
 }
 
+function cloudRuntimeError(error:unknown){
+  const code=error instanceof Error?error.name:'unknown_error';
+  console.error('mathnikita_cloud_runtime_error',{code});
+  return new Response(JSON.stringify({error:'Cloud request failed',code}),{
+    status:500,
+    headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'},
+  });
+}
+
 export default{
   async fetch(request:Request,env:Env,ctx:ExecutionContext):Promise<Response>{
     const url=new URL(request.url);
@@ -30,7 +39,13 @@ export default{
       const response=versionResponse(env);
       return request.method==='HEAD'?new Response(null,{status:response.status,headers:response.headers}):response;
     }
-    const cloudResponse=await handleCloudProfiles(request,env);
+    let cloudResponse:Response|null;
+    try{
+      cloudResponse=await handleCloudProfiles(request,env);
+    }catch(error){
+      if(url.pathname.startsWith('/api/cloud/'))return cloudRuntimeError(error);
+      throw error;
+    }
     if(cloudResponse)return cloudResponse;
     return legacyWorker.fetch(request,env,ctx);
   },
