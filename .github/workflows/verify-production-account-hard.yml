@@ -1,0 +1,211 @@
+name: Verify production account and cloud sync hard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-production-account-hard.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-account-hard-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-lifecycle:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/prod-account-hard-741de'
+    name: Production API · auth sync conflict recovery
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      EXPECTED_SHA: 741de3781b9de744aaf10d727d0e329aab2ea89a
+      QA_STUDENT_ID: qa-account-api-${{ github.run_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify exact production and full cloud lifecycle
+        run: |
+          node <<'NODE'
+          const base=process.env.BASE_URL,id=process.env.QA_STUDENT_ID,pin='2468';
+          const assert=(condition,message)=>{if(!condition)throw new Error(message)};
+          async function raw(path,options={}){
+            return fetch(base+path,{...options,headers:{'content-type':'application/json','cache-control':'no-cache',...(options.headers||{})}});
+          }
+          async function json(path,options={}){
+            const response=await raw(path,options);const text=await response.text();let body={};
+            try{body=text?JSON.parse(text):{}}catch{body={raw:text}}
+            if(!response.ok)throw new Error(`${path} ${response.status}: ${JSON.stringify(body)}`);
+            return body;
+          }
+          const version=await json('/api/version');
+          assert(version.gitSha===process.env.EXPECTED_SHA,`production SHA ${version.gitSha}; expected ${process.env.EXPECTED_SHA}`);
+          assert(version.workerVersion?.id&&version.workerVersion?.timestamp,'worker version metadata missing');
+          const status=await json('/api/cloud/status');assert(status.configured===true,'cloud status is not configured');
+
+          const reg=await json('/api/cloud/register',{method:'POST',body:JSON.stringify({studentId:id,name:'QA Account API',pin,entries:{'mathnikita:qa:marker':'registered','mathnikita:qa:lesson':'6'}})});
+          const code=reg.student?.code,recovery=reg.recoveryCode,token=reg.token;
+          assert(reg.ok&&code&&recovery&&token,'registration response incomplete');
+          assert(reg.entries?.['mathnikita:qa:marker']==='registered','initial entries missing after registration');
+
+          const wrong=await raw('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin:'9999'})});
+          assert(wrong.status===401,`wrong PIN expected 401, got ${wrong.status}`);
+          const login=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin})});
+          assert(login.student?.id===id,'login restored wrong student');
+          assert(login.entries?.['mathnikita:qa:marker']==='registered','login did not restore initial progress');
+
+          const unauthorized=await raw('/api/cloud/snapshot',{headers:{authorization:'Bearer invalid-qa-token'}});
+          assert(unauthorized.status===401,`invalid token snapshot expected 401, got ${unauthorized.status}`);
+
+          const first=await json('/api/cloud/snapshot',{headers:{authorization:`Bearer ${token}`}});
+          assert(first.revision===reg.revision,'initial snapshot revision mismatch');
+          const sync=await json('/api/cloud/sync',{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({baseRevision:first.revision,changes:{'mathnikita:qa:marker':'synced','mathnikita:qa:analytics':JSON.stringify({screenSeconds:1777,wrong:2,correct:14}),'mathnikita:qa:lesson':'9'}})});
+          assert(sync.revision===first.revision+1,'sync revision did not advance exactly once');
+
+          const stale=await raw('/api/cloud/sync',{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({baseRevision:first.revision,changes:{'mathnikita:qa:marker':'stale-overwrite'}})});
+          assert(stale.status===409,`stale sync expected 409, got ${stale.status}`);
+          const staleBody=await stale.json();
+          assert(staleBody.revision===sync.revision,'409 did not return current revision');
+          assert(staleBody.entries?.['mathnikita:qa:marker']==='synced','409 conflict did not return current cloud data');
+
+          const snap=await json('/api/cloud/snapshot',{headers:{authorization:`Bearer ${token}`}});
+          assert(snap.entries?.['mathnikita:qa:marker']==='synced','snapshot lost synced marker');
+          assert(snap.entries?.['mathnikita:qa:lesson']==='9','snapshot lost updated lesson');
+          const analytics=JSON.parse(snap.entries?.['mathnikita:qa:analytics']||'{}');
+          assert(analytics.screenSeconds===1777&&analytics.wrong===2&&analytics.correct===14,'snapshot analytics mismatch');
+
+          const freshLogin=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin})});
+          assert(freshLogin.revision===sync.revision,'fresh login revision mismatch');
+          assert(freshLogin.entries?.['mathnikita:qa:marker']==='synced','fresh login did not restore latest cloud progress');
+
+          const recovered=await json('/api/cloud/recover',{method:'POST',body:JSON.stringify({code,recoveryCode:recovery,newPin:'5678'})});
+          assert(recovered.recoveryCode&&recovered.recoveryCode!==recovery,'recovery code did not rotate');
+          const oldPin=await raw('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin})});
+          assert(oldPin.status===401,'old PIN still works after recovery');
+          const newPin=await json('/api/cloud/login',{method:'POST',body:JSON.stringify({code,pin:'5678'})});
+          assert(newPin.entries?.['mathnikita:qa:marker']==='synced','progress lost after PIN recovery');
+          assert(newPin.entries?.['mathnikita:qa:lesson']==='9','lesson progress lost after PIN recovery');
+
+          console.log(`PRODUCTION API HARD PASS ${process.env.EXPECTED_SHA}: register -> wrong PIN -> login -> unauthorized 401 -> snapshot -> sync -> stale 409 -> fresh login -> recovery -> new PIN`);
+          NODE
+      - name: Remove API QA student from production D1
+        if: always()
+        run: |
+          set -eu
+          cat > /tmp/qa-account-api-cleanup.sql <<SQL
+          DELETE FROM progress_history WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_sessions WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM student_progress WHERE student_id='${QA_STUDENT_ID}';
+          DELETE FROM students WHERE id='${QA_STUDENT_ID}';
+          SQL
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-account-api-cleanup.sql
+          echo 'API QA profile rows cleaned.'
+
+  production-ui:
+    if: github.event_name == 'pull_request' && github.head_ref == 'qa/prod-account-hard-741de'
+    name: Production UI · two students cross-device isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BASE_URL: https://mathnikita.gunya999.workers.dev
+      EXPECTED_SHA: 741de3781b9de744aaf10d727d0e329aab2ea89a
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+    steps:
+      - name: Checkout exact canonical main
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXPECTED_SHA }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Verify real UI registration, immediate switch, clean-device restore and parent isolation
+        run: |
+          cat > qa-production-account-hard.mjs <<'NODE'
+          import fs from 'node:fs';
+          import {chromium} from '@playwright/test';
+
+          const base=process.env.BASE_URL,expected=process.env.EXPECTED_SHA;
+          const ids=[];const idsFile='/tmp/qa-account-ui-ids.json';
+          const saveIds=()=>fs.writeFileSync(idsFile,JSON.stringify(ids));
+          const assert=(condition,message)=>{if(!condition)throw new Error(message)};
+          const browser=await chromium.launch({headless:true});
+
+          async function waitActive(page,name){await page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${name}`)}).waitFor({state:'visible',timeout:25000})}
+          async function waitCloudSaved(page){await page.getByLabel(/Облако: Прогресс сохранён/).waitFor({state:'visible',timeout:30000})}
+          async function createProfile(page,name,pin){
+            await page.getByLabel('Имя ученика').fill(name);
+            await page.getByLabel('PIN · 4 цифры').fill(pin);
+            await page.getByLabel('Повтори PIN').fill(pin);
+            await page.getByRole('button',{name:'Создать профиль'}).click();
+            await page.getByRole('heading',{name:'Прогресс теперь защищён'}).waitFor({state:'visible',timeout:30000});
+            const text=await page.locator('body').innerText();const code=text.match(/\bMN-[A-Z0-9]{7}\b/)?.[0];assert(code,`student code missing for ${name}`);
+            const profile=await page.evaluate(profileName=>{const registry=JSON.parse(localStorage.getItem('mathnikita:accounts:registry:v1')??'null');return registry?.profiles?.find(profile=>profile.name===profileName)??null},name);
+            assert(profile?.id&&/^[A-Za-z0-9_-]{8,80}$/.test(profile.id),`profile id missing/unsafe for ${name}`);
+            ids.push(profile.id);saveIds();
+            await page.getByRole('button',{name:/Я сохранил коды/}).click();await waitActive(page,name);await waitCloudSaved(page);
+            return{id:profile.id,code};
+          }
+          async function seed(page,{marker,lesson,correct,wrong,error,seconds}){
+            await page.evaluate(({marker,lesson,correct,wrong,error,seconds})=>{
+              const now=new Date();const day=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;const iso=now.toISOString();
+              localStorage.setItem('mathnikita:profile-test-marker',marker);
+              localStorage.setItem(`mathnikita:lesson-complete:${lesson}`,JSON.stringify({completedAt:iso,activeSeconds:seconds}));
+              localStorage.setItem('mathnikita:student-analytics:v1',JSON.stringify({version:1,lessons:{[String(lesson)]:{lessonNumber:lesson,sessions:2,screenSeconds:seconds+300,focusSeconds:seconds+200,activeSeconds:seconds,correct,wrong,firstTryCorrect:Math.max(0,correct-1),recoveredErrors:Math.min(1,wrong),hints:wrong?1:0,mentorActions:2,narrationPlays:4,practiceCorrect:Math.max(0,correct-2),practiceWrong:wrong,completedAt:iso,firstSeenAt:iso,lastSeenAt:iso}},daily:{[day]:{screenSeconds:seconds+300,focusSeconds:seconds+200,activeSeconds:seconds,correct,wrong,completedLessons:1}},events:wrong?[{id:`qa-${marker}`,at:iso,lessonNumber:lesson,type:'answer_wrong',area:'practice',key:`qa:${lesson}`,label:error}]:[]}));
+            },{marker,lesson,correct,wrong,error,seconds});
+          }
+          async function switchChooser(page,name){await page.getByRole('button',{name:new RegExp(`Сменить ученика\\. Сейчас ${name}`)}).click();await page.getByRole('heading',{name:'Выбери свой профиль'}).waitFor({state:'visible',timeout:35000})}
+          async function cloudLogin(student,pin){const context=await browser.newContext();const page=await context.newPage();await page.goto(base,{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:/Уже есть код ученика/}).click();await page.getByLabel('Код ученика').fill(student.code);await page.getByLabel('PIN облачного профиля').fill(pin);await page.getByRole('button',{name:'Войти и загрузить прогресс'}).click();return{context,page}}
+          async function localLogin(page,name,pin){await page.getByRole('button',{name:new RegExp(name)}).click();await page.getByLabel(`PIN для ${name}`).fill(pin);await page.getByRole('button',{name:'Войти'}).click();await waitActive(page,name)}
+          async function assertWorkspace(page,{marker,presentLesson,absentLesson,presentError,absentError,seconds}){
+            const actual=await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'));assert(actual===marker,`marker ${actual}; expected ${marker}`);
+            const present=await page.evaluate(lesson=>localStorage.getItem(`mathnikita:lesson-complete:${lesson}`),presentLesson);const absent=await page.evaluate(lesson=>localStorage.getItem(`mathnikita:lesson-complete:${lesson}`),absentLesson);
+            assert(present!==null,`lesson ${presentLesson} missing`);assert(absent===null,`foreign lesson ${absentLesson} leaked`);
+            const completion=JSON.parse(present);assert(completion.activeSeconds===seconds,`activeSeconds ${completion.activeSeconds}; expected ${seconds}`);
+            const analytics=JSON.parse(await page.evaluate(()=>localStorage.getItem('mathnikita:student-analytics:v1'))||'{}');assert(analytics.lessons?.[String(presentLesson)]?.activeSeconds===seconds,'student analytics active time mismatch');
+            await page.getByRole('button',{name:'Родителям'}).click();await page.getByRole('heading',{name:'Обзор обучения'}).waitFor({state:'visible',timeout:15000});await page.getByText(presentError,{exact:true}).waitFor({state:'visible',timeout:15000});assert(await page.getByText(absentError,{exact:true}).count()===0,`foreign parent error leaked: ${absentError}`);
+          }
+
+          const versionResponse=await fetch(`${base}/api/version`,{headers:{'cache-control':'no-cache'}});assert(versionResponse.ok,`/api/version ${versionResponse.status}`);const version=await versionResponse.json();assert(version.gitSha===expected,`production SHA ${version.gitSha}; expected ${expected}`);
+          const primary=await browser.newContext();const page=await primary.newPage();
+          try{
+            await page.goto(base,{waitUntil:'domcontentloaded'});
+            const a=await createProfile(page,'QA Никита','1357');
+            await seed(page,{marker:'qa-nikita-hard',lesson:6,correct:18,wrong:1,error:'QA Никита · только его production ошибка',seconds:1366});
+            await switchChooser(page,'QA Никита');
+            const cleanA=await cloudLogin(a,'1357');await waitActive(cleanA.page,'QA Никита');await assertWorkspace(cleanA.page,{marker:'qa-nikita-hard',presentLesson:6,absentLesson:9,presentError:'QA Никита · только его production ошибка',absentError:'QA Миша · только его production ошибка',seconds:1366});await cleanA.context.close();
+
+            await page.getByRole('button',{name:/Добавить ученика/}).click();
+            const b=await createProfile(page,'QA Миша','2468');assert(await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'))===null,'new student inherited previous marker');
+            await seed(page,{marker:'qa-misha-hard',lesson:9,correct:10,wrong:2,error:'QA Миша · только его production ошибка',seconds:1909});
+            await switchChooser(page,'QA Миша');
+            const cleanB=await cloudLogin(b,'2468');await waitActive(cleanB.page,'QA Миша');await assertWorkspace(cleanB.page,{marker:'qa-misha-hard',presentLesson:9,absentLesson:6,presentError:'QA Миша · только его production ошибка',absentError:'QA Никита · только его production ошибка',seconds:1909});await cleanB.context.close();
+
+            await localLogin(page,'QA Никита','1357');await assertWorkspace(page,{marker:'qa-nikita-hard',presentLesson:6,absentLesson:9,presentError:'QA Никита · только его production ошибка',absentError:'QA Миша · только его production ошибка',seconds:1366});
+            await switchChooser(page,'QA Никита');await localLogin(page,'QA Миша','2468');await assertWorkspace(page,{marker:'qa-misha-hard',presentLesson:9,absentLesson:6,presentError:'QA Миша · только его production ошибка',absentError:'QA Никита · только его production ошибка',seconds:1909});
+
+            await page.reload({waitUntil:'domcontentloaded'});await waitActive(page,'QA Миша');assert(await page.evaluate(()=>localStorage.getItem('mathnikita:profile-test-marker'))==='qa-misha-hard','reload lost active student workspace');
+            console.log(`PRODUCTION UI HARD PASS ${expected}: two real students -> immediate switch flush -> clean-device restore -> same-device isolation -> lesson/time/error/parent isolation -> reload persistence`);
+          } finally {await primary.close();await browser.close()}
+          NODE
+          node qa-production-account-hard.mjs
+      - name: Remove both UI QA students from production D1
+        if: always()
+        run: |
+          set -eu
+          if [ ! -s /tmp/qa-account-ui-ids.json ]; then echo 'No UI QA profile ids were created.'; exit 0; fi
+          node <<'NODE'
+          const fs=require('fs');const ids=JSON.parse(fs.readFileSync('/tmp/qa-account-ui-ids.json','utf8'));
+          if(!Array.isArray(ids)||!ids.length)process.exit(0);for(const id of ids)if(!/^[A-Za-z0-9_-]{8,80}$/.test(id))throw new Error(`Unsafe QA id: ${id}`);
+          const q=ids.map(id=>`'${id}'`).join(',');fs.writeFileSync('/tmp/qa-account-ui-cleanup.sql',[`DELETE FROM progress_history WHERE student_id IN (${q});`,`DELETE FROM student_sessions WHERE student_id IN (${q});`,`DELETE FROM student_progress WHERE student_id IN (${q});`,`DELETE FROM students WHERE id IN (${q});`].join('\n'));console.log(`Prepared cleanup for ${ids.length} UI QA students.`);
+          NODE
+          npx -y wrangler@4.118.0 d1 execute mathnikita-db --remote --file=/tmp/qa-account-ui-cleanup.sql
+          rm -f /tmp/qa-account-ui-ids.json /tmp/qa-account-ui-cleanup.sql qa-production-account-hard.mjs
+          echo 'UI QA profile rows cleaned.'
