@@ -1,0 +1,46 @@
+name: Apply account-switch cloud flush fix
+
+on:
+  push:
+    branches: [qa/multi-student-cloud-hard-retest]
+    paths:
+      - '.github/workflows/apply-account-switch-cloud-flush.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/multi-student-cloud-hard-retest
+      - name: Patch account switching to flush cloud before ending session
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('src/App.tsx')
+          text=path.read_text()
+          old="""  const [showHint, setShowHint] = useState(false);\n  const [routeBuilt, setRouteBuilt] = useState(false);\n"""
+          new="""  const [showHint, setShowHint] = useState(false);\n  const [routeBuilt, setRouteBuilt] = useState(false);\n  const [switchingStudent, setSwitchingStudent] = useState(false);\n"""
+          if old not in text: raise SystemExit('state insertion anchor not found')
+          text=text.replace(old,new,1)
+          old="""  function changeStudent() {\n    switchStudentProfile();\n    window.location.reload();\n  }\n"""
+          new="""  async function changeStudent() {\n    if (switchingStudent) return;\n    setSwitchingStudent(true);\n    backupStudentProfileOnPageHide();\n    try {\n      if (profile?.cloud) await syncStudentCloudNow(profile.id);\n    } finally {\n      switchStudentProfile();\n      window.location.reload();\n    }\n  }\n"""
+          if old not in text: raise SystemExit('changeStudent anchor not found')
+          text=text.replace(old,new,1)
+          old="""{profile && <button className=\"student-profile-pill\" onClick={changeStudent} aria-label={`Сменить ученика. Сейчас ${profile.name}`}><span>{profile.avatar}</span><div><b>{profile.name}</b><small>{profile.cloud?.studentCode??'Сменить ученика'}</small></div></button>}"""
+          new="""{profile && <button className=\"student-profile-pill\" onClick={() => { void changeStudent(); }} disabled={switchingStudent} aria-label={`Сменить ученика. Сейчас ${profile.name}`}><span>{profile.avatar}</span><div><b>{profile.name}</b><small>{switchingStudent?'Сохраняю…':profile.cloud?.studentCode??'Сменить ученика'}</small></div></button>}"""
+          if old not in text: raise SystemExit('profile button anchor not found')
+          text=text.replace(old,new,1)
+          path.write_text(text)
+          PY
+      - name: Remove one-shot workflow and commit product fix
+        run: |
+          rm .github/workflows/apply-account-switch-cloud-flush.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/App.tsx .github/workflows/apply-account-switch-cloud-flush.yml
+          git commit -m 'Flush cloud progress before switching students'
+          git push origin HEAD:qa/multi-student-cloud-hard-retest
