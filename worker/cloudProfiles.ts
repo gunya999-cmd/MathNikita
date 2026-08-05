@@ -1,11 +1,8 @@
-// @ts-expect-error Cloudflare Workers provides node:crypto when nodejs_compat is enabled.
-import {pbkdf2 as nodePbkdf2} from 'node:crypto';
-
 type D1ResultLike={meta?:{changes?:number};results?:unknown[]};
 type D1StatementLike={bind:(...values:unknown[])=>D1StatementLike;run:()=>Promise<D1ResultLike>;first:<T=Record<string,unknown>>()=>Promise<T|null>;all:<T=Record<string,unknown>>()=>Promise<{results:T[]}>};
 type D1DatabaseLike={prepare:(sql:string)=>D1StatementLike;batch:(statements:D1StatementLike[])=>Promise<D1ResultLike[]>};
 
-export type CloudProfilesEnv={DB?:D1DatabaseLike};
+export type CloudProfilesEnv={DB?:D1DatabaseLike;PROFILE_PIN_PEPPER?:string};
 
 type StudentRow={
   id:string;login_code:string;display_name:string;pin_salt:string;pin_hash:string;recovery_hash:string;
@@ -25,7 +22,6 @@ const LOGIN_ALPHABET='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SESSION_TTL_MS=30*24*60*60*1000;
 const LOCK_MS=5*60*1000;
 const MAX_FAILED_ATTEMPTS=5;
-const PIN_ITERATIONS=120_000;
 const MAX_ENTRY_COUNT=400;
 const MAX_KEY_BYTES=300;
 const MAX_VALUE_BYTES=1_800_000;
@@ -53,14 +49,18 @@ function validPin(value:string){return/^\d{4}$/.test(value)}
 function byteLength(value:string){return encoder.encode(value).byteLength}
 
 async function sha256(value:string){const digest=await crypto.subtle.digest('SHA-256',encoder.encode(value));return bytesToHex(new Uint8Array(digest))}
-async function pinHash(pin:string,saltHex:string){
-  const derived=await new Promise<Uint8Array>((resolve,reject)=>{
-    nodePbkdf2(pin,hexToBytes(saltHex),PIN_ITERATIONS,32,'sha256',(error:Error|null,key:Uint8Array)=>{
-      if(error){reject(error);return}
-      resolve(new Uint8Array(key))
-    })
-  });
-  return bytesToHex(derived);
+let cachedPinKey:{pepper:string;promise:Promise<CryptoKey>}|null=null;
+async function pinHmacKey(pepper:string){
+  if(cachedPinKey?.pepper===pepper)return cachedPinKey.promise;
+  const promise=crypto.subtle.importKey('raw',encoder.encode(pepper),{name:'HMAC',hash:{name:'SHA-256'}},false,['sign']);
+  cachedPinKey={pepper,promise};
+  return promise.catch(error=>{if(cachedPinKey?.promise===promise)cachedPinKey=null;throw error});
+}
+async function pinHash(pin:string,saltHex:string,pepper:string){
+  const key=await pinHmacKey(pepper);
+  const payload=encoder.encode(`mathnikita-pin-v1:${saltHex}:${pin}`);
+  const mac=await crypto.subtle.sign({name:'HMAC'},key,payload);
+  return bytesToHex(new Uint8Array(mac));
 }
 async function safeEqualHex(left:string,right:string){
   if(left.length!==right.length)return false;let result=0;for(let i=0;i<left.length;i+=1)result|=left.charCodeAt(i)^right.charCodeAt(i);return result===0;
@@ -126,7 +126,7 @@ function lockedResponse(lockedUntil:number,now:number){
   return json({error:'Слишком много попыток. Попробуйте позже.',retryAfterSeconds},{status:429,headers:{'retry-after':String(retryAfterSeconds)}});
 }
 
-async function register(request:Request,db:D1DatabaseLike){
+async function register(request:Request,db:D1DatabaseLike,pepper:string){
   const body=await parseJson<RegisterBody>(request);if(!body)return json({error:'Invalid JSON'},{status:400});
   const studentId=String(body.studentId??'');const name=cleanName(String(body.name??''));const pin=String(body.pin??'');
   if(!validStudentId(studentId))return json({error:'Invalid student id'},{status:400});
@@ -136,13 +136,13 @@ async function register(request:Request,db:D1DatabaseLike){
   const existing=await db.prepare('SELECT * FROM students WHERE id=?').bind(studentId).first<StudentRow>();
   if(existing){
     const now=Date.now();if(existing.locked_until>now)return lockedResponse(existing.locked_until,now);
-    const candidate=await pinHash(pin,existing.pin_salt);
+    const candidate=await pinHash(pin,existing.pin_salt,pepper);
     if(!(await safeEqualHex(candidate,existing.pin_hash))){const locked=await recordWrongPin(db,existing,now);return locked?lockedResponse(locked,now):json({error:'Student id already exists'},{status:409})}
     const recoveryCode=randomRecoveryCode();await db.prepare('UPDATE students SET recovery_hash=?,failed_attempts=0,locked_until=0,updated_at=? WHERE id=?').bind(await sha256(recoveryCode),new Date().toISOString(),existing.id).run();
     const token=await createSession(db,existing.id);return json({ok:true,student:{id:existing.id,name:existing.display_name,code:existing.login_code},token,recoveryCode,revision:existing.progress_revision,entries:await loadEntries(db,existing.id),resumed:true});
   }
   const loginCode=await uniqueLoginCode(db);const pinSalt=randomHex(16);const recoveryCode=randomRecoveryCode();const now=new Date().toISOString();const revision=Object.keys(entries).length?1:0;const token=randomToken();const tokenHash=await sha256(token);
-  const statements:D1StatementLike[]=[db.prepare('INSERT INTO students(id,login_code,display_name,pin_salt,pin_hash,recovery_hash,progress_revision,last_sync_id,failed_attempts,locked_until,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(studentId,loginCode,name,pinSalt,await pinHash(pin,pinSalt),await sha256(recoveryCode),revision,null,0,0,now,now)];
+  const statements:D1StatementLike[]=[db.prepare('INSERT INTO students(id,login_code,display_name,pin_salt,pin_hash,recovery_hash,progress_revision,last_sync_id,failed_attempts,locked_until,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').bind(studentId,loginCode,name,pinSalt,await pinHash(pin,pinSalt,pepper),await sha256(recoveryCode),revision,null,0,0,now,now)];
   for(const[key,value]of Object.entries(entries)){if(value!==null)statements.push(db.prepare('INSERT INTO student_progress(student_id,storage_key,storage_value,revision,updated_at) VALUES(?,?,?,?,?)').bind(studentId,key,value,revision,now))}
   statements.push(db.prepare('INSERT INTO student_sessions(id,student_id,token_hash,expires_at,created_at,last_seen_at) VALUES(?,?,?,?,?,?)').bind(randomId(),studentId,tokenHash,Date.now()+SESSION_TTL_MS,now,now));
   if(revision)statements.push(db.prepare('INSERT INTO progress_history(student_id,revision,changed_keys,created_at) VALUES(?,?,?,?)').bind(studentId,revision,Object.keys(entries).length,now));
@@ -150,11 +150,11 @@ async function register(request:Request,db:D1DatabaseLike){
   return json({ok:true,student:{id:studentId,name,code:loginCode},token,recoveryCode,revision,entries:Object.fromEntries(Object.entries(entries).filter(([,value])=>value!==null))});
 }
 
-async function login(request:Request,db:D1DatabaseLike){
+async function login(request:Request,db:D1DatabaseLike,pepper:string){
   const body=await parseJson<LoginBody>(request);if(!body)return json({error:'Invalid JSON'},{status:400});const code=normalizeCode(String(body.code??''));const pin=String(body.pin??'');if(!validPin(pin))return json({error:'PIN must contain 4 digits'},{status:400});
   const student=await db.prepare('SELECT * FROM students WHERE login_code=?').bind(code).first<StudentRow>();if(!student)return json({error:'Неверный код ученика или PIN.'},{status:401});
   const now=Date.now();if(student.locked_until>now)return lockedResponse(student.locked_until,now);
-  const candidate=await pinHash(pin,student.pin_salt);if(!(await safeEqualHex(candidate,student.pin_hash))){const locked=await recordWrongPin(db,student,now);if(locked)return lockedResponse(locked,now);return json({error:'Неверный код ученика или PIN.'},{status:401})}
+  const candidate=await pinHash(pin,student.pin_salt,pepper);if(!(await safeEqualHex(candidate,student.pin_hash))){const locked=await recordWrongPin(db,student,now);if(locked)return lockedResponse(locked,now);return json({error:'Неверный код ученика или PIN.'},{status:401})}
   await db.prepare('UPDATE students SET failed_attempts=0,locked_until=0,updated_at=? WHERE id=?').bind(new Date().toISOString(),student.id).run();const token=await createSession(db,student.id);
   return json({ok:true,student:{id:student.id,name:student.display_name,code:student.login_code},token,revision:student.progress_revision,entries:await loadEntries(db,student.id)});
 }
@@ -175,23 +175,24 @@ async function sync(request:Request,db:D1DatabaseLike){
   return json({ok:true,revision:newRevision,updatedAt:now});
 }
 
-async function recover(request:Request,db:D1DatabaseLike){
+async function recover(request:Request,db:D1DatabaseLike,pepper:string){
   const body=await parseJson<RecoverBody>(request);if(!body)return json({error:'Invalid JSON'},{status:400});const code=normalizeCode(String(body.code??''));const recoveryCode=normalizeCode(String(body.recoveryCode??''));const newPin=String(body.newPin??'');if(!validPin(newPin))return json({error:'PIN must contain 4 digits'},{status:400});
   const student=await db.prepare('SELECT * FROM students WHERE login_code=?').bind(code).first<StudentRow>();if(!student||!(await safeEqualHex(await sha256(recoveryCode),student.recovery_hash)))return json({error:'Неверный код восстановления.'},{status:401});
-  const salt=randomHex(16);const newRecovery=randomRecoveryCode();const now=new Date().toISOString();await db.batch([db.prepare('UPDATE students SET pin_salt=?,pin_hash=?,recovery_hash=?,failed_attempts=0,locked_until=0,updated_at=? WHERE id=?').bind(salt,await pinHash(newPin,salt),await sha256(newRecovery),now,student.id),db.prepare('DELETE FROM student_sessions WHERE student_id=?').bind(student.id)]);const token=await createSession(db,student.id);
+  const salt=randomHex(16);const newRecovery=randomRecoveryCode();const now=new Date().toISOString();await db.batch([db.prepare('UPDATE students SET pin_salt=?,pin_hash=?,recovery_hash=?,failed_attempts=0,locked_until=0,updated_at=? WHERE id=?').bind(salt,await pinHash(newPin,salt,pepper),await sha256(newRecovery),now,student.id),db.prepare('DELETE FROM student_sessions WHERE student_id=?').bind(student.id)]);const token=await createSession(db,student.id);
   return json({ok:true,student:{id:student.id,name:student.display_name,code:student.login_code},token,recoveryCode:newRecovery,revision:student.progress_revision,entries:await loadEntries(db,student.id)});
 }
 
 export async function handleCloudProfiles(request:Request,env:CloudProfilesEnv){
   const url=new URL(request.url);if(!url.pathname.startsWith('/api/cloud/'))return null;
   if(!sameOrigin(request))return json({error:'Cross-origin cloud access is not allowed'},{status:403});
-  if(url.pathname==='/api/cloud/status')return json({ok:true,configured:Boolean(env.DB)});
+  if(url.pathname==='/api/cloud/status')return json({ok:true,configured:Boolean(env.DB&&env.PROFILE_PIN_PEPPER)});
   if(!env.DB)return json({error:'Cloud storage is not configured'},{status:503});
+  if(!env.PROFILE_PIN_PEPPER)return json({error:'Cloud authentication is not configured'},{status:503});
   try{await ensureSchema(env.DB)}catch(error){return json({error:'Cloud database is unavailable',detail:error instanceof Error?error.message:'schema_error'},{status:503})}
-  if(url.pathname==='/api/cloud/register'&&request.method==='POST')return register(request,env.DB);
-  if(url.pathname==='/api/cloud/login'&&request.method==='POST')return login(request,env.DB);
+  if(url.pathname==='/api/cloud/register'&&request.method==='POST')return register(request,env.DB,env.PROFILE_PIN_PEPPER);
+  if(url.pathname==='/api/cloud/login'&&request.method==='POST')return login(request,env.DB,env.PROFILE_PIN_PEPPER);
   if(url.pathname==='/api/cloud/snapshot'&&request.method==='GET')return snapshot(request,env.DB);
   if(url.pathname==='/api/cloud/sync'&&request.method==='POST')return sync(request,env.DB);
-  if(url.pathname==='/api/cloud/recover'&&request.method==='POST')return recover(request,env.DB);
+  if(url.pathname==='/api/cloud/recover'&&request.method==='POST')return recover(request,env.DB,env.PROFILE_PIN_PEPPER);
   return json({error:'Not found'},{status:404});
 }
