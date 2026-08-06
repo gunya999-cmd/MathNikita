@@ -1,1 +1,260 @@
-placeholder
+name: Course 1-23 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-1-23-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-content:
+    name: Build + course/practice integrity 1-23
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - name: Production build
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify course plan and mandatory practice across lessons
+        run: >-
+          npx playwright test
+          tests/course-plan.spec.ts
+          tests/extended-practice-all-lessons.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-content-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  desktop-runtime-1-23:
+    name: Desktop Chromium · full runtime 1-23
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Full walkthroughs, mastery, runtime and Pythagoras
+        run: >-
+          npx playwright test
+          tests/lessons-one-to-four-full-walkthrough.spec.ts
+          tests/lesson-five-mastery.spec.ts
+          tests/lesson-six-mastery.spec.ts
+          tests/lessons-six-to-sixteen-runtime-and-pythagoras.spec.ts
+          tests/lessons-seventeen-to-twenty-three-runtime-and-pythagoras.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-desktop-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  voice-1-23:
+    name: Voice · every stage, sequencing and interruption 1-23
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Every-stage narration and sequencing
+        run: >-
+          npx playwright test
+          tests/lessons-one-to-five-every-stage-voice.spec.ts
+          tests/lessons-one-to-four-pythagoras-voice.spec.ts
+          tests/lessons-six-to-sixteen-every-stage-voice.spec.ts
+          tests/lessons-six-to-sixteen-voice-sequencing.spec.ts
+          tests/lessons-seventeen-to-twenty-three-every-stage-voice.spec.ts
+          tests/lessons-seventeen-to-twenty-three-voice-sequencing.spec.ts
+          tests/voice-navigation-interruption.spec.ts
+          tests/studio-voice-priority.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-voice-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad-1-8:
+    name: iPad WebKit · lessons 1-8
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Full iPad regression 1-8
+        run: >-
+          npx playwright test
+          tests/four-lessons-ipad.spec.ts
+          tests/lesson-five-ipad.spec.ts
+          tests/lesson-six-ipad.spec.ts
+          tests/lesson-seven-ipad.spec.ts
+          tests/lesson-eight-ipad.spec.ts
+          --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-ipad-1-8-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad-9-16:
+    name: iPad WebKit · lessons 9-16
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Full iPad regression 9-16
+        run: >-
+          npx playwright test
+          tests/lesson-nine-ipad.spec.ts
+          tests/lesson-ten-ipad.spec.ts
+          tests/lesson-eleven-ipad.spec.ts
+          tests/lesson-twelve-ipad.spec.ts
+          tests/lesson-thirteen-ipad.spec.ts
+          tests/lesson-fourteen-ipad.spec.ts
+          tests/lesson-fifteen-ipad.spec.ts
+          tests/lesson-sixteen-ipad.spec.ts
+          --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-ipad-9-16-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad-17-23:
+    name: iPad WebKit · lessons 17-23
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Full iPad regression 17-23
+        run: >-
+          npx playwright test
+          tests/lesson-seventeen-ipad.spec.ts
+          tests/lesson-eighteen-ipad.spec.ts
+          tests/lesson-nineteen-ipad.spec.ts
+          tests/lesson-twenty-ipad.spec.ts
+          tests/lesson-twenty-one-ipad.spec.ts
+          tests/lesson-twenty-two-ipad.spec.ts
+          tests/lesson-twenty-three-ipad.spec.ts
+          --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-ipad-17-23-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  accounts-cloud-dashboard:
+    name: Accounts · cloud isolation, sync and dashboards
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - name: Production build
+        run: npm run build
+      - name: Verify real local D1 API
+        run: node scripts/cloud-api-smoke.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: Cloud UI and synchronization races
+        run: npx playwright test tests/cloud-student-ui.spec.ts tests/cloud-sync-races.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: Student profile isolation
+        run: npx playwright test tests/student-profiles.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: Learner and parent dashboards
+        run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certification-account-cloud-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  certification:
+    name: COURSE 1-23 CERTIFIED
+    if: always()
+    needs:
+      - build-and-content
+      - desktop-runtime-1-23
+      - voice-1-23
+      - ipad-1-8
+      - ipad-9-16
+      - ipad-17-23
+      - accounts-cloud-dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every certification lane passed
+        env:
+          BUILD_CONTENT: ${{ needs.build-and-content.result }}
+          DESKTOP_RUNTIME: ${{ needs.desktop-runtime-1-23.result }}
+          VOICE: ${{ needs.voice-1-23.result }}
+          IPAD_1_8: ${{ needs.ipad-1-8.result }}
+          IPAD_9_16: ${{ needs.ipad-9-16.result }}
+          IPAD_17_23: ${{ needs.ipad-17-23.result }}
+          ACCOUNTS: ${{ needs.accounts-cloud-dashboard.result }}
+        run: |
+          printf '%s\n' \
+            "build-and-content=$BUILD_CONTENT" \
+            "desktop-runtime=$DESKTOP_RUNTIME" \
+            "voice=$VOICE" \
+            "ipad-1-8=$IPAD_1_8" \
+            "ipad-9-16=$IPAD_9_16" \
+            "ipad-17-23=$IPAD_17_23" \
+            "accounts-cloud-dashboard=$ACCOUNTS"
+          test "$BUILD_CONTENT" = success
+          test "$DESKTOP_RUNTIME" = success
+          test "$VOICE" = success
+          test "$IPAD_1_8" = success
+          test "$IPAD_9_16" = success
+          test "$IPAD_17_23" = success
+          test "$ACCOUNTS" = success
