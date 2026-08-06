@@ -161,7 +161,6 @@ export function LessonCourseShell(){
     return()=>observer.disconnect();
   },[mode,selectedLesson,isControlWork]);
   useEffect(()=>{
-    stopVoice();
     clearHints();
     resetMentor();
     return()=>{if(feedbackTimerRef.current!==null)window.clearTimeout(feedbackTimerRef.current)};
