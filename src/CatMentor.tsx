@@ -30,7 +30,6 @@ type Script = Record<Response,string>;
 
 const scripts = { ...mentorScriptsData, ...lessonThreeScriptsData, ...lessonFourScriptsData, ...lessonFiveScriptsData, ...lessonSixScriptsData, ...lessonSevenScriptsData, ...lessonEightScriptsData, ...lessonNineScriptsData, ...lessonTenScriptsData, ...lessonElevenScriptsData, ...lessonTwelveScriptsData, ...lessonThirteenScriptsData, ...lessonFourteenScriptsData, ...lessonFifteenScriptsData, ...lessonSixteenScriptsData } as Record<string,Script>;
 const AUTO_GUIDE_KEY='mathnikita-mentor-auto-guide';
-const mentorWarmupOrder:Response[]=['hint','different','example','why','welcome','retry','success'];
 const emptyScene:Scene={key:'empty',stageId:'',title:'',body:'',prompt:'',note:''};
 function clean(value?:string|null){return value?.replace(/\s+/g,' ').trim()??''}
 function readScene(root:HTMLElement|null,mode:Props['mode']):Scene{if(!root)return emptyScene;if(mode==='opening'){const scope=root.querySelector<HTMLElement>('.opening-screen:not([hidden])');if(!scope)return emptyScene;const title=clean(scope.querySelector('.lesson-opening-copy h1')?.textContent);const body=clean(scope.querySelector('.lesson-opening-copy p')?.textContent);const prompt=clean(scope.querySelector('.lesson-opening-question b')?.textContent);return{key:`opening:${title}`,stageId:'',title,body,prompt,note:''}}const stage=root.querySelector<HTMLElement>('.lesson-runtime:not([hidden]) .interactive-stage');if(!stage)return emptyScene;const stageId=stage.dataset.stageId??'';const title=clean(stage.querySelector('.stage-copy h2')?.textContent);const body=clean(stage.querySelector('.stage-copy p')?.textContent);const prompt=clean(stage.querySelector('.activity-area h3')?.textContent);const note=clean(stage.querySelector('.theory-note span')?.textContent);return{key:stageId||`${title}|${prompt}`,stageId,title,body,prompt,note}}
@@ -67,15 +66,8 @@ export function CatMentor({rootRef,lessonNumber,mode,signal}:Props){
     if(settings.engine!=='studio'){systemSpeak(text,token);return}
     if(typeof Audio==='undefined'){failStudio(token);return}
     setSpeaking(true);const id=audioId(nextResponse);const ready=peekStudioAudioUrl(id,text);if(ready){playStudioSource(ready,token,settings.rate);return}
-    void getStudioAudioUrl(id,text).then(source=>playStudioSource(source,token,settings.rate)).catch(()=>failStudio(token));
+    void getStudioAudioUrl(id,text,true).then(source=>playStudioSource(source,token,settings.rate)).catch(()=>failStudio(token));
   }
-  useEffect(()=>{
-    if(scene.key==='empty'||loadVoiceSettings().engine!=='studio')return;
-    let cancelled=false;let cursor=0;
-    const warm=async()=>{while(!cancelled){const next=mentorWarmupOrder[cursor++];if(!next)return;try{await getStudioAudioUrl(audioId(next),script[next])}catch{/* button can retry on demand */}}};
-    void Promise.all([warm(),warm()]);
-    return()=>{cancelled=true};
-  },[scene.key,key,script]);
   useEffect(()=>{
     stop();setStudioIssue(false);setAction('welcome');setManualResponse(null);setSignalFloor(signal.version);manualSignalVersion.current=signal.version;if(!autoGuide||scene.key==='empty')return;
     let cancelWait=()=>{};
