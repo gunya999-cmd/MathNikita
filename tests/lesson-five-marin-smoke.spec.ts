@@ -32,12 +32,15 @@ async function expectOnDemandThenCached(page:Page,requests:NarrationRequest[],bu
   expect(requests.filter(item=>item.id===id).length).toBe(calls);
 }
 
-test('lesson 5 opening and first stage use unified AI voice on iPad WebKit',async({page})=>{
+test('lesson 5 opening is on-demand and first stage auto-uses unified AI voice on iPad WebKit',async({page})=>{
   test.setTimeout(35_000);const requests:NarrationRequest[]=[];await installStudioMocks(page);await routeStudioStatus(page);
   await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-mock-audio'})});
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
   const narrator=page.locator('.voice-narrator > button').first();await expect(narrator).toContainText('Слушать · AI',{timeout:5_000});
-  await expect.poll(()=>requests.some(item=>item.id==='lesson-05-opening'),{timeout:5_000}).toBe(true);const opening=requests.find(item=>item.id==='lesson-05-opening')!;expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');expect(opening.text).toContain('Десятичная запись');
+  await page.waitForTimeout(400);expect(requests.some(item=>item.id==='lesson-05-opening')).toBe(false);
+  await domClick(narrator);await expect.poll(()=>requests.some(item=>item.id==='lesson-05-opening'),{timeout:5_000}).toBe(true);
+  const opening=requests.find(item=>item.id==='lesson-05-opening')!;expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');expect(opening.text).toContain('Десятичная запись');
+  await expect(narrator).toContainText('Слушать · AI',{timeout:2_000});
   await startLessonFromDom(page);await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});await expect.poll(()=>requests.some(item=>item.id==='lesson-05-stage-l5-story'),{timeout:5_000}).toBe(true);
   const stage=requests.find(item=>item.id==='lesson-05-stage-l5-story')!;expect(stage.version).toBe('ru-teacher-gemini-sulafat-v2');expect(stage.text).toMatch(/[А-Яа-яЁё]/);
   const audit=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{systemSpeech:number}}).__lessonFiveVoiceAudit);expect(audit.systemSpeech).toBe(0);
