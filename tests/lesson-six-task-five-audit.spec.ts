@@ -51,13 +51,18 @@ test('lesson 6 core CatMentor performs no speculative TTS generation',async({pag
 });
 
 test('lesson 6 mentor distinguishes browser autoplay block from Sulafat outage',async({page})=>{
-  const audit:RequestAudit={active:0,maxActive:0,ids:[]};await openTaskFive(page,audit);const task=page.locator('[data-practice-task="l6-p5"]');
+  const audit:RequestAudit={active:0,maxActive:0,ids:[]};await openTaskFive(page,audit);const task=page.locator('[data-practice-task="l6-p5"]');const hint=task.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/});
   await expect(task.locator('.extended-practice-voice button')).toContainText('▶ Озвучить задание',{timeout:5_000});
-  // Clear any completed/pending narration context so this test isolates only
-  // the browser's rejection of the new Pythagoras clip.
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-stop-narration')));await page.waitForTimeout(80);
-  await page.evaluate(()=>{class BlockedAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){const error=new Error('play blocked');error.name='NotAllowedError';return Promise.reject(error)}}Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:BlockedAudio})});
-  const before=audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length;await task.locator('.practice-pythagoras-actions').getByRole('button',{name:/Подсказка/}).click();
+
+  // First generate and successfully play the hint once, then test the browser
+  // rejection on its cached replay. The second click must not touch TTS at all.
+  const before=audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length;await hint.click();
   await expect.poll(()=>audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length,{timeout:3_000}).toBe(before+1);
+  await page.waitForTimeout(350);
+  const cachedCalls=audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length;
+  await page.evaluate(()=>{class BlockedAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){const error=new Error('play blocked');error.name='NotAllowedError';return Promise.reject(error)}}Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:BlockedAudio})});
+  await hint.click();
   await expect(task.locator('.practice-pythagoras-voice-error')).toContainText('Браузер не запустил звук автоматически');await expect(task.locator('.practice-pythagoras-voice-error')).not.toContainText('временно недоступен');
+  expect(audit.ids.filter(id=>id==='mentor-practice-6-l6-p5-hint').length).toBe(cachedCalls);
 });
