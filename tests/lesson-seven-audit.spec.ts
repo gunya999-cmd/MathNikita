@@ -86,8 +86,10 @@ test('lesson 7 exposes AI narration in main lesson, practice and Pythagoras',asy
   await expect.poll(()=>capture.ids.some(id=>id.startsWith('lesson-07-practice-'))).toBeTruthy();
   await expect(page.locator('.practice-pythagoras-actions button')).toHaveCount(4);
   await expect(page.locator('.practice-pythagoras')).toContainText('тот же AI-голос Sulafat');
-  await expect.poll(()=>capture.ids.some(id=>id.startsWith('mentor-practice-7-')&&id.endsWith('-hint'))).toBeTruthy();
 
+  const hintRequests=()=>capture.ids.filter(id=>id.startsWith('mentor-practice-7-')&&id.endsWith('-hint')).length;
+  expect(hintRequests()).toBe(0);
   await page.getByRole('button',{name:/Подсказка/}).last().click();
   await expect(page.locator('.practice-pythagoras-message')).not.toBeEmpty();
+  await expect.poll(hintRequests,{timeout:3_000}).toBe(1);
 });
