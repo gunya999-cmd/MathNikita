@@ -11,6 +11,7 @@ export const DEFAULT_VOICE_RATE=.94;
 
 const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
+const readyMentorAudioById=new Map<string,string>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
 type PrefetchItem={key:string;id:string;text:string};
 const prefetchQueue:PrefetchItem[]=[];
@@ -36,10 +37,6 @@ if(typeof window!=='undefined'){
     const source=(event as CustomEvent<{source?:string}>).detail?.source;
     if(source!=='mentor'&&source!=='practice-mentor')return;
     mentorForegroundTickets=1;
-    // Foreground permission is valid only for the synchronous request that
-    // follows the learner/auto-guide action. Background warmups resume in a
-    // later microtask and must never inherit this permission or create a
-    // duplicate TTS call after the requested clip is already cached.
     queueMicrotask(()=>{mentorForegroundTickets=0});
   });
   window.addEventListener('mathnikita-stop-narration',cancelStaleStudioGeneration);
@@ -55,9 +52,10 @@ export function loadVoiceSettings():StoredVoiceSettings{
 }
 export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSettings(settings)}
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
-function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${studioNarrationText(text)}`}
+function normalizedCache(id:string,text:string){const prepared=studioNarrationText(text);return{prepared,key:`${STUDIO_VOICE_VERSION}:${id}:${prepared}`}}
+function mentorIdKey(id:string){return`${STUDIO_VOICE_VERSION}:${id}`}
 export function peekStudioAudioUrl(id:string,text:string){
-  const ready=readyAudioUrlCache.get(cacheKey(id,text));
+  const ready=id.startsWith('mentor-')?readyMentorAudioById.get(mentorIdKey(id))??readyAudioUrlCache.get(normalizedCache(id,text).key):readyAudioUrlCache.get(normalizedCache(id,text).key);
   if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
   return ready;
 }
@@ -70,7 +68,7 @@ function drainPrefetchQueue(){
 }
 export function prefetchStudioAudioUrl(id:string,text:string){
   if(!id||!text||isSpeculativeDynamicId(id))return;
-  const key=cacheKey(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
+  const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
 }
@@ -94,16 +92,16 @@ async function requestStudioAudio(id:string,prepared:string,signal:AbortSignal,a
 }
 
 export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOverride=false):Promise<string>{
-  const prepared=studioNarrationText(text);const key=cacheKey(id,prepared);const ready=readyAudioUrlCache.get(key);if(ready){if(id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
-  if(id.startsWith('mentor-')){
+  const {prepared,key}=normalizedCache(id,text);const mentorKey=id.startsWith('mentor-')?mentorIdKey(id):'';const ready=(mentorKey?readyMentorAudioById.get(mentorKey):undefined)??readyAudioUrlCache.get(key);if(ready){if(mentorKey&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
+  if(mentorKey){
     const foreground=mentorForegroundOverride||mentorForegroundTickets>0;
     if(foreground&&mentorForegroundTickets>0)clearMentorForegroundTicket();
     if(!foreground)throw new Error('Background mentor warmup deferred');
   }
   const controller=new AbortController();activeStudioControllers.set(key,controller);
   const request=requestStudioAudio(id,prepared,controller.signal)
-    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url})
-    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error})
+    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);if(mentorKey)readyMentorAudioById.set(mentorKey,url);return url})
+    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);if(mentorKey)readyMentorAudioById.delete(mentorKey);throw error})
     .finally(()=>{if(activeStudioControllers.get(key)===controller)activeStudioControllers.delete(key)});
   audioUrlCache.set(key,request);return request;
 }
