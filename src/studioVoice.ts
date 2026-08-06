@@ -22,10 +22,9 @@ const activeStudioControllers=new Map<string,AbortController>();
 let prefetchRunning=false;
 let activeStudioRequests=0;
 let mentorForegroundTickets=0;
-let mentorTicketTimer:number|null=null;
 
 function abortError(){const error=new Error('Studio narration aborted');error.name='AbortError';return error}
-function clearMentorForegroundTicket(){mentorForegroundTickets=0;if(mentorTicketTimer!==null){window.clearTimeout(mentorTicketTimer);mentorTicketTimer=null}}
+function clearMentorForegroundTicket(){mentorForegroundTickets=0}
 function cancelStaleStudioGeneration(){
   for(const[key,controller]of activeStudioControllers){controller.abort();audioUrlCache.delete(key)}
   activeStudioControllers.clear();prefetchQueue.length=0;queuedPrefetchKeys.clear();
@@ -37,8 +36,11 @@ if(typeof window!=='undefined'){
     const source=(event as CustomEvent<{source?:string}>).detail?.source;
     if(source!=='mentor'&&source!=='practice-mentor')return;
     mentorForegroundTickets=1;
-    if(mentorTicketTimer!==null)window.clearTimeout(mentorTicketTimer);
-    mentorTicketTimer=window.setTimeout(()=>{mentorForegroundTickets=0;mentorTicketTimer=null},1_000);
+    // Foreground permission is valid only for the synchronous request that
+    // follows the learner/auto-guide action. Background warmups resume in a
+    // later microtask and must never inherit this permission or create a
+    // duplicate TTS call after the requested clip is already cached.
+    queueMicrotask(()=>{mentorForegroundTickets=0});
   });
   window.addEventListener('mathnikita-stop-narration',cancelStaleStudioGeneration);
 }
@@ -56,9 +58,6 @@ export function studioNarrationText(value:string){return prepareRussianSpeechTex
 function cacheKey(id:string,text:string){return `${STUDIO_VOICE_VERSION}:${id}:${studioNarrationText(text)}`}
 export function peekStudioAudioUrl(id:string,text:string){
   const ready=readyAudioUrlCache.get(cacheKey(id,text));
-  // A cached mentor clip consumes the foreground intent just like a network
-  // request would. Otherwise the unused one-shot ticket could accidentally
-  // authorize an obsolete background warmup after the requested clip starts.
   if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
   return ready;
 }
@@ -70,8 +69,6 @@ function drainPrefetchQueue(){
   prefetchRunning=true;void getStudioAudioUrl(next.id,next.text).catch(()=>undefined).finally(()=>{prefetchRunning=false;window.setTimeout(drainPrefetchQueue,120)});
 }
 export function prefetchStudioAudioUrl(id:string,text:string){
-  // During a lesson every dynamic line is generated only when it actually
-  // becomes learner-visible. Ready clips are still cached for instant replay.
   if(!id||!text||isSpeculativeDynamicId(id))return;
   const key=cacheKey(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
