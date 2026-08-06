@@ -76,7 +76,9 @@ for(let lessonNumber=17;lessonNumber<=23;lessonNumber+=1){
     const seenStageIds=new Set<string>();
 
     for(let stageIndex=0;stageIndex<total;stageIndex+=1){
-      await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
+      if(stageIndex>0){
+        await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
+      }
       const scope=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');
       await expect(scope).toBeVisible({timeout:5_000});
       const special=specialStageIds[lessonNumber];
