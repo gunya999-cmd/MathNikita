@@ -92,13 +92,14 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     if(autoSession!==null){autoStageSessionRef.current=null;autoStageIdRef.current='';setStageNarrationActive(false,autoId)}
     sessionRef.current+=1;if(audioRef.current){audioRef.current.pause();audioRef.current.currentTime=0;audioRef.current.src='';audioRef.current=null}if(systemSupported)window.speechSynthesis.cancel();setSpeaking(false)
   }
+  function suppressPendingStageForManualVoice(){const stage=resolveStageNarration(rootRef.current as HTMLElement,lessonNumber);if(stage)lastAutoStageRef.current=stage.id}
   function failStudio(session:number,message='AI-голос временно недоступен. Нажми ещё раз.'){if(sessionRef.current!==session)return;releaseAutoStage(session,autoStageIdRef.current,false);audioRef.current=null;setSpeaking(false);setStudioIssue(message)}
 
   useEffect(()=>{if(!systemSupported)return;const loadVoices=()=>{const next=rankRussianVoices(window.speechSynthesis.getVoices());setVoices(next);setVoiceURI(current=>selectBestRussianVoice(next,current)?.voiceURI??'')};loadVoices();window.speechSynthesis.addEventListener('voiceschanged',loadVoices);return()=>window.speechSynthesis.removeEventListener('voiceschanged',loadVoices)},[systemSupported]);
   useEffect(()=>{let active=true;fetch('/api/narration-status',{cache:'no-store'}).then(async response=>response.ok?response.json():Promise.reject()).then((data:{studioConfigured?:boolean})=>{if(active)setStudioStatus(data.studioConfigured?'ready':'unavailable')}).catch(()=>{if(active)setStudioStatus('unavailable')});return()=>{active=false}},[]);
   useEffect(()=>{saveVoiceSettings({engine,voiceURI,rate});if(engine==='system')setStudioIssue('')},[engine,voiceURI,rate]);
   useEffect(()=>{if(!settingsOpen)return;const closeOnOutside=(event:PointerEvent)=>{const target=event.target;if(target instanceof Node&&!narratorRef.current?.contains(target))setSettingsOpen(false)};const closeOnEscape=(event:KeyboardEvent)=>{if(event.key==='Escape')setSettingsOpen(false)};document.addEventListener('pointerdown',closeOnOutside);window.addEventListener('keydown',closeOnEscape);return()=>{document.removeEventListener('pointerdown',closeOnOutside);window.removeEventListener('keydown',closeOnEscape)}},[settingsOpen]);
-  useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
+  useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator'){suppressPendingStageForManualVoice();stop()}};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
   useEffect(()=>{stop();return()=>stop()},[mode,rootRef,lessonNumber]);
   useEffect(()=>{
     if(engine!=='studio')return;
@@ -115,9 +116,8 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     const root=rootRef.current;if(!root)return;
     const schedule=()=>{
       const stage=resolveStageNarration(root,lessonNumber);if(!stage||stage.id===lastAutoStageRef.current)return;
-      lastAutoStageRef.current=stage.id;
       if(autoStageTimerRef.current!==null)window.clearTimeout(autoStageTimerRef.current);
-      autoStageTimerRef.current=window.setTimeout(()=>{autoStageTimerRef.current=null;const latest=resolveStageNarration(root,lessonNumber);if(latest?.id===stage.id)playNarration(latest.text,latest.id,true)},70);
+      autoStageTimerRef.current=window.setTimeout(()=>{autoStageTimerRef.current=null;const latest=resolveStageNarration(root,lessonNumber);if(latest?.id===stage.id){lastAutoStageRef.current=stage.id;playNarration(latest.text,latest.id,true)}},70);
     };
     schedule();
     const observer=new MutationObserver(schedule);observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-stage-id','hidden']});
