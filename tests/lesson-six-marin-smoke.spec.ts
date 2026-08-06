@@ -19,8 +19,9 @@ async function installStudioMocks(page:Page){
     localStorage.setItem('mathnikita-mentor-auto-guide','false');
   });
 }
+async function audioPlays(page:Page){return page.evaluate(()=>(window as unknown as {__lessonSixMarinAudit:{audioPlays:number}}).__lessonSixMarinAudit.audioPlays)}
 
-test('lesson 6 opening is on-demand and first stage auto-uses unified AI voice on iPad WebKit',async({page})=>{
+test('lesson 6 opening caches current AI voice and first stage auto-uses Sulafat on iPad WebKit',async({page})=>{
   test.setTimeout(35_000);
   const requests:NarrationRequest[]=[];
   await installStudioMocks(page);
@@ -32,15 +33,17 @@ test('lesson 6 opening is on-demand and first stage auto-uses unified AI voice o
   const narrator=page.locator('.voice-narrator > button').first();
   await expect(narrator).toContainText('Слушать · AI',{timeout:5_000});
 
-  await page.waitForTimeout(400);
-  expect(requests.some(item=>item.id==='lesson-06-opening')).toBe(false);
-
-  await domClick(narrator);
-  await expect.poll(()=>requests.some(item=>item.id==='lesson-06-opening'),{timeout:5_000}).toBe(true);
+  await expect.poll(()=>requests.filter(item=>item.id==='lesson-06-opening').length,{timeout:5_000}).toBe(1);
   const opening=requests.find(item=>item.id==='lesson-06-opening')!;
   expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');
   expect(opening.text).toContain('Отрезок');
   expect(opening.text).toContain('Длина');
+
+  const openingCalls=requests.filter(item=>item.id==='lesson-06-opening').length;
+  const playsBefore=await audioPlays(page);
+  await domClick(narrator);
+  await expect.poll(()=>audioPlays(page),{timeout:2_000}).toBeGreaterThan(playsBefore);
+  expect(requests.filter(item=>item.id==='lesson-06-opening').length).toBe(openingCalls);
   await expect(narrator).toContainText('Слушать · AI',{timeout:2_000});
 
   await startLessonFromDom(page);
