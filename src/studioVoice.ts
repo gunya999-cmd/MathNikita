@@ -12,6 +12,7 @@ export const DEFAULT_VOICE_RATE=.94;
 const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
 const readyMentorAudioById=new Map<string,string>();
+const mentorAudioPromiseById=new Map<string,Promise<string>>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
 type PrefetchItem={key:string;id:string;text:string};
 const prefetchQueue:PrefetchItem[]=[];
@@ -92,7 +93,9 @@ async function requestStudioAudio(id:string,prepared:string,signal:AbortSignal,a
 }
 
 export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOverride=false):Promise<string>{
-  const {prepared,key}=normalizedCache(id,text);const mentorKey=id.startsWith('mentor-')?mentorIdKey(id):'';const ready=(mentorKey?readyMentorAudioById.get(mentorKey):undefined)??readyAudioUrlCache.get(key);if(ready){if(mentorKey&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
+  const {prepared,key}=normalizedCache(id,text);const mentorKey=id.startsWith('mentor-')?mentorIdKey(id):'';
+  if(mentorKey){const mentorPromise=mentorAudioPromiseById.get(mentorKey);if(mentorPromise){if(mentorForegroundTickets>0)clearMentorForegroundTicket();return mentorPromise}}
+  const ready=(mentorKey?readyMentorAudioById.get(mentorKey):undefined)??readyAudioUrlCache.get(key);if(ready){if(mentorKey&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
   if(mentorKey){
     const foreground=mentorForegroundOverride||mentorForegroundTickets>0;
     if(foreground&&mentorForegroundTickets>0)clearMentorForegroundTicket();
@@ -101,7 +104,7 @@ export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOv
   const controller=new AbortController();activeStudioControllers.set(key,controller);
   const request=requestStudioAudio(id,prepared,controller.signal)
     .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);if(mentorKey)readyMentorAudioById.set(mentorKey,url);return url})
-    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);if(mentorKey)readyMentorAudioById.delete(mentorKey);throw error})
+    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);if(mentorKey){readyMentorAudioById.delete(mentorKey);mentorAudioPromiseById.delete(mentorKey)}throw error})
     .finally(()=>{if(activeStudioControllers.get(key)===controller)activeStudioControllers.delete(key)});
-  audioUrlCache.set(key,request);return request;
+  audioUrlCache.set(key,request);if(mentorKey)mentorAudioPromiseById.set(mentorKey,request);return request;
 }
