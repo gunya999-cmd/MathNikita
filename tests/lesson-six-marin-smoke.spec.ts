@@ -6,18 +6,21 @@ async function domClick(locator:Locator){await expect(locator).toBeVisible({time
 async function startLessonFromDom(page:Page){const clicked=await page.evaluate(()=>{const button=document.querySelector<HTMLButtonElement>('.lesson-opening-start');if(!button)return false;button.click();return true});expect(clicked).toBe(true)}
 async function installStudioMocks(page:Page){
   await page.addInitScript(()=>{
-    const audit={systemSpeech:0};
+    const audit={systemSpeech:0,audioPlays:0};
     const voice={name:'Milena Enhanced',lang:'ru-RU',voiceURI:'ru-enhanced',localService:true,default:true};
     class MockUtterance{lang='';voice:typeof voice|null=null;rate=1;pitch=1;volume=1;onend:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(public text=''){} }
     const synthesis={getVoices:()=>[voice],speak:()=>{audit.systemSpeech+=1},cancel:()=>undefined,pause:()=>undefined,resume:()=>undefined,addEventListener:()=>undefined,removeEventListener:()=>undefined,get speaking(){return false},get pending(){return false},get paused(){return false}};
+    class MockAudio{src='';preload='';playbackRate=1;currentTime=0;onended:(()=>void)|null=null;onerror:(()=>void)|null=null;constructor(source=''){this.src=source}pause(){}play(){audit.audioPlays+=1;window.setTimeout(()=>this.onended?.(),80);return Promise.resolve()}}
     Object.defineProperty(window,'SpeechSynthesisUtterance',{configurable:true,writable:true,value:MockUtterance});
     Object.defineProperty(window,'speechSynthesis',{configurable:true,value:synthesis});
+    Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:MockAudio});
     (window as unknown as {__lessonSixMarinAudit:typeof audit}).__lessonSixMarinAudit=audit;
     localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',voiceURI:'ru-enhanced',rate:.94}));
+    localStorage.setItem('mathnikita-mentor-auto-guide','false');
   });
 }
 
-test('lesson 6 opening and first stage use unified AI voice on iPad WebKit without speculative TTS',async({page})=>{
+test('lesson 6 opening is on-demand and first stage auto-uses unified AI voice on iPad WebKit',async({page})=>{
   test.setTimeout(35_000);
   const requests:NarrationRequest[]=[];
   await installStudioMocks(page);
@@ -29,7 +32,6 @@ test('lesson 6 opening and first stage use unified AI voice on iPad WebKit witho
   const narrator=page.locator('.voice-narrator > button').first();
   await expect(narrator).toContainText('Слушать · AI',{timeout:5_000});
 
-  // Opening audio must not spend Gemini quota until the learner actually asks to hear it.
   await page.waitForTimeout(400);
   expect(requests.some(item=>item.id==='lesson-06-opening')).toBe(false);
 
@@ -39,6 +41,7 @@ test('lesson 6 opening and first stage use unified AI voice on iPad WebKit witho
   expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');
   expect(opening.text).toContain('Отрезок');
   expect(opening.text).toContain('Длина');
+  await expect(narrator).toContainText('Слушать · AI',{timeout:2_000});
 
   await startLessonFromDom(page);
   await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible({timeout:5_000});
