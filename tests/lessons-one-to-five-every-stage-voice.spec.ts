@@ -64,7 +64,12 @@ for(let lessonNumber=1;lessonNumber<=5;lessonNumber+=1){
     const seenStageIds=new Set<string>();
 
     for(let stageIndex=0;stageIndex<total;stageIndex+=1){
-      await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
+      // Stage 0 is already active after opening. Sending a synthetic jump to
+      // the same stage would intentionally stop its pending narration without
+      // causing a React stage change, which is not a learner navigation path.
+      if(stageIndex>0){
+        await page.evaluate(({lessonNumber,stageIndex})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber,stageIndex}})),{lessonNumber,stageIndex});
+      }
       const scope=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');
       await expect(scope).toBeVisible({timeout:5_000});
       const stageId=await scope.getAttribute('data-stage-id');
