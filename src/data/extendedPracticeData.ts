@@ -119,6 +119,11 @@ export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = Obj
     const topUp=markParametric(buildPracticeTopUp(lessonNumber)).slice(0,topUpNeeded);
     const tasks=[...practice.tasks,...primary,...topUp];
     if(tasks.length!==target)throw new Error(`Lesson ${lessonNumber}: mandatory practice must contain ${target} tasks, got ${tasks.length}`);
+    const parametricCount=tasks.filter(task=>task.provenance==='parametric').length;
+    const curatedCount=tasks.length-parametricCount;
+    if(parametricCount>8)throw new Error(`Lesson ${lessonNumber}: parametric practice exceeds 8 of 20 tasks (${parametricCount})`);
+    if(curatedCount<12)throw new Error(`Lesson ${lessonNumber}: curated practice must cover at least 12 of 20 tasks (${curatedCount})`);
+    if(new Set(tasks.map(task=>task.type)).size<2)throw new Error(`Lesson ${lessonNumber}: mandatory practice must use at least two response formats`);
     return [lessonNumber,{...practice,tasks}];
   }),
 );
