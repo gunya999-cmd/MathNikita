@@ -90,3 +90,18 @@ test('lesson 24 keeps an unfinished answer after direct page navigation',async({
   await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:24,stageIndex:3}})));
   await expect(page.locator('[data-stage-id="l24-practice1"] .inline-answer input')).toHaveValue('2944043');
 });
+
+test('lesson 24 invalidates a previously correct answer after the learner edits it',async({page})=>{
+  await openLesson(page);
+  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:24,stageIndex:3}})));
+  const stage=page.locator('[data-stage-id="l24-practice1"]');
+  const input=stage.locator('.inline-answer input');
+  const next=page.locator('.lesson-controls .primary');
+  await input.fill('2944043');
+  await stage.locator('.check-button').click();
+  await expect(stage.locator('.instant-feedback.good')).toBeVisible();
+  await expect(next).toBeEnabled();
+  await input.fill('2944044');
+  await expect(stage.locator('.instant-feedback.good')).toHaveCount(0);
+  await expect(next).toBeDisabled();
+});
