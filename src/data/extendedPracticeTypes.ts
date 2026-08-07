@@ -6,7 +6,10 @@ export type ExtendedPracticeField = {
   validation?: 'loose' | 'decimal';
 };
 
-export type ExtendedPracticeTask =
+export type ExtendedPracticeProvenance = 'curated' | 'parametric';
+type ExtendedPracticeTaskMeta = { provenance?: ExtendedPracticeProvenance };
+
+export type ExtendedPracticeTask = ExtendedPracticeTaskMeta & (
   | {
       id: string;
       type: 'input';
@@ -34,7 +37,8 @@ export type ExtendedPracticeTask =
       fields: ExtendedPracticeField[];
       hint: string;
       explanation: string;
-    };
+    }
+);
 
 export type ExtendedPracticeSet = {
   title: string;

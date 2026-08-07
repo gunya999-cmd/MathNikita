@@ -26,6 +26,7 @@ import { NaturalNumberAdditionPlayer } from './NaturalNumberAdditionPlayer';
 import { AdditionPropertiesPlayer } from './AdditionPropertiesPlayer';
 import { AdditionPropertiesPracticePlayer } from './AdditionPropertiesPracticePlayer';
 import { LessonOpening,buildGenericOpening,lessonOneOpening,lessonTwoOpening,lessonThreeOpening,lessonFourOpening,lessonFiveOpening,lessonSixOpening,lessonSevenOpening,lessonEightOpening,lessonNineOpening,lessonTenOpening,lessonElevenOpening } from './LessonOpening';
+import { lessonTwelveOpening } from './LessonTwelveOpening';
 import { lessonThirteenOpening } from './LessonThirteenOpening';
 import { lessonFourteenOpening } from './LessonFourteenOpening';
 import { lessonFifteenOpening } from './LessonFifteenOpening';
@@ -86,6 +87,7 @@ export function LessonCourseShell(){
     selectedLesson===9?lessonNineOpening:
     selectedLesson===10?lessonTenOpening:
     selectedLesson===11?lessonElevenOpening:
+    selectedLesson===12?lessonTwelveOpening:
     selectedLesson===13?lessonThirteenOpening:
     selectedLesson===14?lessonFourteenOpening:
     selectedLesson===15?lessonFifteenOpening:
