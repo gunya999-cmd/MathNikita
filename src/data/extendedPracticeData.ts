@@ -1,4 +1,4 @@
-import type { ExtendedPracticeSet } from './extendedPracticeTypes';
+import type { ExtendedPracticeSet, ExtendedPracticeTask } from './extendedPracticeTypes';
 import { buildMasteryPractice } from './masteryPracticeGenerator';
 import { buildPracticeTopUp } from './practiceTopUpGenerator';
 import { lessonFiveMastery } from './lessonFiveMastery';
@@ -55,7 +55,7 @@ migrateLessonSixteenRevision();
 const lesson3: ExtendedPracticeSet = {
   title:'Тренировочная мастерская: десятичная запись',
   subtitle:'Читаем многозначные числа, удерживаем нули и работаем с классами.',
-  estimatedMinutes:16,
+  estimatedMinutes:18,
   tasks:[...extendedPracticeLesson3a, ...extendedPracticeLesson3b],
 };
 
@@ -92,16 +92,31 @@ const basePracticeByLesson: Record<number, ExtendedPracticeSet> = {
   23:extendedPracticeLesson23,
 };
 
+const specializedMasteryByLesson: Record<number, ExtendedPracticeTask[]> = {
+  5:lessonFiveMastery,
+  6:lessonSixMastery,
+  9:lessonNineMastery,
+  10:lessonTenMastery,
+  11:lessonElevenMastery,
+  12:lessonTwelveMastery,
+  13:lessonThirteenMastery,
+  14:lessonFourteenMastery,
+  15:lessonFifteenMastery,
+  16:lessonSixteenMastery,
+};
+
+const markParametric=(tasks:ExtendedPracticeTask[]):ExtendedPracticeTask[]=>tasks.map(task=>({...task,provenance:'parametric'}));
+
 export const extendedPracticeByLesson: Record<number, ExtendedPracticeSet> = Object.fromEntries(
   Object.entries(basePracticeByLesson).map(([key,practice])=>{
     const lessonNumber=Number(key);
-    const masteryTasks=lessonNumber===5?lessonFiveMastery:lessonNumber===6?lessonSixMastery:lessonNumber===9?lessonNineMastery:lessonNumber===10?lessonTenMastery:lessonNumber===11?lessonElevenMastery:lessonNumber===12?lessonTwelveMastery:lessonNumber===13?lessonThirteenMastery:lessonNumber===14?lessonFourteenMastery:lessonNumber===15?lessonFifteenMastery:lessonNumber===16?lessonSixteenMastery:buildMasteryPractice(lessonNumber);
+    const masteryTasks=specializedMasteryByLesson[lessonNumber]??markParametric(buildMasteryPractice(lessonNumber));
     if(lessonNumber===20)return [lessonNumber,{...practice,tasks:[...practice.tasks,...masteryTasks]}];
     const target=20;
     const primaryNeeded=Math.max(0,target-practice.tasks.length);
     const primary=masteryTasks.slice(0,primaryNeeded);
     const topUpNeeded=Math.max(0,target-practice.tasks.length-primary.length);
-    const topUp=buildPracticeTopUp(lessonNumber).slice(0,topUpNeeded);
+    const topUp=markParametric(buildPracticeTopUp(lessonNumber)).slice(0,topUpNeeded);
     const tasks=[...practice.tasks,...primary,...topUp];
     if(tasks.length!==target)throw new Error(`Lesson ${lessonNumber}: mandatory practice must contain ${target} tasks, got ${tasks.length}`);
     return [lessonNumber,{...practice,tasks}];
