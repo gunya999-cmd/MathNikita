@@ -1,57 +1,7 @@
 import { expect,test,type Page } from '@playwright/test';
-
 type Answer={type:'choice';value:string}|{type:'input';value:string}|{type:'order';values:string[]};
-const answers:Record<string,Answer>={
-  'l12-diagnostic':{type:'choice',value:'луч'},
-  'l12-practice1':{type:'input',value:'1'},
-  'l12-practice2':{type:'choice',value:'KM'},
-  'l12-practice3':{type:'input',value:'14'},
-  'l12-practice4':{type:'choice',value:'7 см или 43 см'},
-  'l12-practice5':{type:'choice',value:'точка, отрезок или луч'},
-  'l12-practice6':{type:'order',values:['Назвать все фигуры','Определить начала и концы','Проверить направления лучей','Отметить пересечения и общие части','Сверить вывод с условием']},
-  'l12-quiz1':{type:'choice',value:'отрезок'},
-  'l12-quiz2':{type:'choice',value:'прямая'},
-  'l12-quiz3':{type:'input',value:'10'},
-  'l12-quiz4':{type:'choice',value:'P'},
-  'l12-quiz5':{type:'choice',value:'точки могут лежать по одну или по разные стороны от исходной точки'},
-  'l12-challenge':{type:'input',value:'7'},
-};
-async function openLesson(page:Page){
-  await page.goto('/');
-  const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(22);
-  await lessons.nth(11).click();
-  await expect(page.locator('.lesson-opening-start')).toBeVisible();
-  await page.locator('.lesson-opening-start').click();
-  await expect(page.locator('[data-stage-id="l12-story"]')).toBeVisible();
-}
-async function answerStage(page:Page,answer:Answer){
-  const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
-  if(answer.type==='input')await stage.locator('.inline-answer input').fill(answer.value);
-  else if(answer.type==='choice')await stage.getByRole('button',{name:answer.value,exact:true}).click();
-  else for(const value of answer.values)await stage.locator('.order-bank').getByRole('button',{name:value,exact:true}).click();
-  await stage.locator('.check-button').click();
-  await expect(stage.locator('.instant-feedback.good')).toBeVisible();
-}
-test('lesson 12 completes every exercise and produces full scores on iPad WebKit',async({page})=>{
-  test.setTimeout(180_000);await openLesson(page);const visited=new Set<string>();
-  for(let step=0;step<21;step+=1){
-    const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');
-    const stageId=await stage.getAttribute('data-stage-id');
-    expect(stageId,`Stage ${step+1} must have data-stage-id`).toBeTruthy();visited.add(stageId!);
-    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-    expect(overflow,`Horizontal overflow at ${stageId}`).toBeLessThanOrEqual(2);
-    if(await stage.locator('.activity-area').count()){const answer=answers[stageId!];expect(answer,`Missing automated answer for ${stageId}`).toBeTruthy();await answerStage(page,answer)}
-    if(stageId==='l12-summary')break;
-    const next=page.locator('.lesson-controls .primary');await expect(next).toBeEnabled();await next.click();await expect(stage).not.toHaveAttribute('data-stage-id',stageId!);
-  }
-  await expect(page.locator('[data-stage-id="l12-summary"]')).toBeVisible();expect(visited.size).toBe(21);
-  const summary=page.locator('.summary-card');await expect(summary).toContainText('5/5');await expect(summary).toContainText('6/6');await expect(summary).toContainText('Завершён');
-});
-test('lesson 12 keeps an answer after direct page navigation',async({page})=>{
-  await openLesson(page);await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:12,stageIndex:6}})));
-  const stage=page.locator('[data-stage-id="l12-practice1"]');await expect(stage).toBeVisible();await stage.locator('.inline-answer input').fill('1');
-  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:12,stageIndex:7}})));
-  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:12,stageIndex:6}})));
-  await expect(page.locator('[data-stage-id="l12-practice1"] .inline-answer input')).toHaveValue('1');
-});
+const answers:Record<string,Answer>={'l12-diagnostic':{type:'choice',value:'луч'},'l12-practice1':{type:'input',value:'1'},'l12-practice2':{type:'choice',value:'точка X лежит на прямой TF по другую сторону от T, чем F'},'l12-practice3':{type:'input',value:'14'},'l12-practice4':{type:'choice',value:'7 см или 43 см'},'l12-practice5':{type:'choice',value:'точка, отрезок или луч'},'l12-practice6':{type:'order',values:['Назвать все фигуры','Определить начала и концы','Проверить направления лучей','Отметить пересечения и общие части','Сверить вывод с условием']},'l12-quiz1':{type:'choice',value:'плоскость бесконечна'},'l12-quiz2':{type:'choice',value:'AB и BA обозначают одну и ту же прямую'},'l12-quiz3':{type:'input',value:'10'},'l12-quiz4':{type:'choice',value:'P'},'l12-quiz5':{type:'choice',value:'точки могут лежать по одну или по разные стороны от исходной точки'},'l12-challenge':{type:'choice',value:'7 и 4'}};
+async function openLesson(page:Page){await page.goto('/');const lessons=page.locator('.course-lesson-grid > button.is-interactive');await expect(lessons).toHaveCount(22);await lessons.nth(11).click();await expect(page.locator('.lesson-opening-start')).toBeVisible();await page.locator('.lesson-opening-start').click();await expect(page.locator('[data-stage-id="l12-story"]')).toBeVisible()}
+async function answerStage(page:Page,answer:Answer){const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');if(answer.type==='input')await stage.locator('.inline-answer input').fill(answer.value);else if(answer.type==='choice')await stage.getByRole('button',{name:answer.value,exact:true}).click();else for(const value of answer.values)await stage.locator('.order-bank').getByRole('button',{name:value,exact:true}).click();await stage.locator('.check-button').click();await expect(stage.locator('.instant-feedback.good')).toBeVisible()}
+test('lesson 12 completes every main exercise and opens mandatory practice on iPad WebKit',async({page})=>{test.setTimeout(180_000);await openLesson(page);const visited=new Set<string>();for(let step=0;step<21;step+=1){const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');const stageId=await stage.getAttribute('data-stage-id');expect(stageId,`Stage ${step+1} must have data-stage-id`).toBeTruthy();visited.add(stageId!);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);expect(overflow,`Horizontal overflow at ${stageId}`).toBeLessThanOrEqual(2);if(await stage.locator('.activity-area').count()){const answer=answers[stageId!];expect(answer,`Missing automated answer for ${stageId}`).toBeTruthy();await answerStage(page,answer)}if(stageId==='l12-summary')break;const next=page.locator('.lesson-controls .primary');await expect(next).toBeEnabled();await next.click();await expect(stage).not.toHaveAttribute('data-stage-id',stageId!)}await expect(page.locator('[data-stage-id="l12-summary"]')).toBeVisible();expect(visited.size).toBe(21);const summary=page.locator('.summary-card');await expect(summary).toContainText('5/5');await expect(summary).toContainText('6/6');await expect(summary).toContainText('Основная часть ✓');await expect(page.locator('[data-lesson-completion-gate="12"]')).toContainText('Урок ещё не завершён')});
+test('lesson 12 keeps an answer after direct page navigation',async({page})=>{await openLesson(page);await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:12,stageIndex:6}})));const stage=page.locator('[data-stage-id="l12-practice1"]');await expect(stage).toBeVisible();await stage.locator('.inline-answer input').fill('1');await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:12,stageIndex:7}})));await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:12,stageIndex:6}})));await expect(page.locator('[data-stage-id="l12-practice1"] .inline-answer input')).toHaveValue('1')});
