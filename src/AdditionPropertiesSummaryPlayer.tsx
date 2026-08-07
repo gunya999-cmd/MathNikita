@@ -70,11 +70,12 @@ export function AdditionPropertiesSummaryPlayer(){
   const quizCorrect=lessonTwentyFourStages.filter(item=>item.kind==='quiz'&&item.activity).filter(item=>results[item.activity!.id]).length;
   const currentOrder=activity?orders[activity.id]??[]:[];
   const currentResponse=activity?responses[activity.id]??'':'';
-  const isCorrect=activity?Boolean(results[activity.id]):true;
+  const isCorrect=activity?Boolean(results[activity.id]&&checked[activity.id]):true;
   const wasChecked=activity?Boolean(checked[activity.id]):false;
-  function choose(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}))}
-  function addOrder(value:string){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:[...(previous[activity.id]??[]),value]}));setChecked(previous=>({...previous,[activity.id]:false}))}
-  function removeOrder(index:number){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:(previous[activity.id]??[]).filter((_,itemIndex)=>itemIndex!==index)}));setChecked(previous=>({...previous,[activity.id]:false}))}
+  function invalidateCurrent(){if(!activity)return;setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
+  function choose(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));invalidateCurrent()}
+  function addOrder(value:string){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:[...(previous[activity.id]??[]),value]}));invalidateCurrent()}
+  function removeOrder(index:number){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:(previous[activity.id]??[]).filter((_,itemIndex)=>itemIndex!==index)}));invalidateCurrent()}
   function checkAnswer(){if(!activity)return;const correct=activity.type==='order'?sameOrder(currentOrder,activity.answer as string[]):normalize(currentResponse)===normalize(activity.answer as string);setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
   function resetActivity(){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:''}));setOrders(previous=>({...previous,[activity.id]:[]}));setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
   function move(delta:number){setStageIndex(index=>Math.min(Math.max(index+delta,0),lessonTwentyFourStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
