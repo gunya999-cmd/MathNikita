@@ -1,13 +1,15 @@
 import { useEffect,useMemo,useState } from 'react';
+import { loadLessonTiming } from './lessonTiming';
 import './lessonPlayer.css';
 import './controlWork.css';
 
 type FieldType='input'|'choice'|'ticks'|'set';
 type ControlField={id:string;label:string;type:FieldType;answer:string;accepted?:string[];options?:string[];placeholder?:string;explanation:string};
 export type ControlWorkStage={id:string;title:string;eyebrow:string;kind:'intro'|'task'|'submit'|'summary';body:string;fieldIds?:string[]};
-type Saved={version:1;stageIndex:number;responses:Record<string,string>;submitted:boolean;completedAt?:string};
+type Saved={version:1;stageIndex:number;responses:Record<string,string>;submitted:boolean;completedAt?:string;submittedResponses?:Record<string,string>;correctionFieldIds?:string[];correctionCompletedAt?:string};
 
 const KEY='mathnikita-lesson-20-control-v1';
+const COMPLETION_KEY='mathnikita:lesson-complete:20';
 
 const fields:ControlField[]=[
   {id:'l20-1a',type:'input',label:'1) сорок два миллиарда семь миллионов три тысячи девятнадцать',answer:'42007003019',accepted:['42 007 003 019'],placeholder:'Запиши цифрами',explanation:'42 | 007 | 003 | 019 = 42 007 003 019.'},
@@ -53,7 +55,7 @@ function loadSaved():Saved{
   try{
     const raw=localStorage.getItem(KEY);if(!raw)return{version:1,stageIndex:0,responses:{},submitted:false};
     const parsed=JSON.parse(raw) as Saved;
-    if(parsed?.version===1)return{version:1,stageIndex:Math.max(0,Math.min(parsed.stageIndex,lessonTwentyStages.length-1)),responses:parsed.responses??{},submitted:Boolean(parsed.submitted),completedAt:parsed.completedAt};
+    if(parsed?.version===1)return{version:1,stageIndex:Math.max(0,Math.min(parsed.stageIndex,lessonTwentyStages.length-1)),responses:parsed.responses??{},submitted:Boolean(parsed.submitted),completedAt:parsed.completedAt,submittedResponses:parsed.submittedResponses,correctionFieldIds:parsed.correctionFieldIds??[],correctionCompletedAt:parsed.correctionCompletedAt};
   }catch{}
   return{version:1,stageIndex:0,responses:{},submitted:false};
 }
@@ -64,14 +66,25 @@ export function ControlWorkOnePlayer(){
   const[responses,setResponses]=useState<Record<string,string>>(initial.responses);
   const[submitted,setSubmitted]=useState(initial.submitted);
   const[completedAt,setCompletedAt]=useState<string|undefined>(initial.completedAt);
+  const[submittedResponses,setSubmittedResponses]=useState<Record<string,string>|undefined>(initial.submittedResponses);
+  const[correctionFieldIds,setCorrectionFieldIds]=useState<string[]>(initial.correctionFieldIds??[]);
+  const[correctionCompletedAt,setCorrectionCompletedAt]=useState<string|undefined>(initial.correctionCompletedAt);
   const stage=lessonTwentyStages[stageIndex];
   const answeredCount=fields.filter(field=>Boolean(responses[field.id]?.trim())).length;
-  const score=fields.filter(field=>correct(field,responses[field.id]??'')).length;
+  const baselineResponses=submittedResponses??(submitted?responses:{});
+  const score=fields.filter(field=>correct(field,baselineResponses[field.id]??'')).length;
   const grade=score>=13?'5':score>=10?'4':score>=7?'3':'нужно повторить';
+  const wrongFieldIds=submitted?fields.filter(field=>!correct(field,baselineResponses[field.id]??'')).map(field=>field.id):[];
+  const correctionMode=submitted&&correctionFieldIds.length>0&&!correctionCompletedAt;
+  const correctionCorrectCount=correctionFieldIds.filter(id=>{const field=fieldById.get(id);return Boolean(field&&correct(field,responses[id]??''))}).length;
+  const correctionStageIndexes=lessonTwentyStages.map((item,index)=>({item,index})).filter(({item})=>item.kind==='task'&&item.fieldIds?.some(id=>correctionFieldIds.includes(id))).map(({index})=>index);
+  const correctionPosition=correctionStageIndexes.indexOf(stageIndex);
   const stageFields=(stage.fieldIds??[]).map(id=>fieldById.get(id)).filter(Boolean) as ControlField[];
-  const stageComplete=stageFields.every(field=>Boolean(responses[field.id]?.trim()));
+  const stageComplete=correctionMode
+    ? stageFields.filter(field=>correctionFieldIds.includes(field.id)).every(field=>correct(field,responses[field.id]??''))
+    : stageFields.every(field=>Boolean(responses[field.id]?.trim()));
 
-  useEffect(()=>{localStorage.setItem(KEY,JSON.stringify({version:1,stageIndex,responses,submitted,completedAt} satisfies Saved))},[stageIndex,responses,submitted,completedAt]);
+  useEffect(()=>{localStorage.setItem(KEY,JSON.stringify({version:1,stageIndex,responses,submitted,completedAt,submittedResponses,correctionFieldIds,correctionCompletedAt} satisfies Saved))},[stageIndex,responses,submitted,completedAt,submittedResponses,correctionFieldIds,correctionCompletedAt]);
   useEffect(()=>{
     const go=(event:Event)=>{
       const detail=(event as CustomEvent<{lessonNumber:number;stageIndex:number}>).detail;
@@ -81,42 +94,57 @@ export function ControlWorkOnePlayer(){
     window.addEventListener('mathnikita-go-to-stage',go);return()=>window.removeEventListener('mathnikita-go-to-stage',go);
   },[]);
 
-  function setResponse(id:string,value:string){if(!submitted)setResponses(previous=>({...previous,[id]:value}))}
+  function canEdit(id:string){return!submitted||(correctionMode&&correctionFieldIds.includes(id))}
+  function setResponse(id:string,value:string){if(canEdit(id))setResponses(previous=>({...previous,[id]:value}))}
   function toggleTick(id:string,tick:number){
-    if(submitted)return;
+    if(!canEdit(id))return;
     const current=(responses[id]??'').split(',').filter(Boolean).map(Number);
     const next=current.includes(tick)?current.filter(item=>item!==tick):[...current,tick];
     setResponse(id,next.sort((a,b)=>a-b).join(','));
   }
   function submit(){
     if(answeredCount!==fields.length)return;
-    const now=new Date().toISOString();setSubmitted(true);setCompletedAt(now);setStageIndex(lessonTwentyStages.length-1);
+    const now=new Date().toISOString();const snapshot={...responses};const activeSeconds=Math.round(loadLessonTiming(20).activeSeconds);
+    setSubmittedResponses(snapshot);setSubmitted(true);setCompletedAt(now);setCorrectionFieldIds([]);setCorrectionCompletedAt(undefined);setStageIndex(lessonTwentyStages.length-1);
+    localStorage.setItem(COMPLETION_KEY,JSON.stringify({completedAt:now,activeSeconds}));
+    window.dispatchEvent(new CustomEvent('mathnikita-lesson-completed',{detail:{lessonNumber:20,completedAt:now,activeSeconds}}));
   }
-  function reset(){localStorage.removeItem(KEY);setResponses({});setSubmitted(false);setCompletedAt(undefined);setStageIndex(0)}
+  function startCorrection(){
+    if(!wrongFieldIds.length)return;
+    const indexes=lessonTwentyStages.map((item,index)=>({item,index})).filter(({item})=>item.kind==='task'&&item.fieldIds?.some(id=>wrongFieldIds.includes(id))).map(({index})=>index);
+    setCorrectionFieldIds(wrongFieldIds);setCorrectionCompletedAt(undefined);setStageIndex(indexes[0]??lessonTwentyStages.length-1);
+  }
+  function finishCorrection(){
+    if(!correctionFieldIds.length||correctionCorrectCount!==correctionFieldIds.length)return;
+    setCorrectionCompletedAt(new Date().toISOString());setStageIndex(lessonTwentyStages.length-1);
+  }
+  function reset(){localStorage.removeItem(KEY);localStorage.removeItem(COMPLETION_KEY);setResponses({});setSubmittedResponses(undefined);setSubmitted(false);setCompletedAt(undefined);setCorrectionFieldIds([]);setCorrectionCompletedAt(undefined);setStageIndex(0)}
 
   return <main className="control-work-page">
     <section className="lesson-player-shell">
-      <header className="control-work-status"><div><span>Контрольная работа № 1</span><b>{submitted?'Работа сдана':`Заполнено ${answeredCount} из ${fields.length}`}</b></div><div className="control-progress"><i style={{width:`${answeredCount/fields.length*100}%`}}/></div></header>
-      <nav className="control-page-jump" aria-label="Быстрый переход по контрольной">{lessonTwentyStages.map((item,index)=><button type="button" key={item.id} className={index===stageIndex?'active':''} onClick={()=>setStageIndex(index)}><span>{index+1}</span><b>{item.kind==='task'?`Задание ${index}`:item.kind==='intro'?'Правила':item.kind==='submit'?'Сдача':'Результат'}</b></button>)}</nav>
-      <article className={`interactive-stage control-stage is-${stage.kind}`} data-stage-id={stage.id}>
-        <div className="stage-copy"><span>{stage.eyebrow}</span><h2>{stage.title}</h2><p>{stage.body}</p></div>
+      <header className="control-work-status"><div><span>{correctionMode?'Коррекция контрольной № 1':'Контрольная работа № 1'}</span><b>{correctionMode?`Исправлено ${correctionCorrectCount} из ${correctionFieldIds.length}`:submitted?'Работа сдана':`Заполнено ${answeredCount} из ${fields.length}`}</b></div><div className="control-progress"><i style={{width:`${correctionMode?(correctionFieldIds.length?correctionCorrectCount/correctionFieldIds.length*100:100):answeredCount/fields.length*100}%`}}/></div></header>
+      <nav className="control-page-jump" aria-label="Быстрый переход по контрольной">{lessonTwentyStages.map((item,index)=>{const correctionTarget=Boolean(item.kind==='task'&&item.fieldIds?.some(id=>correctionFieldIds.includes(id)));return <button type="button" key={item.id} className={`${index===stageIndex?'active':''} ${correctionMode&&correctionTarget?'correction-target':''}`} onClick={()=>setStageIndex(index)} disabled={correctionMode&&!correctionTarget}><span>{index+1}</span><b>{item.kind==='task'?`Задание ${index}`:item.kind==='intro'?'Правила':item.kind==='submit'?'Сдача':'Результат'}</b></button>})}</nav>
+      <article className={`interactive-stage control-stage is-${stage.kind} ${correctionMode?'is-correction':''}`} data-stage-id={stage.id}>
+        <div className="stage-copy"><span>{correctionMode?'Коррекция · только ошибки':stage.eyebrow}</span><h2>{stage.title}</h2><p>{correctionMode?'Исправь только ошибочные подпункты этого задания. Правильные ответы первой попытки сохранены и заблокированы.':stage.body}</p></div>
 
         {stage.kind==='intro'?<div className="control-rules-card"><b>Во время работы</b><ul><li>Подсказки и мгновенная проверка отключены.</li><li>Можно возвращаться к любому заданию до сдачи.</li><li>Черновик на бумаге разрешён и полезен для геометрии.</li><li>После сдачи увидишь 14-балльный результат и разбор ошибок.</li></ul></div>:null}
 
-        {stage.kind==='task'?<div className="control-field-list">{stageFields.map(field=><section className="control-field" key={field.id} data-control-field={field.id}><label>{field.label}</label>
-          {field.type==='choice'?<div className="control-choice-grid">{field.options?.map(option=><button type="button" key={option} className={responses[field.id]===option?'selected':''} onClick={()=>setResponse(field.id,option)} disabled={submitted}>{option}</button>)}</div>:
-          field.type==='ticks'?<div className="control-ray" aria-label="Координатный луч"><div className="control-ray-line"/>{Array.from({length:11},(_,tick)=>{const selected=(responses[field.id]??'').split(',').includes(String(tick));return <button type="button" key={tick} data-control-tick={tick} className={selected?'selected':''} onClick={()=>toggleTick(field.id,tick)} disabled={submitted}><i/><span>{tick}</span></button>})}</div>:
-          <input className="control-input" value={responses[field.id]??''} onChange={event=>setResponse(field.id,event.target.value)} placeholder={field.placeholder} disabled={submitted}/>}</section>)}</div>:null}
+        {stage.kind==='task'?<div className="control-field-list">{stageFields.map(field=>{const correctionTarget=correctionMode&&correctionFieldIds.includes(field.id);const correctionOk=correctionTarget&&correct(field,responses[field.id]??'');return <section className={`control-field ${correctionTarget?'is-correction-target':''}`} key={field.id} data-control-field={field.id}><label>{field.label}</label>
+          {field.type==='choice'?<div className="control-choice-grid">{field.options?.map(option=><button type="button" key={option} className={responses[field.id]===option?'selected':''} onClick={()=>setResponse(field.id,option)} disabled={!canEdit(field.id)}>{option}</button>)}</div>:
+          field.type==='ticks'?<div className="control-ray" aria-label="Координатный луч"><div className="control-ray-line"/>{Array.from({length:11},(_,tick)=>{const selected=(responses[field.id]??'').split(',').includes(String(tick));return <button type="button" key={tick} data-control-tick={tick} className={selected?'selected':''} onClick={()=>toggleTick(field.id,tick)} disabled={!canEdit(field.id)}><i/><span>{tick}</span></button>})}</div>:
+          <input className="control-input" value={responses[field.id]??''} onChange={event=>setResponse(field.id,event.target.value)} placeholder={field.placeholder} disabled={!canEdit(field.id)}/>}          
+          {correctionTarget?<div className={`control-correction-feedback ${correctionOk?'is-correct':'is-pending'}`}>{correctionOk?'Исправлено ✓':'Сверь ход решения с разбором и исправь ответ.'}</div>:null}
+        </section>})}</div>:null}
 
         {stage.id==='l20-task4'?<div className="control-segment-visual" aria-label="Отрезок A D B"><span>A</span><i/><span>D</span><i className="long"/><span>B</span></div>:null}
         {stage.id==='l20-task7'?<div className="control-overlap-visual"><span>O</span><i className="whole"/><b>N</b><i className="overlap"/><b>M</b><i className="whole"/><span>P</span></div>:null}
 
         {stage.kind==='submit'?<div className="control-submit-card"><strong>{answeredCount}/{fields.length}</strong><p>{answeredCount===fields.length?'Все подпункты заполнены. Можно сдавать работу.':'Не все подпункты заполнены. Вернись к пропущенным заданиям.'}</p><button type="button" onClick={submit} disabled={answeredCount!==fields.length||submitted}>Сдать контрольную работу</button></div>:null}
 
-        {stage.kind==='summary'?submitted?<div className="summary-card control-summary"><div className="control-score"><span>Результат</span><strong>{score}/{fields.length}</strong><b>Оценка: {grade}</b><small>Завершён{completedAt?` · ${new Date(completedAt).toLocaleDateString('ru-RU')}`:''}</small></div><div className="control-review-list">{fields.map((field,index)=>{const ok=correct(field,responses[field.id]??'');return <section key={field.id} className={ok?'correct':'wrong'}><header><span>{index+1}</span><b>{ok?'Верно':'Нужно исправить'}</b></header><p>{field.label}</p><small>Твой ответ: {responses[field.id]||'—'}</small>{!ok?<><strong>Правильный ответ: {field.answer}</strong><em>{field.explanation}</em></>:null}</section>})}</div><button className="control-reset" type="button" onClick={reset}>Пройти контрольную заново</button></div>:<div className="control-submit-card"><strong>Результат закрыт</strong><p>Сначала заполни задания 1–8 и сдай работу.</p></div>:null}
+        {stage.kind==='summary'?submitted?<div className="summary-card control-summary"><div className="control-score"><span>Первичный результат</span><strong>{score}/{fields.length}</strong><b>Оценка: {grade}</b><small>Сдана{completedAt?` · ${new Date(completedAt).toLocaleDateString('ru-RU')}`:''}</small></div>{wrongFieldIds.length?<div className={`control-correction-card ${correctionCompletedAt?'is-complete':''}`}><b>{correctionCompletedAt?'Коррекция завершена ✓':`Нужно закрепить ${wrongFieldIds.length} ${wrongFieldIds.length===1?'подпункт':'подпункта'}`}</b><p>{correctionCompletedAt?'Все ошибки первой попытки исправлены. Первичный балл сохранён отдельно и не переписан.':'Не нужно проходить всю контрольную заново. Откроются только те подпункты, где была ошибка.'}</p>{!correctionCompletedAt?<button type="button" onClick={startCorrection}>Исправить только ошибки</button>:null}</div>:<div className="control-correction-card is-complete"><b>Все навыки подтверждены ✓</b><p>Коррекция не требуется.</p></div>}<div className="control-review-list">{fields.map((field,index)=>{const original=baselineResponses[field.id]??'';const ok=correct(field,original);const corrected=!ok&&Boolean(correctionCompletedAt)&&correct(field,responses[field.id]??'');return <section key={field.id} className={ok||corrected?'correct':'wrong'}><header><span>{index+1}</span><b>{ok?'Верно':corrected?'Исправлено':'Нужно исправить'}</b></header><p>{field.label}</p><small>Ответ при сдаче: {original||'—'}</small>{corrected?<strong>После коррекции: {responses[field.id]}</strong>:null}{!ok?<><strong>Правильный ответ: {field.answer}</strong><em>{field.explanation}</em></>:null}</section>})}</div><button className="control-reset" type="button" onClick={reset}>Пройти контрольную заново</button></div>:<div className="control-submit-card"><strong>Результат закрыт</strong><p>Сначала заполни задания 1–8 и сдай работу.</p></div>:null}
       </article>
 
-      <nav className="lesson-controls" aria-label="Навигация контрольной работы"><button type="button" onClick={()=>setStageIndex(value=>Math.max(0,value-1))} disabled={stageIndex===0}>← Назад</button><span>{stageIndex+1} / {lessonTwentyStages.length}</span>{stageIndex<lessonTwentyStages.length-1?<button className="primary" type="button" onClick={()=>setStageIndex(value=>Math.min(lessonTwentyStages.length-1,value+1))} disabled={stage.kind==='task'&&!stageComplete}>Далее →</button>:<button className="primary" type="button" onClick={()=>setStageIndex(9)}>К сдаче</button>}</nav>
+      {correctionMode&&stage.kind==='task'?<nav className="lesson-controls control-correction-controls" aria-label="Навигация коррекции"><button type="button" onClick={()=>setStageIndex(correctionStageIndexes[Math.max(0,correctionPosition-1)]??stageIndex)} disabled={correctionPosition<=0}>← Предыдущая ошибка</button><span>Коррекция {correctionPosition+1} / {correctionStageIndexes.length}</span>{correctionPosition<correctionStageIndexes.length-1?<button className="primary" type="button" onClick={()=>setStageIndex(correctionStageIndexes[correctionPosition+1])} disabled={!stageComplete}>Следующая ошибка →</button>:<button className="primary" type="button" onClick={finishCorrection} disabled={correctionCorrectCount!==correctionFieldIds.length}>Завершить коррекцию ✓</button>}</nav>:<nav className="lesson-controls" aria-label="Навигация контрольной работы"><button type="button" onClick={()=>setStageIndex(value=>Math.max(0,value-1))} disabled={stageIndex===0}>← Назад</button><span>{stageIndex+1} / {lessonTwentyStages.length}</span>{stageIndex<lessonTwentyStages.length-1?<button className="primary" type="button" onClick={()=>setStageIndex(value=>Math.min(lessonTwentyStages.length-1,value+1))} disabled={stage.kind==='task'&&!stageComplete}>Далее →</button>:<button className="primary" type="button" onClick={()=>setStageIndex(9)}>К сдаче</button>}</nav>}
     </section>
   </main>;
 }

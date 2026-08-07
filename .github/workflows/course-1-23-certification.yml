@@ -30,10 +30,12 @@ jobs:
         run: npm run build
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Verify course plan and mandatory practice across lessons
+      - name: Verify course plan, pedagogical composition and mandatory practice
         run: >-
           npx playwright test
           tests/course-plan.spec.ts
+          tests/pedagogical-practice-quality.spec.ts
+          tests/lesson-analytics-engagement.spec.ts
           tests/extended-practice-all-lessons.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - if: failure()
@@ -173,13 +175,14 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps webkit
-      - name: Full iPad regression 17-23
+      - name: Full iPad regression 17-23 and targeted control correction
         run: >-
           npx playwright test
           tests/lesson-seventeen-ipad.spec.ts
           tests/lesson-eighteen-ipad.spec.ts
           tests/lesson-nineteen-ipad.spec.ts
           tests/lesson-twenty-ipad.spec.ts
+          tests/lesson-twenty-correction.spec.ts
           tests/lesson-twenty-one-ipad.spec.ts
           tests/lesson-twenty-two-ipad.spec.ts
           tests/lesson-twenty-three-ipad.spec.ts
