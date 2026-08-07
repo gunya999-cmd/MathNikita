@@ -1,5 +1,6 @@
 import { useEffect,useRef,type RefObject } from 'react';
 import { addAnalyticsTime,recordAnalyticsEvent,startAnalyticsSession,type AnalyticsArea } from './studentAnalytics';
+import { isStageNarrationActive } from './stageNarrationSequence';
 
 type Props={rootRef:RefObject<HTMLElement|null>;lessonNumber:number;active:boolean};
 type AttemptState={wrong:number};
@@ -34,6 +35,10 @@ function isCheckAction(target:HTMLElement){
   return Boolean(button.matches('.check-button,.extended-practice-check,.practice-check,.lesson-check,.answer-check')||/проверить|готово|ответить/.test(text));
 }
 
+export function shouldCountEngagedSecond(lastInteractionAt:number,now:number,narrationActive:boolean){
+  return narrationActive||now-lastInteractionAt<60_000;
+}
+
 export function LessonAnalyticsTracker({rootRef,lessonNumber,active}:Props){
   const attemptsRef=useRef<Record<string,AttemptState>>({});
   const lastInteractionRef=useRef(Date.now());
@@ -50,7 +55,7 @@ export function LessonAnalyticsTracker({rootRef,lessonNumber,active}:Props){
         screen+=1;
         if(document.hasFocus()){
           focus+=1;
-          if(Date.now()-lastInteractionRef.current<60_000)engaged+=1;
+          if(shouldCountEngagedSecond(lastInteractionRef.current,Date.now(),isStageNarrationActive()))engaged+=1;
         }
       }
       if(screen>=5)flush();
