@@ -40,10 +40,10 @@ test('lesson 5 is not complete before mandatory mastery practice and reflection'
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-complete:5'))).toBeNull();
 
   const task=page.locator('[data-practice-task="l5-master-10"]');
-  await task.getByLabel('Следующее натуральное число').fill('10 000 000');
-  await task.getByLabel('На сколько следующее натуральное число больше предыдущего?').fill('1');
-  await task.getByLabel('Самое маленькое натуральное число').fill('1');
-  await task.getByLabel('Существует ли наибольшее натуральное число?').fill('нет');
+  await task.getByLabel('Следующее натуральное число',{exact:true}).fill('10 000 000');
+  await task.getByLabel('На сколько следующее натуральное число больше предыдущего?',{exact:true}).fill('1');
+  await task.getByLabel('Самое маленькое натуральное число',{exact:true}).fill('1');
+  await task.getByLabel('Существует ли наибольшее натуральное число?',{exact:true}).fill('нет');
   await domClick(task.getByRole('button',{name:'Проверить'}));
   await expect(task.locator('.extended-practice-feedback.is-correct')).toBeVisible();
   await domClick(task.getByRole('button',{name:'Завершить практику'}));
