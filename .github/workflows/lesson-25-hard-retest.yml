@@ -1,0 +1,85 @@
+name: Lesson 25 hard retest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, agent/lesson-25-subtraction]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-25-hard-retest-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build · lesson 25
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+
+  chromium:
+    name: Chromium · lesson 25 full flow, voice and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Full main lesson and response persistence
+        run: npx playwright test tests/lesson-twenty-five-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Every-stage Sulafat, Pythagoras and narration interruption
+        run: npx playwright test tests/lesson-twenty-five-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Complete all 20 mandatory-practice tasks
+        env:
+          PRACTICE_START: 25
+          PRACTICE_END: 25
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-25-chromium-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad:
+    name: iPad WebKit · lesson 25 full flow, voice and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Full main lesson and responsive layout
+        run: npx playwright test tests/lesson-twenty-five-ipad.spec.ts --config=playwright.config.ts --workers=1
+      - name: Every-stage Sulafat, Pythagoras and narration interruption
+        run: npx playwright test tests/lesson-twenty-five-voice.spec.ts --config=playwright.config.ts --workers=1
+      - name: Complete all 20 mandatory-practice tasks
+        env:
+          PRACTICE_START: 25
+          PRACTICE_END: 25
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-25-ipad-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
