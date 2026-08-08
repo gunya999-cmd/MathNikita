@@ -23,7 +23,7 @@ const answers:Record<string,Answer>={
 async function openLesson(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(22);
+  await expect(lessons).toHaveCount(23);
   await lessons.nth(16).click();
   await expect(page.locator('.lesson-opening-start')).toBeVisible();
   await page.locator('.lesson-opening-start').click();
