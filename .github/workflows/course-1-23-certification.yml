@@ -1,4 +1,4 @@
-name: Course 1-26 certification
+name: Course 1-27 certification
 
 on:
   workflow_dispatch:
@@ -12,14 +12,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: course-1-26-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: course-1-27-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build-and-content:
-    name: Build + course/practice integrity 1-26
+    name: Build + course/practice integrity 1-27
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,10 +46,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  desktop-runtime-1-26:
-    name: Desktop Chromium · full runtime 1-26
+  desktop-runtime-1-27:
+    name: Desktop Chromium · full runtime 1-27
     runs-on: ubuntu-latest
-    timeout-minutes: 28
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -75,6 +75,7 @@ jobs:
           tests/lesson-twenty-four-ipad.spec.ts
           tests/lesson-twenty-five-ipad.spec.ts
           tests/lesson-twenty-six-ipad.spec.ts
+          tests/lesson-twenty-seven-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -84,10 +85,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  voice-1-26:
-    name: Voice · every stage, sequencing and interruption 1-26
+  voice-1-27:
+    name: Voice · every stage, sequencing and interruption 1-27
     runs-on: ubuntu-latest
-    timeout-minutes: 29
+    timeout-minutes: 31
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -109,6 +110,7 @@ jobs:
           tests/lesson-twenty-four-voice.spec.ts
           tests/lesson-twenty-five-voice.spec.ts
           tests/lesson-twenty-six-voice.spec.ts
+          tests/lesson-twenty-seven-voice.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -177,10 +179,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  ipad-17-26:
-    name: iPad WebKit · lessons 17-26
+  ipad-17-27:
+    name: iPad WebKit · lessons 17-27
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 32
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -188,7 +190,7 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps webkit
-      - name: Full iPad regression 17-26 and targeted control correction
+      - name: Full iPad regression 17-27 and targeted control correction
         run: >-
           npx playwright test
           tests/lesson-seventeen-ipad.spec.ts
@@ -202,11 +204,12 @@ jobs:
           tests/lesson-twenty-four-ipad.spec.ts
           tests/lesson-twenty-five-ipad.spec.ts
           tests/lesson-twenty-six-ipad.spec.ts
+          tests/lesson-twenty-seven-ipad.spec.ts
           --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: certification-ipad-17-26-${{ github.sha }}
+          name: certification-ipad-17-27-${{ github.sha }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7
@@ -246,26 +249,26 @@ jobs:
           retention-days: 7
 
   certification:
-    name: COURSE 1-26 CERTIFIED
+    name: COURSE 1-27 CERTIFIED
     if: always()
     needs:
       - build-and-content
-      - desktop-runtime-1-26
-      - voice-1-26
+      - desktop-runtime-1-27
+      - voice-1-27
       - ipad-1-8
       - ipad-9-16
-      - ipad-17-26
+      - ipad-17-27
       - accounts-cloud-dashboard
     runs-on: ubuntu-latest
     steps:
       - name: Fail unless every certification lane passed
         env:
           BUILD_CONTENT: ${{ needs.build-and-content.result }}
-          DESKTOP_RUNTIME: ${{ needs.desktop-runtime-1-26.result }}
-          VOICE: ${{ needs.voice-1-26.result }}
+          DESKTOP_RUNTIME: ${{ needs.desktop-runtime-1-27.result }}
+          VOICE: ${{ needs.voice-1-27.result }}
           IPAD_1_8: ${{ needs.ipad-1-8.result }}
           IPAD_9_16: ${{ needs.ipad-9-16.result }}
-          IPAD_17_26: ${{ needs.ipad-17-26.result }}
+          IPAD_17_27: ${{ needs.ipad-17-27.result }}
           ACCOUNTS: ${{ needs.accounts-cloud-dashboard.result }}
         run: |
           printf '%s\n' \
@@ -274,12 +277,12 @@ jobs:
             "voice=$VOICE" \
             "ipad-1-8=$IPAD_1_8" \
             "ipad-9-16=$IPAD_9_16" \
-            "ipad-17-26=$IPAD_17_26" \
+            "ipad-17-27=$IPAD_17_27" \
             "accounts-cloud-dashboard=$ACCOUNTS"
           test "$BUILD_CONTENT" = success
           test "$DESKTOP_RUNTIME" = success
           test "$VOICE" = success
           test "$IPAD_1_8" = success
           test "$IPAD_9_16" = success
-          test "$IPAD_17_26" = success
+          test "$IPAD_17_27" = success
           test "$ACCOUNTS" = success
