@@ -19,11 +19,14 @@ jobs:
         with:
           node-version: 24
       - name: Wire lesson 27
-        run: node scripts/wire-lesson27.mjs
+        run: |
+          cp .github/workflows/course-1-23-certification.yml /tmp/course-certification.yml
+          node scripts/wire-lesson27.mjs
+          cp /tmp/course-certification.yml .github/workflows/course-1-23-certification.yml
       - name: Commit generated lesson
         run: |
           git config user.name "gunya999-cmd"
           git config user.email "gunya999@gmail.com"
-          git add src tests .github/workflows/course-1-23-certification.yml
+          git add src tests
           git commit -m "Build lesson 27: subtraction generalization"
           git push
