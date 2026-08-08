@@ -15,7 +15,7 @@ const answers:Record<string,Answer>={
   'l15-quiz4':{type:'input',value:'0,14'},
   'l15-quiz5':{type:'input',value:'74'},
   'l15-challenge':{type:'input',value:'8,5 см'},
-  'l15-transfer':{type:'choice',value:'Крупное деление 0→3 содержит три единиччных отрезка'},
+  'l15-transfer':{type:'choice',value:'Крупное деление 0→3 содержит три единичных отрезка'},
 };
 async function openLesson(page:Page){await page.goto('/');const lessons=page.locator('.course-lesson-grid > button.is-interactive');await expect(lessons).toHaveCount(23);await lessons.nth(14).click();await expect(page.locator('.lesson-opening-start')).toBeVisible();await page.locator('.lesson-opening-start').click();await expect(page.locator('[data-stage-id="l15-mission"]')).toBeVisible()}
 async function answerStage(page:Page,answer:Answer){const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage');if(answer.type==='input')await stage.locator('.inline-answer input').fill(answer.value);else await stage.getByRole('button',{name:answer.value,exact:true}).click();await stage.locator('.check-button').click();await expect(stage.locator('.instant-feedback.good')).toBeVisible()}
