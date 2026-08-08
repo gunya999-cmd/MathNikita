@@ -1,4 +1,4 @@
-name: Course 1-23 certification
+name: Course 1-24 certification
 
 on:
   workflow_dispatch:
@@ -12,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: course-1-23-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: course-1-24-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build-and-content:
-    name: Build + course/practice integrity 1-23
+    name: Build + course/practice integrity 1-24
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -46,10 +46,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  desktop-runtime-1-23:
-    name: Desktop Chromium · full runtime 1-23
+  desktop-runtime-1-24:
+    name: Desktop Chromium · full runtime 1-24
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 24
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,6 +65,14 @@ jobs:
           tests/lesson-six-mastery.spec.ts
           tests/lessons-six-to-sixteen-runtime-and-pythagoras.spec.ts
           tests/lessons-seventeen-to-twenty-three-runtime-and-pythagoras.spec.ts
+          tests/lesson-seventeen-ipad.spec.ts
+          tests/lesson-eighteen-ipad.spec.ts
+          tests/lesson-nineteen-ipad.spec.ts
+          tests/lesson-twenty-ipad.spec.ts
+          tests/lesson-twenty-one-ipad.spec.ts
+          tests/lesson-twenty-two-ipad.spec.ts
+          tests/lesson-twenty-three-ipad.spec.ts
+          tests/lesson-twenty-four-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -74,10 +82,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  voice-1-23:
-    name: Voice · every stage, sequencing and interruption 1-23
+  voice-1-24:
+    name: Voice · every stage, sequencing and interruption 1-24
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -96,6 +104,7 @@ jobs:
           tests/lessons-seventeen-to-twenty-three-voice-sequencing.spec.ts
           tests/voice-navigation-interruption.spec.ts
           tests/studio-voice-priority.spec.ts
+          tests/lesson-twenty-four-voice.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -164,10 +173,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  ipad-17-23:
-    name: iPad WebKit · lessons 17-23
+  ipad-17-24:
+    name: iPad WebKit · lessons 17-24
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 26
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -175,7 +184,7 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps webkit
-      - name: Full iPad regression 17-23 and targeted control correction
+      - name: Full iPad regression 17-24 and targeted control correction
         run: >-
           npx playwright test
           tests/lesson-seventeen-ipad.spec.ts
@@ -186,11 +195,12 @@ jobs:
           tests/lesson-twenty-one-ipad.spec.ts
           tests/lesson-twenty-two-ipad.spec.ts
           tests/lesson-twenty-three-ipad.spec.ts
+          tests/lesson-twenty-four-ipad.spec.ts
           --workers=1
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: certification-ipad-17-23-${{ github.sha }}
+          name: certification-ipad-17-24-${{ github.sha }}
           path: test-results
           if-no-files-found: ignore
           retention-days: 7
@@ -230,26 +240,26 @@ jobs:
           retention-days: 7
 
   certification:
-    name: COURSE 1-23 CERTIFIED
+    name: COURSE 1-24 CERTIFIED
     if: always()
     needs:
       - build-and-content
-      - desktop-runtime-1-23
-      - voice-1-23
+      - desktop-runtime-1-24
+      - voice-1-24
       - ipad-1-8
       - ipad-9-16
-      - ipad-17-23
+      - ipad-17-24
       - accounts-cloud-dashboard
     runs-on: ubuntu-latest
     steps:
       - name: Fail unless every certification lane passed
         env:
           BUILD_CONTENT: ${{ needs.build-and-content.result }}
-          DESKTOP_RUNTIME: ${{ needs.desktop-runtime-1-23.result }}
-          VOICE: ${{ needs.voice-1-23.result }}
+          DESKTOP_RUNTIME: ${{ needs.desktop-runtime-1-24.result }}
+          VOICE: ${{ needs.voice-1-24.result }}
           IPAD_1_8: ${{ needs.ipad-1-8.result }}
           IPAD_9_16: ${{ needs.ipad-9-16.result }}
-          IPAD_17_23: ${{ needs.ipad-17-23.result }}
+          IPAD_17_24: ${{ needs.ipad-17-24.result }}
           ACCOUNTS: ${{ needs.accounts-cloud-dashboard.result }}
         run: |
           printf '%s\n' \
@@ -258,12 +268,12 @@ jobs:
             "voice=$VOICE" \
             "ipad-1-8=$IPAD_1_8" \
             "ipad-9-16=$IPAD_9_16" \
-            "ipad-17-23=$IPAD_17_23" \
+            "ipad-17-24=$IPAD_17_24" \
             "accounts-cloud-dashboard=$ACCOUNTS"
           test "$BUILD_CONTENT" = success
           test "$DESKTOP_RUNTIME" = success
           test "$VOICE" = success
           test "$IPAD_1_8" = success
           test "$IPAD_9_16" = success
-          test "$IPAD_17_23" = success
+          test "$IPAD_17_24" = success
           test "$ACCOUNTS" = success

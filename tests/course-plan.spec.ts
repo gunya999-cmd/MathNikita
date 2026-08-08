@@ -8,8 +8,8 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
 
   const lessons = page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(22);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(23);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(23);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(24);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(1);
 
   await expect(lessons.nth(0)).toContainText('Ряд натуральных чисел');
@@ -34,6 +34,7 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
   await expect(lessons.nth(20)).toContainText('Сложение натуральных чисел. Свойства сложения');
   await expect(lessons.nth(21)).toContainText('Сложение натуральных чисел. Свойства сложения');
   await expect(lessons.nth(22)).toContainText('Сложение натуральных чисел. Свойства сложения');
+  await expect(lessons.nth(23)).toContainText('Сложение натуральных чисел. Свойства сложения');
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
@@ -42,7 +43,8 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
   await expect(lessons.nth(20)).toBeEnabled();
   await expect(lessons.nth(21)).toBeEnabled();
   await expect(lessons.nth(22)).toBeEnabled();
-  await expect(lessons.nth(23)).toBeDisabled();
+  await expect(lessons.nth(23)).toBeEnabled();
+  await expect(lessons.nth(24)).toBeDisabled();
   await expect(page.locator('body')).not.toContainText('Открытие темы');
-  await expect(page.getByText('Полностью готовы 23 интерактивных урока.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 24 интерактивных урока.')).toBeVisible();
 });
