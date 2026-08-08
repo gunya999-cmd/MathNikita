@@ -21,6 +21,7 @@ const answers:Record<string,Answer>={
 
 async function openLesson(page:Page){
   await page.goto('/');
+  // Lesson 25 makes the catalog invariant 24 regular interactive lessons + control lesson 20 = 25 open lessons total.
   await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(24);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(1);
   await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(25);
