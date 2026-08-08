@@ -1,0 +1,29 @@
+name: Lesson 27 course count sync
+
+on:
+  push:
+    branches: [agent/lesson-27-subtraction-generalization]
+    paths:
+      - .github/workflows/lesson-27-test-count-sync.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Sync course availability assertions
+        run: node scripts/sync-lesson27-course-counts.mjs
+      - name: Commit corrected test expectations
+        run: |
+          git config user.name "gunya999-cmd"
+          git config user.email "gunya999@gmail.com"
+          git add tests
+          git commit -m "Refresh course availability assertions through lesson 27"
+          git push
