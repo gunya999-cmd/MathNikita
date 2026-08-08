@@ -23,7 +23,7 @@ const answers:Record<string,Answer>={
 async function openLessonNine(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(25);
+  await expect(lessons).toHaveCount(26);
   await lessons.nth(8).click();
   await expect(page.getByRole('heading',{name:'Отрезок. Длина отрезка. Ломаная — обобщение'}).first()).toBeVisible();
   await page.locator('.lesson-opening-start').click();
