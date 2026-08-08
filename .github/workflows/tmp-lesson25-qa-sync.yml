@@ -1,0 +1,101 @@
+name: Temp lesson25 QA sync
+
+on:
+  push:
+    branches: [agent/tmp-lesson25-qa-sync]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lesson-25-subtraction
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Refresh only catalog-count expectations in iPad 1-16 specs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          files = [
+            'tests/four-lessons-ipad.spec.ts',
+            'tests/lesson-five-ipad.spec.ts',
+            'tests/lesson-six-ipad.spec.ts',
+            'tests/lesson-seven-ipad.spec.ts',
+            'tests/lesson-eight-ipad.spec.ts',
+            'tests/lesson-nine-ipad.spec.ts',
+            'tests/lesson-ten-ipad.spec.ts',
+            'tests/lesson-eleven-ipad.spec.ts',
+            'tests/lesson-twelve-ipad.spec.ts',
+            'tests/lesson-thirteen-ipad.spec.ts',
+            'tests/lesson-fourteen-ipad.spec.ts',
+            'tests/lesson-fifteen-ipad.spec.ts',
+            'tests/lesson-sixteen-ipad.spec.ts',
+          ]
+
+          changed=[]
+          for name in files:
+            p=Path(name)
+            text=p.read_text()
+            original=text
+
+            # Direct locator expectation. Only the course catalog selector is eligible.
+            text=re.sub(
+              r"(page\.locator\(['\"]\.course-lesson-grid > button\.is-interactive['\"]\)\)\.toHaveCount\()23(?=[,)])",
+              r"\g<1>24",
+              text,
+            )
+
+            # Variables that are explicitly assigned the same course-catalog locator.
+            vars=set(re.findall(
+              r"(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*page\.locator\(['\"]\.course-lesson-grid > button\.is-interactive['\"]\)",
+              text,
+            ))
+            for var in vars:
+              text=re.sub(
+                rf"(expect\({re.escape(var)}\)\.toHaveCount\()23(?=[,)])",
+                r"\g<1>24",
+                text,
+              )
+
+            if text != original:
+              p.write_text(text)
+              changed.append(name)
+
+          if not changed:
+            raise SystemExit('No stale course-catalog counts found')
+
+          # Hard guard: no certification iPad 1-16 spec may still assert 23 interactive lessons.
+          stale=[]
+          for name in files:
+            text=Path(name).read_text()
+            if re.search(r"page\.locator\(['\"]\.course-lesson-grid > button\.is-interactive['\"]\)\)\.toHaveCount\(23(?=[,)])", text):
+              stale.append(name)
+              continue
+            vars=set(re.findall(
+              r"(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*page\.locator\(['\"]\.course-lesson-grid > button\.is-interactive['\"]\)",
+              text,
+            ))
+            if any(re.search(rf"expect\({re.escape(var)}\)\.toHaveCount\(23(?=[,)])", text) for var in vars):
+              stale.append(name)
+          if stale:
+            raise SystemExit('Stale catalog counts remain: '+', '.join(stale))
+
+          print('Changed files:')
+          print('\n'.join(changed))
+          PY
+      - name: Commit one QA-only batch
+        run: |
+          git config user.name "mathnikita-course-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add tests
+          git diff --cached --name-only
+          git commit -m "Refresh iPad 1-16 catalog counts for lesson 25"
+          git push origin HEAD:agent/lesson-25-subtraction
