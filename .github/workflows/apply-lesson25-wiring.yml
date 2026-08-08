@@ -1,0 +1,63 @@
+name: Apply lesson 25 wiring
+
+on:
+  push:
+    branches:
+      - agent/lesson-25-subtraction
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lesson-25-subtraction
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Wire lesson 25 into the course
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p=Path(path)
+              text=p.read_text()
+              if old not in text:
+                  raise SystemExit(f'anchor not found in {path}: {old[:100]}')
+              p.write_text(text.replace(old,new,1))
+
+          replace('src/data/yearPlan.ts', 'available:segment.from + offset <= 24,', 'available:segment.from + offset <= 25,')
+          replace('src/VoiceNarrator.tsx', "lessonNumber<1||lessonNumber>24", "lessonNumber<1||lessonNumber>25")
+
+          replace('src/data/extendedPracticeData.ts', "import { extendedPracticeLesson24 } from './extendedPracticeLesson24';", "import { extendedPracticeLesson24 } from './extendedPracticeLesson24';\nimport { extendedPracticeLesson25 } from './extendedPracticeLesson25';")
+          replace('src/data/extendedPracticeData.ts', '  24:extendedPracticeLesson24,\n};', '  24:extendedPracticeLesson24,\n  25:extendedPracticeLesson25,\n};')
+          replace('src/data/extendedPracticeData.ts', '  24:[],\n};', '  24:[],\n  25:[],\n};')
+
+          replace('src/LessonCourseShell.tsx', "import { AdditionPropertiesSummaryPlayer } from './AdditionPropertiesSummaryPlayer';", "import { AdditionPropertiesSummaryPlayer } from './AdditionPropertiesSummaryPlayer';\nimport { NaturalNumberSubtractionPlayer } from './NaturalNumberSubtractionPlayer';")
+          replace('src/LessonCourseShell.tsx', "import { lessonTwentyFourOpening } from './LessonTwentyFourOpening';", "import { lessonTwentyFourOpening } from './LessonTwentyFourOpening';\nimport { lessonTwentyFiveOpening } from './LessonTwentyFiveOpening';")
+          replace('src/LessonCourseShell.tsx', 'const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24];', 'const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];')
+          replace('src/LessonCourseShell.tsx', '    selectedLesson===24?lessonTwentyFourOpening:\n    buildGenericOpening(lesson);', '    selectedLesson===24?lessonTwentyFourOpening:\n    selectedLesson===25?lessonTwentyFiveOpening:\n    buildGenericOpening(lesson);')
+          replace('src/LessonCourseShell.tsx', '  const runtime=\n    selectedLesson===24?<AdditionPropertiesSummaryPlayer key="lesson-24"/>:', '  const runtime=\n    selectedLesson===25?<NaturalNumberSubtractionPlayer key="lesson-25"/>:\n    selectedLesson===24?<AdditionPropertiesSummaryPlayer key="lesson-24"/>:')
+
+          replace('src/LessonPageNavigator.tsx', "import { lessonTwentyFourStages } from './AdditionPropertiesSummaryPlayer';", "import { lessonTwentyFourStages } from './AdditionPropertiesSummaryPlayer';\nimport { lessonTwentyFiveStages } from './NaturalNumberSubtractionPlayer';")
+          replace('src/LessonPageNavigator.tsx', "const groups24:PageGroup[]=[{label:'Карта § 7 и выбор стратегии',indexes:[0,1,2]},{label:'Свойства и практика',indexes:[3,4,5,6,7,8,9,10,11,12,13,14,15]},{label:'Итоговый контроль',indexes:[16,17,18,19,20]},{label:'Задача повышенной сложности и итог',indexes:[21,22]}];", "const groups24:PageGroup[]=[{label:'Карта § 7 и выбор стратегии',indexes:[0,1,2]},{label:'Свойства и практика',indexes:[3,4,5,6,7,8,9,10,11,12,13,14,15]},{label:'Итоговый контроль',indexes:[16,17,18,19,20]},{label:'Задача повышенной сложности и итог',indexes:[21,22]}];\nconst groups25:PageGroup[]=[{label:'Смысл вычитания',indexes:[0,1,2,3,4,5]},{label:'Письменный алгоритм и практика',indexes:[6,7,8,9,10,11,12,13,14,15,16,17]},{label:'Самостоятельный контроль',indexes:[18,19,20,21,22]},{label:'Задача повышенной сложности и итог',indexes:[23,24]}];")
+          replace('src/LessonPageNavigator.tsx', '23:lessonTwentyThreeStages,24:lessonTwentyFourStages,', '23:lessonTwentyThreeStages,24:lessonTwentyFourStages,25:lessonTwentyFiveStages,')
+          replace('src/LessonPageNavigator.tsx', '23:groups23,24:groups24,', '23:groups23,24:groups24,25:groups25,')
+          replace('src/LessonPageNavigator.tsx', 'for(let lessonNumber=24;lessonNumber>=2;lessonNumber-=1)', 'for(let lessonNumber=25;lessonNumber>=2;lessonNumber-=1)')
+
+          replace('src/CourseCatalog.tsx', "  24:'Итог § 7: обобщение сложения и его свойств, выбор стратегии, текстовые задачи, самостоятельный контроль и задача повышенной сложности.',\n};", "  24:'Итог § 7: обобщение сложения и его свойств, выбор стратегии, текстовые задачи, самостоятельный контроль и задача повышенной сложности.',\n  25:'Новая тема § 8: вычитание как действие, обратное сложению, компоненты действия, письменное вычитание, размен разрядов, проверка сложением и первые задачи.',\n};")
+          replace('src/CourseCatalog.tsx', 'Полностью готовы 24 интерактивных урока.', 'Полностью готовы 25 интерактивных уроков.')
+          PY
+      - name: Commit wiring
+        run: |
+          git config user.name "mathnikita-course-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src
+          git commit -m "Wire lesson 25 into course runtime [skip ci]"
+          git push origin HEAD:agent/lesson-25-subtraction
