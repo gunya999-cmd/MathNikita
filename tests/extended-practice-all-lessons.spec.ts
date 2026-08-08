@@ -8,7 +8,7 @@ type NarrationRequest={id:string;text:string;version:string};
 type VoiceAudit={playedIds:string[];audioPlays:number};
 
 const startLesson=Number(process.env.PRACTICE_START??1);
-const endLesson=Number(process.env.PRACTICE_END??24);
+const endLesson=Number(process.env.PRACTICE_END??27);
 const specialStageCounts:Record<number,number>={18:24,20:11};
 
 async function installVoiceAudit(page:Page){
