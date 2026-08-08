@@ -23,6 +23,7 @@ import { lessonTwentyTwoStages } from './AdditionPropertiesPlayer';
 import { lessonTwentyThreeStages } from './AdditionPropertiesPracticePlayer';
 import { lessonTwentyFourStages } from './AdditionPropertiesSummaryPlayer';
 import { lessonTwentyFiveStages } from './NaturalNumberSubtractionPlayer';
+import { lessonTwentySixStages } from './NaturalNumberSubtractionPracticePlayer';
 import './lessonPageNavigator.css';
 
 type PageItem={id:string;title:string};
@@ -52,23 +53,24 @@ const groups22:PageGroup[]=[{label:'Свойства сложения',indexes:[
 const groups23:PageGroup[]=[{label:'Разминка и стратегия',indexes:[0,1,2]},{label:'Удобные вычисления и практика',indexes:[3,4,5,6,7,8,9,10,11,12,13,14,15]},{label:'Самостоятельный контроль',indexes:[16,17,18,19,20]},{label:'Задача со звёздочкой и итог',indexes:[21,22]}];
 const groups24:PageGroup[]=[{label:'Карта § 7 и выбор стратегии',indexes:[0,1,2]},{label:'Свойства и практика',indexes:[3,4,5,6,7,8,9,10,11,12,13,14,15]},{label:'Итоговый контроль',indexes:[16,17,18,19,20]},{label:'Задача повышенной сложности и итог',indexes:[21,22]}];
 const groups25:PageGroup[]=[{label:'Смысл вычитания',indexes:[0,1,2,3,4,5]},{label:'Письменный алгоритм и практика',indexes:[6,7,8,9,10,11,12,13,14,15,16,17]},{label:'Самостоятельный контроль',indexes:[18,19,20,21,22]},{label:'Задача повышенной сложности и итог',indexes:[23,24]}];
+const groups26:PageGroup[]=[{label:'Разминка и точность',indexes:[0,1,2,3,4,5]},{label:'Текстовые задачи и проверка',indexes:[6,7,8,9,10,11,12,13,14,15]},{label:'Самостоятельный контроль',indexes:[16,17,18,19,20]},{label:'Задача повышенной сложности и итог',indexes:[21,22,23]}];
 
 const pagesByLesson:Record<number,PageItem[]>={
   1:lessonOneStages,2:lessonTwoStages,3:lessonThreeStages,4:lessonFourStages,
   5:lessonFiveStages,6:lessonSixStages,7:lessonSevenStages,8:lessonEightStages,
   9:lessonNineStages,10:lessonTenStages,11:lessonElevenStages,12:lessonTwelveStages,
   13:lessonThirteenStages,14:lessonFourteenStages,15:lessonFifteenStages,16:lessonSixteenStages,
-  17:lessonSeventeenStages,18:lessonEighteenStages,19:lessonNineteenStages,21:lessonTwentyOneStages,22:lessonTwentyTwoStages,23:lessonTwentyThreeStages,24:lessonTwentyFourStages,25:lessonTwentyFiveStages,
+  17:lessonSeventeenStages,18:lessonEighteenStages,19:lessonNineteenStages,21:lessonTwentyOneStages,22:lessonTwentyTwoStages,23:lessonTwentyThreeStages,24:lessonTwentyFourStages,25:lessonTwentyFiveStages,26:lessonTwentySixStages,
 };
 const groupsByLesson:Record<number,PageGroup[]>={
   1:groups1,2:groups2,3:groups3,4:groups4,5:groups5,6:groups6,7:groups7,8:groups8,
   9:groups9,10:groups10,11:groups11,12:groups12,13:groups13,14:groups14,15:groups15,16:groups16,
-  17:groups17,18:groups18,19:groups19,21:groups21,22:groups22,23:groups23,24:groups24,25:groups25,
+  17:groups17,18:groups18,19:groups19,21:groups21,22:groups22,23:groups23,24:groups24,25:groups25,26:groups26,
 };
 
 function activeLessonNumber(){
   const text=document.querySelector<HTMLElement>('.lesson-mode-toolbar')?.textContent??'';
-  for(let lessonNumber=25;lessonNumber>=2;lessonNumber-=1){
+  for(let lessonNumber=26;lessonNumber>=2;lessonNumber-=1){
     if(new RegExp(`Урок\\s+${lessonNumber}\\s+из`).test(text))return lessonNumber;
   }
   const saved=Number(localStorage.getItem('mathnikita-selected-lesson'));

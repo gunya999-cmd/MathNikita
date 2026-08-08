@@ -45,6 +45,7 @@ import { extendedPracticeLesson22 } from './extendedPracticeLesson22';
 import { extendedPracticeLesson23 } from './extendedPracticeLesson23';
 import { extendedPracticeLesson24 } from './extendedPracticeLesson24';
 import { extendedPracticeLesson25 } from './extendedPracticeLesson25';
+import { extendedPracticeLesson26 } from './extendedPracticeLesson26';
 
 migrateLessonSixRevision();
 migrateLessonElevenRevision();
@@ -94,6 +95,7 @@ const basePracticeByLesson: Record<number, ExtendedPracticeSet> = {
   23:extendedPracticeLesson23,
   24:extendedPracticeLesson24,
   25:extendedPracticeLesson25,
+  26:extendedPracticeLesson26,
 };
 
 const specializedMasteryByLesson: Record<number, ExtendedPracticeTask[]> = {
@@ -109,6 +111,7 @@ const specializedMasteryByLesson: Record<number, ExtendedPracticeTask[]> = {
   16:lessonSixteenMastery,
   24:[],
   25:[],
+  26:[],
 };
 
 const markParametric=(tasks:ExtendedPracticeTask[]):ExtendedPracticeTask[]=>tasks.map(task=>({...task,provenance:'parametric'}));
