@@ -1,0 +1,78 @@
+name: Temp lesson26 QA sync
+
+on:
+  push:
+    branches: [agent/tmp-lesson26-qa-sync]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lesson-26-subtraction-practice
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Synchronize test expectations through lesson 26
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          changed=[]
+          for p in Path('tests').glob('*.ts'):
+              text=p.read_text()
+              original=text
+
+              # Direct catalog locators.
+              text=re.sub(r"(page\.locator\(['\"]\.course-lesson-grid > button\.is-interactive['\"]\)\)\.toHaveCount\()24(?=[,)])",r"\g<1>25",text)
+              text=re.sub(r"(page\.locator\(['\"]\.course-lesson-grid > button:not\(\[disabled\]\)['\"]\)\)\.toHaveCount\()25(?=[,)])",r"\g<1>26",text)
+
+              # Variables explicitly assigned to those catalog locators.
+              interactive_vars=set(re.findall(r"(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*page\.locator\(['\"]\.course-lesson-grid > button\.is-interactive['\"]\)",text))
+              open_vars=set(re.findall(r"(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*page\.locator\(['\"]\.course-lesson-grid > button:not\(\[disabled\]\)['\"]\)",text))
+              for var in interactive_vars:
+                  text=re.sub(rf"(expect\({re.escape(var)}\)\.toHaveCount\()24(?=[,)])",r"\g<1>25",text)
+              for var in open_vars:
+                  text=re.sub(rf"(expect\({re.escape(var)}\)\.toHaveCount\()25(?=[,)])",r"\g<1>26",text)
+
+              if text!=original:
+                  p.write_text(text)
+                  changed.append(str(p))
+
+          p=Path('tests/course-plan.spec.ts')
+          text=p.read_text()
+          text=text.replace("  await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');\n", "  await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');\n  await expect(lessons.nth(25)).toContainText('Вычитание натуральных чисел');\n")
+          text=text.replace("  await expect(lessons.nth(24)).toBeEnabled();\n  await expect(lessons.nth(25)).toBeDisabled();", "  await expect(lessons.nth(24)).toBeEnabled();\n  await expect(lessons.nth(25)).toBeEnabled();\n  await expect(lessons.nth(26)).toBeDisabled();")
+          text=text.replace('Полностью готовы 25 интерактивных уроков.','Полностью готовы 26 интерактивных уроков.')
+          p.write_text(text)
+
+          p=Path('tests/pedagogical-practice-quality.spec.ts')
+          p.write_text(p.read_text().replace('lessonNumber<=25','lessonNumber<=26'))
+
+          # Guard only the two catalog invariants being migrated.
+          stale=[]
+          for p in Path('tests').glob('*.ts'):
+              text=p.read_text()
+              if re.search(r"\.course-lesson-grid > button\.is-interactive['\"]\)\)\.toHaveCount\(24(?=[,)])",text): stale.append(str(p))
+              if re.search(r"\.course-lesson-grid > button:not\(\[disabled\]\)['\"]\)\)\.toHaveCount\(25(?=[,)])",text): stale.append(str(p))
+              interactive_vars=set(re.findall(r"(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*page\.locator\(['\"]\.course-lesson-grid > button\.is-interactive['\"]\)",text))
+              open_vars=set(re.findall(r"(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*page\.locator\(['\"]\.course-lesson-grid > button:not\(\[disabled\]\)['\"]\)",text))
+              if any(re.search(rf"expect\({re.escape(v)}\)\.toHaveCount\(24(?=[,)])",text) for v in interactive_vars): stale.append(str(p))
+              if any(re.search(rf"expect\({re.escape(v)}\)\.toHaveCount\(25(?=[,)])",text) for v in open_vars): stale.append(str(p))
+          if stale:
+              raise SystemExit('Stale lesson-25 catalog expectations remain: '+', '.join(sorted(set(stale))))
+          print('Changed test files:', len(set(changed)))
+          PY
+      - name: Commit one QA-only batch
+        run: |
+          git config user.name "mathnikita-course-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add tests
+          git commit -m "Synchronize course QA through lesson 26 [skip ci]"
+          git push origin HEAD:agent/lesson-26-subtraction-practice
