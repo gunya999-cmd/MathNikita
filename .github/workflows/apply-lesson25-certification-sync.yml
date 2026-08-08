@@ -86,6 +86,6 @@ jobs:
         run: |
           git config user.name "mathnikita-course-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add tests .github/workflows/course-1-23-certification.yml .github/workflows/apply-lesson25-certification-sync.yml
+          git add -A
           git commit -m "Expand certification through lesson 25 [skip ci]"
           git push origin HEAD:agent/lesson-25-subtraction
