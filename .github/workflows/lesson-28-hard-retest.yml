@@ -1,0 +1,86 @@
+name: Lesson 28 hard retest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/lesson-28-estimation]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/NaturalNumberEstimatePlayer.tsx'
+      - 'src/LessonTwentyEightOpening.ts'
+      - 'src/data/extendedPracticeLesson28.ts'
+      - 'tests/lesson-twenty-eight-ipad.spec.ts'
+      - '.github/workflows/lesson-28-hard-retest.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-28-hard-retest-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build · lesson 28
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+
+  chromium:
+    name: Chromium · lesson 28 full flow and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Full lesson, persistence and scoring
+        run: npx playwright test tests/lesson-twenty-eight-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Complete all 20 mandatory-practice tasks
+        env:
+          PRACTICE_START: 28
+          PRACTICE_END: 28
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-28-chromium-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad:
+    name: iPad WebKit · lesson 28 full flow and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Full lesson and responsive layout
+        run: npx playwright test tests/lesson-twenty-eight-ipad.spec.ts --config=playwright.config.ts --workers=1
+      - name: Complete all 20 mandatory-practice tasks
+        env:
+          PRACTICE_START: 28
+          PRACTICE_END: 28
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-28-ipad-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
