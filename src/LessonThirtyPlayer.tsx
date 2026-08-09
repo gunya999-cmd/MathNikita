@@ -3,6 +3,7 @@ import { ExtendedPracticeLab } from './ExtendedPracticeLab';
 import { lessonThirtyStages } from './NumericalLiteralExpressionsPlayer';
 
 type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:Record<string,boolean>;results:Record<string,boolean>};
+type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-30-progress-v1';
 
 function normalize(value:string){return value.trim().toLowerCase().replace(/\s+/g,'').replace(/×/g,'·').replace(/\*/g,'·').replace(/,/g,'.')}
@@ -26,6 +27,19 @@ export function LessonThirtyPlayer(){
   const percent=Math.round(((stageIndex+1)/lessonThirtyStages.length)*100);
 
   useEffect(()=>{localStorage.setItem(KEY,JSON.stringify({version:1,stageIndex,responses,checked,results} satisfies Saved))},[stageIndex,responses,checked,results]);
+  useEffect(()=>{
+    const jump=(event:Event)=>{
+      const detail=(event as CustomEvent<StageJumpDetail>).detail;
+      if(detail?.lessonNumber!==30||!Number.isInteger(detail.stageIndex))return;
+      const next=Math.max(0,Math.min(Number(detail.stageIndex),lessonThirtyStages.length-1));
+      window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));
+      if('speechSynthesis'in window)window.speechSynthesis.cancel();
+      setStageIndex(next);
+      window.scrollTo({top:0,behavior:'smooth'});
+    };
+    window.addEventListener('mathnikita-go-to-stage',jump);
+    return()=>window.removeEventListener('mathnikita-go-to-stage',jump);
+  },[]);
 
   function stopVoice(){window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));if('speechSynthesis'in window)window.speechSynthesis.cancel()}
   function moveTo(nextIndex:number){stopVoice();setStageIndex(Math.max(0,Math.min(nextIndex,lessonThirtyStages.length-1)));window.scrollTo({top:0,behavior:'smooth'})}
@@ -36,7 +50,7 @@ export function LessonThirtyPlayer(){
   return <main className="lesson-player">
     <div className="lesson-progress" aria-label={`Пройдено ${percent}% урока`}><i style={{width:`${percent}%`}}/></div>
     <section className={`interactive-stage ${stage.kind==='summary'?'stage-summary':''}`} data-stage-id={stage.id}>
-      <div className="stage-counter"><span>{stageIndex+1} / {lessonThirtyStages.length}</span><div><button type="button" onClick={()=>moveTo(stageIndex-1)} disabled={stageIndex===0} aria-label="Предыдущий этап">←</button><button type="button" onClick={()=>moveTo(stageIndex+1)} disabled={stageIndex===lessonThirtyStages.length-1||!canAdvance} aria-label="Следующий этап">→</button></div></div>
+      <div className="stage-counter"><span>Этап {stageIndex+1} из {lessonThirtyStages.length}</span><div><button type="button" onClick={()=>moveTo(stageIndex-1)} disabled={stageIndex===0} aria-label="Предыдущий этап">←</button><button type="button" onClick={()=>moveTo(stageIndex+1)} disabled={stageIndex===lessonThirtyStages.length-1||!canAdvance} aria-label="Следующий этап">→</button></div></div>
       <div className="stage-copy"><span>{stage.eyebrow}</span><h2>{stage.title}</h2><p>{stage.body}</p>{stage.note?<aside>{stage.note}</aside>:null}</div>
 
       {activity?<div className="activity-area">
