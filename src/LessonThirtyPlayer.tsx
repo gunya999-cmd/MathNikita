@@ -1,5 +1,4 @@
 import { useEffect,useMemo,useState } from 'react';
-import { ExtendedPracticeLab } from './ExtendedPracticeLab';
 import { lessonThirtyStages } from './NumericalLiteralExpressionsPlayer';
 
 type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:Record<string,boolean>;results:Record<string,boolean>};
@@ -18,7 +17,6 @@ export function LessonThirtyPlayer(){
   const[responses,setResponses]=useState<Record<string,string>>(initial.responses);
   const[checked,setChecked]=useState<Record<string,boolean>>(initial.checked);
   const[results,setResults]=useState<Record<string,boolean>>(initial.results);
-  const[practiceComplete,setPracticeComplete]=useState(false);
   const stage=lessonThirtyStages[stageIndex];
   const activity=stage.activity;
   const response=activity?responses[activity.id]??'':'';
@@ -63,7 +61,7 @@ export function LessonThirtyPlayer(){
         {isCorrect?<div className="instant-feedback good"><b>Верно!</b><span>{activity.explanation}</span></div>:null}
       </div>:null}
 
-      {stage.kind==='summary'?<><div className="summary-card"><b>{practiceComplete?'Обязательная практика пройдена':'Следующий шаг — обязательная практика'}</b><span>{practiceComplete?'Все 20 заданий урока 30 выполнены. Можно перейти к рефлексии урока.':'Практика закрепит классификацию выражений, подстановку и работу с формулами.'}</span></div><ExtendedPracticeLab lessonNumber={30} onComplete={()=>setPracticeComplete(true)} onRestart={()=>setPracticeComplete(false)}/></>:null}
+      {stage.kind==='summary'?<div className="summary-card"><b>Основная часть готова</b><span>Дальше — единая обязательная практика и итоговая рефлексия в финишном блоке урока.</span></div>:null}
 
       {stage.kind!=='summary'?<div className="lesson-controls"><button type="button" onClick={()=>moveTo(stageIndex-1)} disabled={stageIndex===0}>← Назад</button><button type="button" onClick={()=>moveTo(stageIndex+1)} disabled={!canAdvance}>{activity&&!isCorrect?'Сначала реши задание':'Дальше →'}</button></div>:null}
     </section>
