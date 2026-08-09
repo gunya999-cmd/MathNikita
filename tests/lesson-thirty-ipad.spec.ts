@@ -9,9 +9,13 @@ test('lesson 30 opens, checks choices, persists stage and exposes 20-task practi
   await expect(lesson30).toBeEnabled();
   await expect(lesson31).toBeDisabled();
 
+  const chapterTwo=page.locator('.course-chapter-group').nth(1);
+  const chapterTwoOpen=await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open);
+  if(!chapterTwoOpen)await chapterTwo.locator('summary').click();
+  await expect(lesson30).toBeVisible();
   await lesson30.click();
-  await expect(page.getByRole('heading',{name:'Числовые и буквенные выражения. Формулы'})).toBeVisible();
-  await page.getByRole('button',{name:/Начать урок/}).click();
+  await expect(page.getByRole('heading',{name:'Числовые и буквенные выражения. Формулы'}).first()).toBeVisible();
+  await page.locator('.lesson-opening-start').click();
   await expect(page.getByRole('heading',{name:'Одна запись — много задач'})).toBeVisible();
 
   await page.locator('.lesson-controls button').filter({hasText:'Дальше'}).click();
@@ -30,14 +34,16 @@ test('lesson 30 opens, checks choices, persists stage and exposes 20-task practi
   expect(saved.results['l30-a1']).toBe(true);
 
   await page.getByRole('button',{name:/Все уроки/}).click();
+  await expect(lesson30).toBeVisible();
   await lesson30.click();
-  await page.getByRole('button',{name:/Начать урок/}).click();
+  await page.locator('.lesson-opening-start').click();
   await expect(page.getByRole('heading',{name:'Значение выражения'})).toBeVisible();
 
   await page.getByRole('button',{name:/Все уроки/}).click();
   await page.evaluate(()=>localStorage.setItem('mathnikita-lesson-30-progress-v1',JSON.stringify({version:1,stageIndex:27,responses:{},checked:{},results:{}})));
+  await expect(lesson30).toBeVisible();
   await lesson30.click();
-  await page.getByRole('button',{name:/Начать урок/}).click();
+  await page.locator('.lesson-opening-start').click();
   await expect(page.getByRole('heading',{name:'Ты начал говорить на языке формул'})).toBeVisible();
   await expect(page.getByText(/Обязательная практика · 20 заданий/)).toBeVisible();
   await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-task','l30-extra-01');
