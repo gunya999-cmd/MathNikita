@@ -24,7 +24,7 @@ async function nextStage(page:Page,currentId:string,nextId:string){
   await expect(page.locator(`.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id="${nextId}"]`)).toBeVisible();
 }
 
-test('lesson 30 opens, checks choices, persists stage and exposes 20-task practice',async({page})=>{
+test('lesson 30 opens, checks choices, persists stage and exposes one 20-task completion practice',async({page})=>{
   await openLesson30(page);
   await expect(page.locator('[data-stage-id="l30-mission"]')).toBeVisible();
   await nextStage(page,'l30-mission','l30-number-expression');
@@ -53,11 +53,13 @@ test('lesson 30 opens, checks choices, persists stage and exposes 20-task practi
   await expect(lesson30).toBeVisible();
   await lesson30.click();
   await page.locator('.lesson-opening-start').click();
-  const summary=page.locator('[data-stage-id="l30-summary"]');
-  await expect(summary).toBeVisible();
-  await expect(summary.locator('.extended-practice[data-practice-task="l30-extra-01"]')).toBeVisible();
+  await expect(page.locator('[data-stage-id="l30-summary"]')).toBeVisible();
+  const reflection=page.locator('.lesson-reflection');
+  await expect(reflection).toBeVisible();
+  await expect(reflection.locator('.extended-practice[data-practice-task="l30-extra-01"]')).toBeVisible();
+  await expect(page.locator('.extended-practice')).toHaveCount(1);
 
-  const practice=summary.locator('.extended-practice');
+  const practice=reflection.locator('.extended-practice');
   await practice.getByRole('button',{name:'(27 + 16) · 5',exact:true}).click();
   await practice.locator('.extended-practice-check').click();
   await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
