@@ -7,7 +7,7 @@ const RUN=process.env.GITHUB_RUN_ID||String(Date.now());
 const code='MN-NABUQA4';
 const pin='7392';
 const markerKey='mathnikita:qa-live-marker';
-const markerSynced=`rerun-${RUN}`;
+const markerSynced=`lesson33-${RUN}`;
 
 async function jsonFetch(path,init={}){
   const response=await fetch(`${BASE}${path}`,init);
@@ -16,7 +16,6 @@ async function jsonFetch(path,init={}){
   if(!response.ok)throw new Error(`${path} -> ${response.status}: ${text}`);
   return body;
 }
-
 function headers(extra={}){return{'content-type':'application/json',...extra}}
 
 const version=await jsonFetch('/api/version');
@@ -56,9 +55,7 @@ async function installVoiceHarness(page){
       if(url.includes('/api/narration')&&!url.includes('/api/narration-status')){
         let rawBody=init?.body;
         if(rawBody==null&&input instanceof Request){try{rawBody=await input.clone().text()}catch{}}
-        if(typeof rawBody==='string'){
-          try{narrationId=JSON.parse(rawBody)?.id??''}catch{}
-        }
+        if(typeof rawBody==='string'){try{narrationId=JSON.parse(rawBody)?.id??''}catch{}}
         if(narrationId)audit.events.push({kind:'request',id:narrationId});
       }
       const response=await nativeFetch(input,init);
@@ -84,9 +81,7 @@ async function installVoiceHarness(page){
     localStorage.setItem('mathnikita-mentor-auto-guide','false');
   });
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'production-smoke',voice:'Sulafat'})}));
-  await page.route('**/api/narration',async route=>{
-    await route.fulfill({status:200,contentType:'audio/wav',body:Buffer.from('RIFF-production-live-smoke')});
-  });
+  await page.route('**/api/narration',route=>route.fulfill({status:200,contentType:'audio/wav',body:Buffer.from('RIFF-production-live-smoke')}));
 }
 
 async function loginThroughUi(page){
@@ -103,14 +98,15 @@ async function loginThroughUi(page){
 }
 
 async function checkCatalog(page){
-  await page.getByText('Полностью готовы 32 интерактивных урока.').waitFor({state:'visible',timeout:20000});
+  await page.getByText('Полностью готовы 33 интерактивных урока.').waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('.course-lesson-grid > button').count(),175,'catalog must contain 175 lessons');
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   if(!(await chapterTwo.evaluate(el=>el.open)))await chapterTwo.locator('summary').click();
-  const lesson32=page.getByRole('button',{name:/Открыть урок 32:/});
-  assert.equal(await lesson32.isEnabled(),true,'lesson 32 must be enabled in production');
-  assert.equal(await page.locator('.course-lesson-grid > button').nth(32).isDisabled(),true,'lesson 33 must remain locked');
-  return lesson32;
+  const lesson33=page.getByRole('button',{name:/Открыть урок 33:/});
+  assert.equal(await lesson33.isEnabled(),true,'lesson 33 must be enabled in production');
+  assert.equal(await lesson33.evaluate(el=>el.classList.contains('is-control-ready')),true,'lesson 33 must be a control-ready lesson');
+  assert.equal(await page.locator('.course-lesson-grid > button').nth(33).isDisabled(),true,'lesson 34 must remain locked');
+  return lesson33;
 }
 
 async function chromiumHardSmoke(){
@@ -121,20 +117,23 @@ async function chromiumHardSmoke(){
   await loginThroughUi(page);
   await page.evaluate(()=>{localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',rate:.94}));localStorage.setItem('mathnikita-mentor-auto-guide','false')});
   await page.reload({waitUntil:'domcontentloaded'});
-  const lesson32=await checkCatalog(page);
-  await lesson32.click();
+  const lesson33=await checkCatalog(page);
+  await lesson33.click();
   await page.locator('.lesson-opening-start').click();
-  await page.locator('[data-stage-id="l32-mission"]').waitFor({state:'visible',timeout:20000});
-  const oldId='lesson-32-stage-l32-mission';
+  await page.locator('[data-stage-id="l33-rules"]').waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.cat-mentor').count(),0,'control work must not expose CatMentor');
+  assert.equal(await page.locator('.progressive-hint-coach').count(),0,'control work must not expose hint coach');
+  assert.equal(await page.locator('.extended-practice').count(),0,'control work must not render extended practice');
+  const oldId='lesson-33-stage-l33-rules';
   await page.waitForFunction(id=>window.__qaVoiceAudit?.events?.some(event=>event.kind==='request'&&event.id===id),oldId,{timeout:15000});
   await page.waitForFunction(id=>window.__qaVoiceAudit?.events?.some(event=>event.kind==='play'&&event.id===id),oldId,{timeout:15000});
   await page.evaluate(()=>{window.__qaVoiceAudit.events=[]});
-  await page.locator('[data-stage-id="l32-mission"] .lesson-controls button').last().click();
+  await page.locator('.lesson-controls button:not([disabled])').last().click();
   const immediate=await page.evaluate(()=>window.__qaVoiceAudit.events);
-  assert.ok(immediate.some(event=>event.kind==='pause'&&event.id===oldId),'old narration did not pause synchronously on stage change');
-  await page.locator('[data-stage-id="l32-meaning"]').waitFor({state:'visible',timeout:10000});
-  await page.waitForFunction(()=>window.__qaVoiceAudit?.events?.some(event=>event.kind==='play'&&event.id==='lesson-32-stage-l32-meaning'),null,{timeout:15000});
-  console.log('Chromium live catalog + lesson32 + voice interruption OK');
+  assert.ok(immediate.some(event=>event.kind==='pause'&&event.id===oldId),'old control narration did not pause synchronously on stage change');
+  await page.locator('[data-stage-id="l33-task1"]').waitFor({state:'visible',timeout:10000});
+  await page.waitForFunction(()=>window.__qaVoiceAudit?.events?.some(event=>event.kind==='play'&&event.id==='lesson-33-stage-l33-task1'),null,{timeout:15000});
+  console.log('Chromium live catalog + lesson33 control mode + voice interruption OK');
   await browser.close();
 }
 
@@ -143,10 +142,17 @@ async function webkitHardSmoke(){
   const context=await browser.newContext({viewport:{width:1024,height:1366},userAgent:'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
   const page=await context.newPage();
   await loginThroughUi(page);
-  await checkCatalog(page);
-  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
-  assert.ok(overflow<=2,`iPad horizontal overflow: ${overflow}`);
-  console.log('WebKit/iPad live cloud restore + catalog layout OK');
+  const lesson33=await checkCatalog(page);
+  let overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  assert.ok(overflow<=2,`iPad catalog horizontal overflow: ${overflow}`);
+  await lesson33.click();
+  await page.locator('.lesson-opening-start').click();
+  await page.locator('[data-stage-id="l33-rules"]').waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.cat-mentor').count(),0,'iPad control work must not expose CatMentor');
+  assert.equal(await page.locator('.progressive-hint-coach').count(),0,'iPad control work must not expose hint coach');
+  overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+  assert.ok(overflow<=2,`iPad lesson33 horizontal overflow: ${overflow}`);
+  console.log('WebKit/iPad live cloud restore + lesson33 control layout OK');
   await browser.close();
 }
 
