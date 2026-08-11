@@ -26,10 +26,7 @@ test('production serves exact lesson 34 release with cloud profile and responsiv
   await pins.nth(1).fill('3434');
   await page.getByRole('button',{name:'Создать профиль'}).click();
 
-  await expect.poll(async()=>({
-    app:await page.locator('.app-shell').count(),
-    receipt:await page.locator('.cloud-ready-card').count(),
-  }),{timeout:30_000}).toMatchObject({app:expect.any(Number),receipt:expect.any(Number)});
+  await expect.poll(async()=>await page.locator('.app-shell').count()+await page.locator('.cloud-ready-card').count(),{timeout:30_000}).toBeGreaterThan(0);
   if(await page.locator('.cloud-ready-card').isVisible().catch(()=>false)){
     await page.getByRole('button',{name:'Я сохранил коды · продолжить'}).click();
   }
