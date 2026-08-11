@@ -26,6 +26,7 @@ async function nextStage(page:Page,currentId:string,nextId:string){
 test('lesson 34 teaches equation roots, persists progress and exposes one mandatory practice gate',async({page})=>{
   await openLesson34(page);
   await expect(page.locator('[data-stage-id="l34-mission"]')).toBeVisible();
+  await expect(page.locator('.lesson-runtime:not([hidden]) .lesson-controls')).toContainText('Этап 1 из 28');
   await nextStage(page,'l34-mission','l34-meaning');
   await nextStage(page,'l34-meaning','l34-root-check');
 
