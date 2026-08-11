@@ -1,0 +1,94 @@
+name: Lesson 32 hard retest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/lesson-32-formulas]
+  pull_request:
+    branches: [feat/lesson-31-expressions-formulas-practice]
+    paths:
+      - 'src/FormulaPracticePlayer.tsx'
+      - 'src/LessonThirtyTwoOpening.ts'
+      - 'src/data/extendedPracticeLesson32.ts'
+      - 'src/data/extendedPracticeData.ts'
+      - 'src/LessonCourseShell.tsx'
+      - 'src/CourseCatalog.tsx'
+      - 'src/data/yearPlan.ts'
+      - 'src/App.tsx'
+      - 'tests/lesson-thirty-two-ipad.spec.ts'
+      - 'tests/course-plan.spec.ts'
+      - '.github/workflows/lesson-32-hard-retest.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-32-hard-retest-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build · lesson 32
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+
+  chromium:
+    name: Chromium · lesson 32 flow and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Lesson 32 interaction, persistence and layout
+        run: npx playwright test tests/lesson-thirty-two-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Complete all 20 mandatory-practice tasks
+        env:
+          PRACTICE_START: 32
+          PRACTICE_END: 32
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Course catalog regression
+        run: npx playwright test tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-32-chromium-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ipad:
+    name: iPad WebKit · lesson 32 flow and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Lesson 32 full responsive flow
+        run: npx playwright test tests/lesson-thirty-two-ipad.spec.ts --config=playwright.config.ts --workers=1
+      - name: Complete all 20 mandatory-practice tasks
+        env:
+          PRACTICE_START: 32
+          PRACTICE_END: 32
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lesson-32-ipad-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
