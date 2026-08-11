@@ -29,6 +29,7 @@ import { AdditionPropertiesSummaryPlayer } from './AdditionPropertiesSummaryPlay
 import { NaturalNumberSubtractionPlayer } from './NaturalNumberSubtractionPlayer';
 import { NaturalNumberSubtractionPracticePlayer } from './NaturalNumberSubtractionPracticePlayer';
 import { NaturalNumberSubtractionGeneralizationPlayer } from './NaturalNumberSubtractionGeneralizationPlayer';
+import { NaturalNumberEstimatePlayer } from './NaturalNumberEstimatePlayer';
 import { LessonOpening,buildGenericOpening,lessonOneOpening,lessonTwoOpening,lessonThreeOpening,lessonFourOpening,lessonFiveOpening,lessonSixOpening,lessonSevenOpening,lessonEightOpening,lessonNineOpening,lessonTenOpening,lessonElevenOpening } from './LessonOpening';
 import { lessonTwelveOpening } from './LessonTwelveOpening';
 import { lessonThirteenOpening } from './LessonThirteenOpening';
@@ -46,6 +47,7 @@ import { lessonTwentyFourOpening } from './LessonTwentyFourOpening';
 import { lessonTwentyFiveOpening } from './LessonTwentyFiveOpening';
 import { lessonTwentySixOpening } from './LessonTwentySixOpening';
 import { lessonTwentySevenOpening } from './LessonTwentySevenOpening';
+import { lessonTwentyEightOpening } from './LessonTwentyEightOpening';
 import { LessonReflection } from './LessonReflection';
 import { ProgressiveHintCoach,type ProgressiveHintState } from './ProgressiveHintCoach';
 import { VoiceNarrator } from './VoiceNarrator';
@@ -57,7 +59,7 @@ import { MentorResponsiveBehavior } from './MentorResponsiveBehavior';
 type CourseMode='catalog'|'opening'|'lesson';
 const emptyHintState:ProgressiveHintState={prompt:'',stageTitle:'',activityType:'',attempts:0,revealedLevel:0,fullExplanation:'',mountNode:null};
 const emptyMentorSignal:MentorSignal={kind:'idle',version:0};
-const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27];
+const readyLessons=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28];
 const narrationContextControlSelector=[
   '.lesson-opening-start:not(:disabled)',
   '.lesson-controls button:not(:disabled)',
@@ -111,6 +113,7 @@ export function LessonCourseShell(){
     selectedLesson===25?lessonTwentyFiveOpening:
     selectedLesson===26?lessonTwentySixOpening:
     selectedLesson===27?lessonTwentySevenOpening:
+    selectedLesson===28?lessonTwentyEightOpening:
     buildGenericOpening(lesson);
   const showOpening=mode==='opening';
   const openingNarrationText=[opening.title,opening.intro,opening.question,...opening.goals].filter(Boolean).join('. ');
@@ -212,6 +215,7 @@ export function LessonCourseShell(){
   if(mode==='catalog')return <CourseCatalog selectedLesson={selectedLesson} onOpenLesson={openLesson}/>;
 
   const runtime=
+    selectedLesson===28?<NaturalNumberEstimatePlayer key="lesson-28"/>:
     selectedLesson===27?<NaturalNumberSubtractionGeneralizationPlayer key="lesson-27"/>:
     selectedLesson===26?<NaturalNumberSubtractionPracticePlayer key="lesson-26"/>:
     selectedLesson===25?<NaturalNumberSubtractionPlayer key="lesson-25"/>:

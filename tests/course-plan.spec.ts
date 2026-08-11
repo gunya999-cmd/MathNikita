@@ -8,8 +8,8 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
 
   const lessons = page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(26);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(27);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(27);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(28);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(1);
 
   await expect(lessons.nth(0)).toContainText('Ряд натуральных чисел');
@@ -38,6 +38,7 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
   await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(25)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(26)).toContainText('Вычитание натуральных чисел');
+  await expect(lessons.nth(27)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
@@ -50,7 +51,8 @@ test('catalog follows the official 175-lesson Merzlyak plan', async ({ page }) =
   await expect(lessons.nth(24)).toBeEnabled();
   await expect(lessons.nth(25)).toBeEnabled();
   await expect(lessons.nth(26)).toBeEnabled();
-  await expect(lessons.nth(27)).toBeDisabled();
+  await expect(lessons.nth(27)).toBeEnabled();
+  await expect(lessons.nth(28)).toBeDisabled();
   await expect(page.locator('body')).not.toContainText('Открытие темы');
-  await expect(page.getByText('Полностью готовы 27 интерактивных уроков.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 28 интерактивных уроков.')).toBeVisible();
 });
