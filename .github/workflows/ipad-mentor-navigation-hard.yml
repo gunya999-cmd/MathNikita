@@ -1,0 +1,72 @@
+name: iPad mentor navigation hard test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/ipad-mentor-navigation-overlap]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/catMentor.css'
+      - 'tests/ipad-mentor-navigation-safety.spec.ts'
+      - '.github/workflows/ipad-mentor-navigation-hard.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ipad-mentor-navigation-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build · mentor navigation safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+
+  chromium:
+    name: Chromium 1024 · mentor never blocks Next
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/ipad-mentor-navigation-safety.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-navigation-chromium-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  webkit:
+    name: iPad WebKit · mentor never blocks Next
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/ipad-mentor-navigation-safety.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mentor-navigation-webkit-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
