@@ -9,6 +9,7 @@ on:
     paths:
       - 'src/topbarResponsive.css'
       - 'tests/ipad-authenticated-topbar.spec.ts'
+      - 'playwright.authenticated-ipad.config.ts'
       - '.github/workflows/ipad-authenticated-topbar-hard.yml'
 
 permissions:
@@ -42,7 +43,7 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test tests/ipad-authenticated-topbar.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - run: npx playwright test tests/ipad-authenticated-topbar.spec.ts --config=playwright.authenticated-ipad.config.ts --project=chromium-1024 --workers=1
 
   ipad:
     name: iPad WebKit · authenticated catalog layout
@@ -55,4 +56,4 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps webkit
-      - run: npx playwright test tests/ipad-authenticated-topbar.spec.ts --config=playwright.config.ts --workers=1
+      - run: npx playwright test tests/ipad-authenticated-topbar.spec.ts --config=playwright.authenticated-ipad.config.ts --project=ipad-webkit --workers=1
