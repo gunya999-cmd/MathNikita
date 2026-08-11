@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      EXPECTED_SHA: dcdcdbc42de5a9f887a41585b6659a5c7e24a8e3
+      EXPECTED_SHA: 78c3a29abf0d819c8bd7c474213ebbe93f0e0e51
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
