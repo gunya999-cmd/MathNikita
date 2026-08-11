@@ -96,6 +96,22 @@ for(const lessonNumber of [20,22]){
   });
 }
 
+test('lesson 32 auto-switches Sulafat immediately when learner advances',async({page})=>{
+  test.setTimeout(90_000);
+  const lessonNumber=32;
+  await installAudit(page);await routeNarration(page);await openLesson(page,lessonNumber);
+  const oldStage='l32-mission';const nextStage='l32-meaning';
+  const oldId='lesson-32-stage-l32-mission';const nextId='lesson-32-stage-l32-meaning';
+  await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toHaveAttribute('data-stage-id',oldStage);
+  await waitForEvent(page,'play',oldId);
+  await clearAudit(page);
+  await page.locator(`[data-stage-id="${oldStage}"] .lesson-controls button`).last().dispatchEvent('click');
+  const immediate=await audit(page);
+  expect(immediate.some(event=>event.kind==='pause'&&event.id===oldId),'Lesson 32: old narration was still alive after navigation click').toBeTruthy();
+  await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toHaveAttribute('data-stage-id',nextStage);
+  await waitForEvent(page,'play',nextId);
+});
+
 test('late Sulafat response from an abandoned stage never starts playing',async({page})=>{
   test.setTimeout(90_000);
   const lessonNumber=22;const staleId='lesson-22-stage-l22-mission';
