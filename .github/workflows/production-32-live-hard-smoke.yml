@@ -1,4 +1,4 @@
-name: Production 32 live hard smoke
+name: Production 33 live hard smoke
 
 on:
   push:
@@ -11,16 +11,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: production-32-live-hard-smoke
+  group: production-33-live-hard-smoke
   cancel-in-progress: true
 
 jobs:
   live-production:
-    name: Live production · cloud + Chromium + iPad WebKit + voice interruption
+    name: Live production · cloud + Chromium + iPad WebKit + lesson 33 control
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      EXPECTED_SHA: 78c3a29abf0d819c8bd7c474213ebbe93f0e0e51
+      EXPECTED_SHA: a3b9aa4f05fce373b384848df09033b5d9d9520a
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
