@@ -1,0 +1,97 @@
+name: Lessons 23-33 WebKit split certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [qa/lessons-23-33-webkit-split]
+    paths:
+      - '.github/workflows/lessons-23-33-webkit-split.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lessons-23-33-webkit-split
+  cancel-in-progress: true
+
+jobs:
+  webkit-23-27:
+    name: iPad WebKit · dedicated flows 23-27
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: node scripts/prepare-lessons-23-33-legacy-tests.mjs
+      - run: >-
+          npx playwright test
+          tests/lesson-twenty-three-ipad.spec.ts
+          tests/lesson-twenty-four-ipad.spec.ts
+          tests/lesson-twenty-five-ipad.spec.ts
+          tests/lesson-twenty-six-ipad.spec.ts
+          tests/lesson-twenty-seven-ipad.spec.ts
+          --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-23-27-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  webkit-28-30:
+    name: iPad WebKit · dedicated flows 28-30
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: node scripts/prepare-lessons-23-33-legacy-tests.mjs
+      - run: >-
+          npx playwright test
+          tests/lesson-twenty-eight-ipad.spec.ts
+          tests/lesson-twenty-nine-ipad.spec.ts
+          tests/lesson-thirty-ipad.spec.ts
+          --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-28-30-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
+
+  webkit-31-33:
+    name: iPad WebKit · dedicated flows 31-33 + catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: node scripts/prepare-lessons-23-33-legacy-tests.mjs
+      - run: >-
+          npx playwright test
+          tests/lesson-thirty-one-ipad.spec.ts
+          tests/lesson-thirty-two-ipad.spec.ts
+          tests/lesson-thirty-three-ipad.spec.ts
+          tests/course-plan.spec.ts
+          --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-31-33-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
