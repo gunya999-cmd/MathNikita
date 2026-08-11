@@ -1,0 +1,66 @@
+name: Lesson 34 production live smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [qa/lesson-34-production-smoke]
+    paths:
+      - 'tests/production-lesson-thirty-four.spec.ts'
+      - 'playwright.production-lesson34.config.ts'
+      - '.github/workflows/lesson-34-production-live-smoke.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-34-production-live-smoke
+  cancel-in-progress: true
+
+jobs:
+  chromium:
+    name: Production Chromium · lesson 34 + cloud
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PRODUCTION_BROWSER: chromium
+      EXPECTED_SHA: ea169958a5f96e4c1b4461a99f53cfe9e1c014fb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: Wait for exact production SHA
+        run: |
+          for attempt in $(seq 1 36); do
+            actual="$(curl -fsS --max-time 15 https://mathnikita.gunya999.workers.dev/api/version | node -e 'let x="";process.stdin.on("data",d=>x+=d).on("end",()=>{try{process.stdout.write(JSON.parse(x).gitSha||"")}catch{}})' || true)"
+            if [ "$actual" = "$EXPECTED_SHA" ]; then echo "Production exact SHA: $actual"; exit 0; fi
+            echo "Attempt $attempt: production=${actual:-unavailable}; expected=$EXPECTED_SHA"
+            sleep 10
+          done
+          exit 1
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/production-lesson-thirty-four.spec.ts --config=playwright.production-lesson34.config.ts --workers=1
+
+  webkit:
+    name: Production iPad WebKit · lesson 34 + cloud
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PRODUCTION_BROWSER: webkit
+      EXPECTED_SHA: ea169958a5f96e4c1b4461a99f53cfe9e1c014fb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - name: Wait for exact production SHA
+        run: |
+          for attempt in $(seq 1 36); do
+            actual="$(curl -fsS --max-time 15 https://mathnikita.gunya999.workers.dev/api/version | node -e 'let x="";process.stdin.on("data",d=>x+=d).on("end",()=>{try{process.stdout.write(JSON.parse(x).gitSha||"")}catch{}})' || true)"
+            if [ "$actual" = "$EXPECTED_SHA" ]; then echo "Production exact SHA: $actual"; exit 0; fi
+            echo "Attempt $attempt: production=${actual:-unavailable}; expected=$EXPECTED_SHA"
+            sleep 10
+          done
+          exit 1
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/production-lesson-thirty-four.spec.ts --config=playwright.production-lesson34.config.ts --workers=1
