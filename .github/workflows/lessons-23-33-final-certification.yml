@@ -1,0 +1,221 @@
+name: Lessons 23-33 final hard certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [qa/lessons-23-33-final-certification]
+    paths:
+      - 'tests/lessons-23-33-voice-handoff-cert.spec.ts'
+      - 'scripts/prepare-lessons-23-33-legacy-tests.mjs'
+      - '.github/workflows/lessons-23-33-final-certification.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lessons-23-33-final-hard-certification
+  cancel-in-progress: true
+
+jobs:
+  build-quality:
+    name: Build + pedagogical quality contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright test tests/pedagogical-practice-quality.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  chromium-flows:
+    name: Chromium · dedicated flows 23-33 + catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/prepare-lessons-23-33-legacy-tests.mjs
+      - run: >-
+          npx playwright test
+          tests/lesson-twenty-three-ipad.spec.ts
+          tests/lesson-twenty-four-ipad.spec.ts
+          tests/lesson-twenty-five-ipad.spec.ts
+          tests/lesson-twenty-six-ipad.spec.ts
+          tests/lesson-twenty-seven-ipad.spec.ts
+          tests/lesson-twenty-eight-ipad.spec.ts
+          tests/lesson-twenty-nine-ipad.spec.ts
+          tests/lesson-thirty-ipad.spec.ts
+          tests/lesson-thirty-one-ipad.spec.ts
+          tests/lesson-thirty-two-ipad.spec.ts
+          tests/lesson-thirty-three-ipad.spec.ts
+          tests/course-plan.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-chromium-flows, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  chromium-practice-23-27:
+    name: Chromium · mandatory practice 23-27 · 100 tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env: { PRACTICE_START: '23', PRACTICE_END: '27' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-chromium-practice-23-27, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  chromium-practice-28-32:
+    name: Chromium · mandatory practice 28-32 · 100 tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env: { PRACTICE_START: '28', PRACTICE_END: '32' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-chromium-practice-28-32, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  chromium-voice:
+    name: Chromium · Sulafat handoff 23-33 · 11 lessons
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/lessons-23-33-voice-handoff-cert.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-chromium-voice, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  webkit-flows-23-27:
+    name: iPad WebKit · dedicated flows 23-27
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: node scripts/prepare-lessons-23-33-legacy-tests.mjs
+      - run: >-
+          npx playwright test
+          tests/lesson-twenty-three-ipad.spec.ts
+          tests/lesson-twenty-four-ipad.spec.ts
+          tests/lesson-twenty-five-ipad.spec.ts
+          tests/lesson-twenty-six-ipad.spec.ts
+          tests/lesson-twenty-seven-ipad.spec.ts
+          --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-webkit-flows-23-27, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  webkit-flows-28-30:
+    name: iPad WebKit · dedicated flows 28-30
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: node scripts/prepare-lessons-23-33-legacy-tests.mjs
+      - run: >-
+          npx playwright test
+          tests/lesson-twenty-eight-ipad.spec.ts
+          tests/lesson-twenty-nine-ipad.spec.ts
+          tests/lesson-thirty-ipad.spec.ts
+          --config=playwright.config.ts --workers=1
+      - run: npx playwright test tests/ipad-mentor-navigation-safety.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-webkit-flows-28-30, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  webkit-flows-31-33:
+    name: iPad WebKit · dedicated flows 31-33 + catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: node scripts/prepare-lessons-23-33-legacy-tests.mjs
+      - run: >-
+          npx playwright test
+          tests/lesson-thirty-one-ipad.spec.ts
+          tests/lesson-thirty-two-ipad.spec.ts
+          tests/lesson-thirty-three-ipad.spec.ts
+          tests/course-plan.spec.ts
+          --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-webkit-flows-31-33, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  webkit-practice-23-27:
+    name: iPad WebKit · mandatory practice 23-27 · 100 tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env: { PRACTICE_START: '23', PRACTICE_END: '27' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-webkit-practice-23-27, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  webkit-practice-28-32:
+    name: iPad WebKit · mandatory practice 28-32 · 100 tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env: { PRACTICE_START: '28', PRACTICE_END: '32' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-webkit-practice-28-32, path: test-results, if-no-files-found: ignore, retention-days: 7 }
+
+  webkit-voice:
+    name: iPad WebKit · Sulafat handoff 23-33 · 11 lessons
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lessons-23-33-voice-handoff-cert.spec.ts --config=playwright.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: final-cert-webkit-voice, path: test-results, if-no-files-found: ignore, retention-days: 7 }
