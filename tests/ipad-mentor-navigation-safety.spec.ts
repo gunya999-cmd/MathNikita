@@ -1,5 +1,7 @@
 import {expect,test,type Page} from '@playwright/test';
 
+test.use({viewport:{width:1024,height:1366},userAgent:'Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'});
+
 type Answer={type:'choice';value:string}|{type:'input';value:string};
 const answers:Record<string,Answer>={
   'l28-round':{type:'input',value:'6500'},
