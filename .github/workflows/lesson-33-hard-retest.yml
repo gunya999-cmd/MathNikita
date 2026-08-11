@@ -15,6 +15,7 @@ on:
       - 'src/App.tsx'
       - 'tests/lesson-thirty-three-ipad.spec.ts'
       - 'tests/course-plan.spec.ts'
+      - 'tests/voice-navigation-interruption.spec.ts'
       - '.github/workflows/lesson-33-hard-retest.yml'
 
 permissions:
@@ -38,7 +39,7 @@ jobs:
       - run: npm run build
 
   chromium:
-    name: Chromium · lesson 33 full control and correction
+    name: Chromium · lesson 33 full control, correction and voice
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -50,6 +51,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Lesson 33 control flow, persistence, scoring and correction
         run: npx playwright test tests/lesson-thirty-three-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Lesson 33 Sulafat handoff and control-mode isolation
+        run: npx playwright test tests/voice-navigation-interruption.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep 'lesson 33 control'
       - name: Course catalog regression
         run: npx playwright test tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
       - if: failure()
@@ -61,7 +64,7 @@ jobs:
           retention-days: 7
 
   ipad:
-    name: iPad WebKit · lesson 33 full control and correction
+    name: iPad WebKit · lesson 33 full control, correction and voice
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -73,6 +76,8 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - name: Lesson 33 responsive control flow
         run: npx playwright test tests/lesson-thirty-three-ipad.spec.ts --config=playwright.config.ts --workers=1
+      - name: Lesson 33 Sulafat handoff on WebKit
+        run: npx playwright test tests/voice-navigation-interruption.spec.ts --config=playwright.config.ts --workers=1 --grep 'lesson 33 control'
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
