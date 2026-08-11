@@ -110,7 +110,7 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
   },[engine,mode,rootRef,lessonNumber,openingText]);
 
   useEffect(()=>{
-    if(mode!=='lesson'||lessonNumber<1||lessonNumber>27){lastAutoStageRef.current='';return}
+    if(mode!=='lesson'||lessonNumber<1){lastAutoStageRef.current='';return}
     const root=rootRef.current;if(!root)return;
     let timer:number|null=null;
     const schedule=()=>{
