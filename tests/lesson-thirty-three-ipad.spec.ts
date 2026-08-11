@@ -37,7 +37,7 @@ test('lesson 33 persists work, submits 20/20 and stays a dedicated control',asyn
   const inputs=firstTask.locator('input');
   await inputs.nth(0).fill('7802');
   await inputs.nth(1).fill('45403');
-  await firstTask.locator('.lesson-controls button').last().click();
+  await page.locator('.lesson-controls button').last().click();
   await expect(page.locator('[data-stage-id="l33-task2"]')).toBeVisible();
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-lesson-33-control-v1')??'null'));
   expect(saved?.stageIndex).toBe(2);
