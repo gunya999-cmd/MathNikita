@@ -1,3 +1,4 @@
+// Final certification trigger: rerun the whole matrix after removing the tablet mentor auto-collapse race.
 import {expect,test,type Page} from '@playwright/test';
 
 type AuditEvent={kind:'request'|'play'|'pause';id:string};
