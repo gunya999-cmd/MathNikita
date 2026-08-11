@@ -1,0 +1,32 @@
+name: Production 32 live hard smoke
+
+on:
+  push:
+    branches: [qa/production-32-hard-smoke]
+    paths:
+      - 'scripts/production-live-hard-smoke.mjs'
+      - '.github/workflows/production-32-live-hard-smoke.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-32-live-hard-smoke
+  cancel-in-progress: true
+
+jobs:
+  live-production:
+    name: Live production · cloud + Chromium + iPad WebKit + voice interruption
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EXPECTED_SHA: 26163cb66c55b8b0342833abbe7826a1bceac7d4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Hard-test exact live production
+        run: node scripts/production-live-hard-smoke.mjs
