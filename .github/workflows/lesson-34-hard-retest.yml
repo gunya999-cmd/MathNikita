@@ -1,0 +1,70 @@
+name: Lesson 34 hard retest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/lesson-34-equations]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/EquationLessonPlayer.tsx'
+      - 'src/LessonThirtyFourOpening.ts'
+      - 'src/data/extendedPracticeLesson34.ts'
+      - 'src/data/extendedPracticeData.ts'
+      - 'src/data/yearPlan.ts'
+      - 'src/LessonCourseShell.tsx'
+      - 'src/CourseCatalog.tsx'
+      - 'tests/lesson-thirty-four-ipad.spec.ts'
+      - 'tests/lesson-thirty-four-voice.spec.ts'
+      - 'tests/course-plan.spec.ts'
+      - 'tests/pedagogical-practice-quality.spec.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-34-hard-retest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build · lesson 34
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright test tests/pedagogical-practice-quality.spec.ts tests/extended-practice-count.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  chromium:
+    name: Chromium · lesson 34 flow, voice and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PRACTICE_START: '34'
+      PRACTICE_END: '34'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/lesson-thirty-four-ipad.spec.ts tests/lesson-thirty-four-voice.spec.ts tests/extended-practice-all-lessons.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit:
+    name: iPad WebKit · lesson 34 flow, voice and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PRACTICE_START: '34'
+      PRACTICE_END: '34'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lesson-thirty-four-ipad.spec.ts tests/lesson-thirty-four-voice.spec.ts tests/extended-practice-all-lessons.spec.ts tests/course-plan.spec.ts --config=playwright.config.ts --workers=1
