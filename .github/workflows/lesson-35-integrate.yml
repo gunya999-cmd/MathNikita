@@ -26,7 +26,50 @@ jobs:
 
           edit('src/LessonCourseShell.tsx',s=>{
             s=one(s,"import { EquationLessonPlayer } from './EquationLessonPlayer';","import { EquationLessonPlayer } from './EquationLessonPlayer';import { EquationPracticePlayer } from './EquationPracticePlayer';",'lesson35 player import');
-            s=one(s,"import { lessonThirtyThirtyFourOpening } from './LessonThirtyFourOpening';","import { lessonThirtyThirtyFourOpening } from './LessonThirtyFourOpening';import { lessonThirtyFiveOpening } from './LessonThirtyFiveOpening';",'placeholder');
+            s=one(s,"import { lessonThirtyFourOpening } from './LessonThirtyFourOpening';","import { lessonThirtyFourOpening } from './LessonThirtyFourOpening';import { lessonThirtyFiveOpening } from './LessonThirtyFiveOpening';",'lesson35 opening import');
+            s=one(s,'const readyLessons=Array.from({length:34}','const readyLessons=Array.from({length:35}','ready lesson count');
+            s=one(s,'lessonThirtyThreeOpening,lessonThirtyFourOpening];const opening=','lessonThirtyThreeOpening,lessonThirtyFourOpening,lessonThirtyFiveOpening];const opening=','opening registry');
+            s=one(s,'const runtime=selectedLesson===34?<EquationLessonPlayer key="lesson-34"/>:','const runtime=selectedLesson===35?<EquationPracticePlayer key="lesson-35"/>:selectedLesson===34?<EquationLessonPlayer key="lesson-34"/>:','runtime registry');
+            return s;
+          });
+
+          edit('src/data/yearPlan.ts',s=>one(s,'available:segment.from+offset<=34','available:segment.from+offset<=35','year plan availability'));
+
+          edit('src/data/extendedPracticeData.ts',s=>{
+            s=one(s,"import { extendedPracticeLesson34 } from './extendedPracticeLesson34';","import { extendedPracticeLesson34 } from './extendedPracticeLesson34';\nimport { extendedPracticeLesson35 } from './extendedPracticeLesson35';",'practice import');
+            s=one(s,'34:extendedPracticeLesson34};','34:extendedPracticeLesson34,35:extendedPracticeLesson35};','practice map');
+            s=one(s,'34:[]};','34:[],35:[]};','specialized map');
+            return s;
+          });
+
+          edit('src/CourseCatalog.tsx',s=>{
+            const from="34:'Новая тема § 10: понятие уравнения и корня, проверка подстановкой, неизвестные компоненты сложения и вычитания, перевод текста в уравнение.'};";
+            const to="34:'Новая тема § 10: понятие уравнения и корня, проверка подстановкой, неизвестные компоненты сложения и вычитания, перевод текста в уравнение.',35:'Закрепление § 10: уравнения с числовыми выражениями, план решения по шагам, текстовые задачи, поиск ошибок и проверка корня.'};";
+            s=one(s,from,to,'course description 35');
+            s=one(s,'Полностью готовы 34 интерактивных урока.','Полностью готовы 35 интерактивных уроков.','catalog ready count');
+            return s;
+          });
+
+          edit('src/App.tsx',s=>one(s,"i===1?'14 уроков готовы':'В разработке'","i===1?'15 уроков готовы':'В разработке'",'chapter two count'));
+
+          edit('tests/extended-practice-all-lessons.spec.ts',s=>one(s,'const specialStageCounts:Record<number,number>={18:24,20:11,34:28};','const specialStageCounts:Record<number,number>={18:24,20:11,34:28,35:28};','practice stage count'));
+
+          edit('tests/course-plan.spec.ts',s=>{
+            s=one(s,'through lesson 34','through lesson 35','course test title');
+            s=one(s,"toHaveCount(32);","toHaveCount(33);",'interactive count');
+            s=one(s,"toHaveCount(34);","toHaveCount(35);",'enabled count');
+            const from="  await expect(lessons.nth(34)).toContainText('Уравнение');\n  await expect(lessons.nth(34)).toBeDisabled();";
+            const to="  await expect(lessons.nth(34)).toContainText('Уравнение');\n  await expect(lessons.nth(34)).toBeEnabled();\n  await expect(lessons.nth(34)).toHaveClass(/is-interactive/);\n  await expect(lessons.nth(35)).toContainText('Уравнение');\n  await expect(lessons.nth(35)).toBeDisabled();";
+            s=one(s,from,to,'lesson35 enabled lesson36 locked');
+            s=one(s,'Полностью готовы 34 интерактивных урока.','Полностью готовы 35 интерактивных уроков.','course ready text');
             return s;
           });
           NODE
+      - name: Commit integration
+        run: |
+          git config user.name "gunya999-cmd"
+          git config user.email "gunya999@gmail.com"
+          git add src tests
+          git diff --cached --check
+          git commit -m "Wire lesson 35 into course"
+          git push origin HEAD:feat/lesson-35-equations-practice
