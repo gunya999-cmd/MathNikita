@@ -1,5 +1,4 @@
 import { useEffect,useMemo,useState } from 'react';
-import { ExtendedPracticeLab } from './ExtendedPracticeLab';
 import './lessonPlayer.css';
 import './theoryExperience.css';
 import './additionProperties.css';
@@ -62,16 +61,17 @@ export function NaturalNumberEstimatePlayer(){
   const stage=lessonTwentyEightStages[stageIndex];
   const activity=stage.activity;
   useEffect(()=>{localStorage.setItem(KEY,JSON.stringify({version:1,stageIndex,responses,checked,results} satisfies Saved))},[stageIndex,responses,checked,results]);
-  useEffect(()=>{const jump=(event:Event)=>{const detail=(event as CustomEvent<{lessonNumber:number;stageIndex:number}>).detail;if(detail?.lessonNumber!==28)return;setStageIndex(Math.min(Math.max(detail.stageIndex,0),lessonTwentyEightStages.length-1));window.scrollTo({top:0,behavior:'smooth'})};window.addEventListener('mathnikita-go-to-stage',jump);return()=>window.removeEventListener('mathnikita-go-to-stage',jump)},[]);
+  useEffect(()=>{const jump=(event:Event)=>{const detail=(event as CustomEvent<{lessonNumber:number;stageIndex:number}>).detail;if(detail?.lessonNumber!==28)return;stopVoice();setStageIndex(Math.min(Math.max(detail.stageIndex,0),lessonTwentyEightStages.length-1));window.scrollTo({top:0,behavior:'smooth'})};window.addEventListener('mathnikita-go-to-stage',jump);return()=>window.removeEventListener('mathnikita-go-to-stage',jump)},[]);
   const practiceCorrect=lessonTwentyEightStages.filter(item=>item.kind==='practice'&&item.activity).filter(item=>results[item.activity!.id]).length;
   const quizCorrect=lessonTwentyEightStages.filter(item=>item.kind==='quiz'&&item.activity).filter(item=>results[item.activity!.id]).length;
   const currentResponse=activity?responses[activity.id]??'':'';
   const isCorrect=activity?Boolean(results[activity.id]&&checked[activity.id]):true;
   const wasChecked=activity?Boolean(checked[activity.id]):false;
+  function stopVoice(){window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));window.speechSynthesis?.cancel()}
   function choose(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
   function checkAnswer(){if(!activity)return;const correct=normalize(currentResponse)===normalize(activity.answer);setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
   function resetActivity(){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:''}));setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
-  function move(delta:number){setStageIndex(index=>Math.min(Math.max(index+delta,0),lessonTwentyEightStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
+  function move(delta:number){stopVoice();setStageIndex(index=>Math.min(Math.max(index+delta,0),lessonTwentyEightStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
   return <main className="lesson-player-page"><div className="lesson-workspace">
     <header className="lesson-header"><div><span>Урок 28 · § 8 · прикидка</span><h1>Прикидка суммы и разности</h1><p>Быстрая оценка результата, округление и обнаружение невозможных ответов.</p></div><div className="lesson-duration">≈ 50 минут</div></header>
     <div className="lesson-progress"><i style={{width:`${((stageIndex+1)/lessonTwentyEightStages.length)*100}%`}}/></div>
@@ -88,6 +88,5 @@ export function NaturalNumberEstimatePlayer(){
       {stage.kind==='summary'?<div className="summary-card"><div><span>Контроль</span><b>{quizCorrect}/5</b><small>самостоятельных заданий</small></div><div><span>Практика</span><b>{practiceCorrect}/6</b><small>основных упражнений</small></div><div><span>Статус</span><b>{quizCorrect===5&&practiceCorrect===6?'Основная часть готова':'Нужно закончить'}</b><small>дальше — 20 обязательных заданий</small></div></div>:null}
     </section>
     <nav className="lesson-controls" aria-label="Переход между этапами"><button type="button" disabled={stageIndex===0} onClick={()=>move(-1)}>← Назад</button><span>{stageIndex+1} / {lessonTwentyEightStages.length}</span><button type="button" className="primary" disabled={stageIndex===lessonTwentyEightStages.length-1||(Boolean(activity)&&!isCorrect)} onClick={()=>move(1)}>{stageIndex===lessonTwentyEightStages.length-1?'Основная часть завершена':'Дальше →'}</button></nav>
-    {stage.kind==='summary'?<ExtendedPracticeLab lessonNumber={28}/>:null}
   </div></main>;
 }
