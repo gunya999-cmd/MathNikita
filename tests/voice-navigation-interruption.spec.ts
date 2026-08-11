@@ -122,7 +122,7 @@ test('lesson 33 control auto-switches Sulafat without exposing tutoring feedback
   await expect(page.locator('.progressive-hint-coach')).toHaveCount(0);
   await waitForEvent(page,'play',oldId);
   await clearAudit(page);
-  await page.locator(`[data-stage-id="${oldStage}"] .lesson-controls button`).last().dispatchEvent('click');
+  await page.locator('.lesson-controls button').last().dispatchEvent('click');
   const immediate=await audit(page);
   expect(immediate.some(event=>event.kind==='pause'&&event.id===oldId),'Lesson 33: old control narration was still alive after navigation click').toBeTruthy();
   await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toHaveAttribute('data-stage-id',nextStage);
