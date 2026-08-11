@@ -1,0 +1,59 @@
+name: Authenticated iPad topbar hard test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/ipad-authenticated-topbar-overflow]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/topbarResponsive.css'
+      - 'tests/ipad-authenticated-topbar.spec.ts'
+      - 'playwright.authenticated-ipad.config.ts'
+      - '.github/workflows/ipad-authenticated-topbar-hard.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ipad-authenticated-topbar-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build · authenticated iPad topbar
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+
+  chromium:
+    name: Chromium 1024 · authenticated catalog layout
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/ipad-authenticated-topbar.spec.ts --config=playwright.authenticated-ipad.config.ts --project=chromium-1024 --workers=1
+
+  ipad:
+    name: iPad WebKit · authenticated catalog layout
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/ipad-authenticated-topbar.spec.ts --config=playwright.authenticated-ipad.config.ts --project=ipad-webkit --workers=1
