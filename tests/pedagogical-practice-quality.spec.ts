@@ -1,8 +1,8 @@
 import {expect,test} from '@playwright/test';
 import {extendedPracticeByLesson} from '../src/data/extendedPracticeData';
 
-for(let lessonNumber=1;lessonNumber<=32;lessonNumber+=1){
-  if(lessonNumber===20)continue;
+for(let lessonNumber=1;lessonNumber<=34;lessonNumber+=1){
+  if(lessonNumber===20||lessonNumber===33)continue;
 
   test(`lesson ${lessonNumber} mandatory practice keeps a curated majority`,()=>{
     const practice=extendedPracticeByLesson[lessonNumber];
