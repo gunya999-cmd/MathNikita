@@ -1,0 +1,72 @@
+name: Lesson 36 hard retest
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/lesson-36-equation-mastery]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/EquationMasteryPlayer.tsx'
+      - 'src/LessonThirtySixOpening.ts'
+      - 'src/data/extendedPracticeLesson36.ts'
+      - 'src/data/extendedPracticeData.ts'
+      - 'src/data/yearPlan.ts'
+      - 'src/LessonCourseShell.tsx'
+      - 'src/CourseCatalog.tsx'
+      - 'src/App.tsx'
+      - 'tests/lesson-thirty-six-ipad.spec.ts'
+      - 'tests/lesson-thirty-six-voice.spec.ts'
+      - 'tests/extended-practice-all-lessons.spec.ts'
+      - 'tests/course-plan.spec.ts'
+      - 'tests/pedagogical-practice-quality.spec.ts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-36-hard-retest-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build · lesson 36
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright test tests/pedagogical-practice-quality.spec.ts tests/extended-practice-count.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  chromium:
+    name: Chromium · lesson 36 flow, voice and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PRACTICE_START: '36'
+      PRACTICE_END: '36'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/lesson-thirty-six-ipad.spec.ts tests/lesson-thirty-six-voice.spec.ts tests/extended-practice-all-lessons.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit:
+    name: iPad WebKit · lesson 36 flow, voice and 20-task practice
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PRACTICE_START: '36'
+      PRACTICE_END: '36'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lesson-thirty-six-ipad.spec.ts tests/lesson-thirty-six-voice.spec.ts tests/extended-practice-all-lessons.spec.ts tests/course-plan.spec.ts --config=playwright.config.ts --workers=1
