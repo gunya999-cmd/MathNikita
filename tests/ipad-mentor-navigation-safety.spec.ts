@@ -32,6 +32,23 @@ function boxesIntersect(a:{x:number;y:number;width:number;height:number},b:{x:nu
   return a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
 }
 
+async function ensureMentorCollapsed(page:Page){
+  const collapsed=page.locator('.cat-mentor-collapsed');
+  const collapseButton=page.locator('.cat-mentor-panel').getByRole('button',{name:'Свернуть наставника'});
+  await expect(collapsed.or(collapseButton)).toBeVisible();
+  if(!(await collapsed.isVisible())){
+    try{
+      await collapseButton.click({timeout:3000});
+    }catch(error){
+      // Tablet responsive behavior can auto-collapse between the visibility check
+      // and the click. That is already the desired state, so only rethrow if the
+      // collapsed mentor did not actually appear.
+      if(!(await collapsed.isVisible()))throw error;
+    }
+  }
+  await expect(collapsed).toBeVisible();
+}
+
 test('collapsed Pythagoras never intercepts lesson 28 forward navigation on iPad',async({page})=>{
   test.setTimeout(180_000);
   await page.goto('/');
@@ -41,10 +58,8 @@ test('collapsed Pythagoras never intercepts lesson 28 forward navigation on iPad
   await expect(lesson28).toBeEnabled();
   await lesson28.click();
 
-  const panel=page.locator('.cat-mentor-panel');
   const collapsed=page.locator('.cat-mentor-collapsed');
-  if(await panel.isVisible())await panel.getByRole('button',{name:'Свернуть наставника'}).click();
-  await expect(collapsed).toBeVisible();
+  await ensureMentorCollapsed(page);
   await page.locator('.lesson-opening-start').click();
 
   const visited=new Set<string>();
