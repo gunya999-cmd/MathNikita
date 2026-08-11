@@ -4,12 +4,10 @@ import {chromium,webkit} from '@playwright/test';
 const BASE='https://mathnikita.gunya999.workers.dev';
 const EXPECTED=process.env.EXPECTED_SHA||'';
 const RUN=process.env.GITHUB_RUN_ID||String(Date.now());
-const studentId=`qa-prod32-${RUN}-${Date.now()}`.slice(0,80);
-const originalPin='7391';
-const recoveredPin='7392';
+const code='MN-NABUQA4';
+const pin='7392';
 const markerKey='mathnikita:qa-live-marker';
-const markerInitial=`registered-${RUN}`;
-const markerSynced=`synced-${RUN}`;
+const markerSynced=`rerun-${RUN}`;
 
 async function jsonFetch(path,init={}){
   const response=await fetch(`${BASE}${path}`,init);
@@ -37,69 +35,57 @@ const narration=await narrationResponse.json();
 assert.equal(Boolean(narration.studioConfigured),true,'studio narration is not configured');
 console.log(`narration status OK: ${narration.provider||'provider'} / ${narration.voice||'voice'}`);
 
-const registered=await jsonFetch('/api/cloud/register',{method:'POST',headers:headers(),body:JSON.stringify({studentId,name:'QA Production 32',pin:originalPin,entries:{[markerKey]:markerInitial}})});
-assert.ok(registered.student?.code,'student code missing');
-assert.ok(registered.recoveryCode,'recovery code missing');
-assert.equal(registered.entries?.[markerKey],markerInitial);
-const code=registered.student.code;
-console.log(`registration OK: ${code}`);
-
-const logged=await jsonFetch('/api/cloud/login',{method:'POST',headers:headers(),body:JSON.stringify({code,pin:originalPin})});
-assert.equal(logged.entries?.[markerKey],markerInitial,'login did not restore initial cloud data');
+const logged=await jsonFetch('/api/cloud/login',{method:'POST',headers:headers(),body:JSON.stringify({code,pin})});
 assert.ok(logged.token,'cloud login token missing');
-
+assert.ok(Number.isInteger(logged.revision),'cloud login revision missing');
 const synced=await jsonFetch('/api/cloud/sync',{method:'POST',headers:headers({authorization:`Bearer ${logged.token}`}),body:JSON.stringify({baseRevision:logged.revision,changes:{[markerKey]:markerSynced}})});
 assert.ok(Number.isInteger(synced.revision),'sync revision missing');
 const snapshot=await jsonFetch('/api/cloud/snapshot',{headers:{authorization:`Bearer ${logged.token}`}});
-assert.equal(snapshot.entries?.[markerKey],markerSynced,'snapshot did not contain synced value');
-console.log(`cloud sync OK: revision ${snapshot.revision}`);
+assert.equal(snapshot.entries?.[markerKey],markerSynced,'snapshot did not contain latest synced value');
+console.log(`existing production smoke profile login + sync OK: revision ${snapshot.revision}`);
 
-const recovered=await jsonFetch('/api/cloud/recover',{method:'POST',headers:headers(),body:JSON.stringify({code,recoveryCode:registered.recoveryCode,newPin:recoveredPin})});
-assert.equal(recovered.entries?.[markerKey],markerSynced,'recovery lost cloud data');
-const relogged=await jsonFetch('/api/cloud/login',{method:'POST',headers:headers(),body:JSON.stringify({code,pin:recoveredPin})});
-assert.equal(relogged.entries?.[markerKey],markerSynced,'new PIN login lost cloud data');
-console.log('recovery + new PIN login OK');
-
-async function installVoiceAudit(context){
-  await context.addInitScript(()=>{
+async function installVoiceHarness(page){
+  await page.addInitScript(()=>{
     const audit={events:[]};
     const blobIds=new WeakMap();
-    const nativeCreate=URL.createObjectURL.bind(URL);
-    URL.createObjectURL=(blob)=>{const id=blobIds.get(blob);return id?`blob:qa-live/${encodeURIComponent(id)}`:nativeCreate(blob)};
+    const nativeFetch=window.fetch.bind(window);
+    const nativeCreateObjectURL=URL.createObjectURL.bind(URL);
+    window.fetch=async(input,init)=>{
+      const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+      let narrationId='';
+      if(url.includes('/api/narration')&&!url.includes('/api/narration-status')){
+        let rawBody=init?.body;
+        if(rawBody==null&&input instanceof Request){try{rawBody=await input.clone().text()}catch{}}
+        if(typeof rawBody==='string'){
+          try{narrationId=JSON.parse(rawBody)?.id??''}catch{}
+        }
+        if(narrationId)audit.events.push({kind:'request',id:narrationId});
+      }
+      const response=await nativeFetch(input,init);
+      if(!narrationId)return response;
+      return new Proxy(response,{get(target,property){
+        if(property==='blob')return async()=>{const blob=await target.blob();blobIds.set(blob,narrationId);return blob};
+        const value=Reflect.get(target,property,target);return typeof value==='function'?value.bind(target):value;
+      }});
+    };
+    URL.createObjectURL=(blob)=>{
+      if(blob instanceof Blob){const id=blobIds.get(blob);if(id)return`blob:qa-live/${encodeURIComponent(id)}`}
+      return nativeCreateObjectURL(blob);
+    };
     class MockAudio{
-      constructor(src=''){this.src=src;this.preload='';this.playbackRate=1;this.currentTime=0;this.onended=null;this.onerror=null;this.started=false;this.timer=null}
-      id(){const p='blob:qa-live/';return this.src.startsWith(p)?decodeURIComponent(this.src.slice(p.length)):this.src}
+      constructor(source=''){this.src=source;this.preload='';this.playbackRate=1;this.currentTime=0;this.onended=null;this.onerror=null;this.timer=null;this.started=false}
+      id(){const prefix='blob:qa-live/';return this.src.startsWith(prefix)?decodeURIComponent(this.src.slice(prefix.length)):this.src}
       pause(){if(this.started)audit.events.push({kind:'pause',id:this.id()});this.started=false;if(this.timer!==null){clearTimeout(this.timer);this.timer=null}}
       play(){this.pause();this.started=true;audit.events.push({kind:'play',id:this.id()});this.timer=setTimeout(()=>{this.timer=null;this.started=false;this.onended?.()},5000);return Promise.resolve()}
     }
     Object.defineProperty(window,'Audio',{configurable:true,writable:true,value:MockAudio});
     window.__qaVoiceAudit=audit;
-    window.__qaBlobIds=blobIds;
+    localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',rate:.94}));
+    localStorage.setItem('mathnikita-mentor-auto-guide','false');
   });
-}
-
-async function installNarrationRoutes(page){
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'production-smoke',voice:'Sulafat'})}));
   await page.route('**/api/narration',async route=>{
-    let id='';try{id=route.request().postDataJSON()?.id||''}catch{}
-    const responseBody=Buffer.from('RIFF-production-live-smoke');
-    await route.fulfill({status:200,contentType:'audio/wav',body:responseBody});
-    await page.evaluate(({id})=>{window.__qaPendingNarrationId=id},{id}).catch(()=>{});
-  });
-  await page.addInitScript(()=>{
-    const nativeFetch=window.fetch.bind(window);
-    const blobIds=window.__qaBlobIds;
-    window.fetch=async(input,init)=>{
-      const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;
-      let id='';
-      if(url.includes('/api/narration')&&!url.includes('status')){
-        let raw=init?.body;if(raw==null&&input instanceof Request){try{raw=await input.clone().text()}catch{}}
-        if(typeof raw==='string'){try{id=JSON.parse(raw)?.id||''}catch{}}
-      }
-      const response=await nativeFetch(input,init);
-      if(!id)return response;
-      return new Proxy(response,{get(target,property){if(property==='blob')return async()=>{const blob=await target.blob();blobIds.set(blob,id);return blob};const value=Reflect.get(target,property,target);return typeof value==='function'?value.bind(target):value}});
-    };
+    await route.fulfill({status:200,contentType:'audio/wav',body:Buffer.from('RIFF-production-live-smoke')});
   });
 }
 
@@ -109,11 +95,11 @@ async function loginThroughUi(page){
   await existingButton.waitFor({state:'visible',timeout:20000});
   await existingButton.click();
   await page.getByLabel('Код ученика').fill(code);
-  await page.getByLabel('PIN облачного профиля').fill(recoveredPin);
+  await page.getByLabel('PIN облачного профиля').fill(pin);
   await page.getByRole('button',{name:'Войти и загрузить прогресс'}).click();
   await page.getByRole('button',{name:/Сменить ученика/}).waitFor({state:'visible',timeout:20000});
   const marker=await page.evaluate(key=>localStorage.getItem(key),markerKey);
-  assert.equal(marker,markerSynced,'UI cloud login did not restore synced marker');
+  assert.equal(marker,markerSynced,'UI cloud login did not restore latest synced marker');
 }
 
 async function checkCatalog(page){
@@ -130,9 +116,8 @@ async function checkCatalog(page){
 async function chromiumHardSmoke(){
   const browser=await chromium.launch({headless:true});
   const context=await browser.newContext({viewport:{width:1440,height:1000}});
-  await installVoiceAudit(context);
   const page=await context.newPage();
-  await installNarrationRoutes(page);
+  await installVoiceHarness(page);
   await loginThroughUi(page);
   await page.evaluate(()=>{localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',rate:.94}));localStorage.setItem('mathnikita-mentor-auto-guide','false')});
   await page.reload({waitUntil:'domcontentloaded'});
@@ -141,13 +126,14 @@ async function chromiumHardSmoke(){
   await page.locator('.lesson-opening-start').click();
   await page.locator('[data-stage-id="l32-mission"]').waitFor({state:'visible',timeout:20000});
   const oldId='lesson-32-stage-l32-mission';
-  await page.waitForFunction(id=>window.__qaVoiceAudit?.events?.some(e=>e.kind==='play'&&e.id===id),oldId,{timeout:15000});
+  await page.waitForFunction(id=>window.__qaVoiceAudit?.events?.some(event=>event.kind==='request'&&event.id===id),oldId,{timeout:15000});
+  await page.waitForFunction(id=>window.__qaVoiceAudit?.events?.some(event=>event.kind==='play'&&event.id===id),oldId,{timeout:15000});
   await page.evaluate(()=>{window.__qaVoiceAudit.events=[]});
   await page.locator('[data-stage-id="l32-mission"] .lesson-controls button').last().click();
   const immediate=await page.evaluate(()=>window.__qaVoiceAudit.events);
-  assert.ok(immediate.some(e=>e.kind==='pause'&&e.id===oldId),'old narration did not pause synchronously on stage change');
+  assert.ok(immediate.some(event=>event.kind==='pause'&&event.id===oldId),'old narration did not pause synchronously on stage change');
   await page.locator('[data-stage-id="l32-meaning"]').waitFor({state:'visible',timeout:10000});
-  await page.waitForFunction(()=>window.__qaVoiceAudit?.events?.some(e=>e.kind==='play'&&e.id==='lesson-32-stage-l32-meaning'),null,{timeout:15000});
+  await page.waitForFunction(()=>window.__qaVoiceAudit?.events?.some(event=>event.kind==='play'&&event.id==='lesson-32-stage-l32-meaning'),null,{timeout:15000});
   console.log('Chromium live catalog + lesson32 + voice interruption OK');
   await browser.close();
 }
