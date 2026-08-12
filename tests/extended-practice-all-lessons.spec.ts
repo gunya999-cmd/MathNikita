@@ -9,7 +9,7 @@ type VoiceAudit={playedIds:string[];audioPlays:number};
 
 const startLesson=Number(process.env.PRACTICE_START??1);
 const endLesson=Number(process.env.PRACTICE_END??27);
-const specialStageCounts:Record<number,number>={18:24,20:11,34:28,35:28,36:30,37:29};
+const specialStageCounts:Record<number,number>={18:24,20:11,34:28,35:28,36:30,37:29,38:35};
 
 async function installVoiceAudit(page:Page){
   await page.addInitScript(()=>{
