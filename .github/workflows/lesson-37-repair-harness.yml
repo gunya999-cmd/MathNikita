@@ -1,0 +1,40 @@
+name: Lesson 37 repair generic harness
+
+on:
+  push:
+    branches: [agent/lesson-37-angle-notation]
+    paths: ['.github/workflows/lesson-37-repair-harness.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lesson-37-angle-notation
+          fetch-depth: 0
+      - name: Restore generic practice harness from main and add lesson 37 stage count only
+        run: |
+          git fetch origin main
+          git checkout origin/main -- tests/extended-practice-all-lessons.spec.ts
+          node <<'NODE'
+          const fs=require('fs');
+          const path='tests/extended-practice-all-lessons.spec.ts';
+          let s=fs.readFileSync(path,'utf8');
+          const from='const specialStageCounts:Record<number,number>={18:24,20:11,34:28,35:28,36:30};';
+          const to='const specialStageCounts:Record<number,number>={18:24,20:11,34:28,35:28,36:30,37:29};';
+          if(!s.includes(from))throw new Error('Expected main specialStageCounts line was not found');
+          s=s.replace(from,to);
+          fs.writeFileSync(path,s);
+          NODE
+          git diff --check
+      - name: Commit repaired harness
+        run: |
+          git config user.name "gunya999-cmd"
+          git config user.email "gunya999@gmail.com"
+          git add tests/extended-practice-all-lessons.spec.ts
+          git commit -m "Restore generic practice harness for lesson 37"
+          git push origin HEAD:agent/lesson-37-angle-notation
