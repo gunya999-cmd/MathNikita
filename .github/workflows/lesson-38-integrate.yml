@@ -1,0 +1,74 @@
+name: Lesson 38 integrate
+
+on:
+  push:
+    branches: [feat/lesson-38-angle-mastery]
+    paths: ['.github/workflows/lesson-38-integrate.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/lesson-38-angle-mastery
+          fetch-depth: 0
+      - name: Wire lesson 38 into course and QA contracts
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          function edit(path,replacements){
+            let s=fs.readFileSync(path,'utf8');
+            for(const [from,to] of replacements){
+              if(!s.includes(from))throw new Error(`${path}: expected fragment not found: ${from.slice(0,100)}`);
+              s=s.replace(from,to);
+            }
+            fs.writeFileSync(path,s);
+          }
+
+          edit('src/data/yearPlan.ts',[["available:segment.from+offset<=37","available:segment.from+offset<=38"]]);
+
+          edit('src/data/extendedPracticeData.ts',[
+            ["import { extendedPracticeLesson37 } from './extendedPracticeLesson37';","import { extendedPracticeLesson37 } from './extendedPracticeLesson37';\nimport { extendedPracticeLesson38 } from './extendedPracticeLesson38';"],
+            [",37:extendedPracticeLesson37};",",37:extendedPracticeLesson37,38:extendedPracticeLesson38};"],
+            [",36:[],37:[]};",",36:[],37:[],38:[]};"]
+          ]);
+
+          edit('src/LessonCourseShell.tsx',[
+            ["import { AngleNotationPlayer } from './AngleNotationPlayer';","import { AngleNotationPlayer } from './AngleNotationPlayer';import { AngleNotationMasteryPlayer } from './AngleNotationMasteryPlayer';"],
+            ["import { lessonThirtySevenOpening } from './LessonThirtySevenOpening';","import { lessonThirtySevenOpening } from './LessonThirtySevenOpening';import { lessonThirtyEightOpening } from './LessonThirtyEightOpening';"],
+            ["readyLessons=Array.from({length:37}","readyLessons=Array.from({length:38}"],
+            ["lessonThirtySixOpening,lessonThirtySevenOpening];","lessonThirtySixOpening,lessonThirtySevenOpening,lessonThirtyEightOpening];"],
+            ["const runtime=selectedLesson===37?<AngleNotationPlayer key=\"lesson-37\"/>","const runtime=selectedLesson===38?<AngleNotationMasteryPlayer key=\"lesson-38\"/>:selectedLesson===37?<AngleNotationPlayer key=\"lesson-37\"/>"]
+          ]);
+
+          edit('src/CourseCatalog.tsx',[
+            ["37:'Новая тема § 11: угол как два луча с общим началом, вершина и стороны, обозначение угла тремя буквами, обратные названия и неоднозначные случаи.'};","37:'Новая тема § 11: угол как два луча с общим началом, вершина и стороны, обозначение угла тремя буквами, обратные названия и неоднозначные случаи.',38:'Закрепление § 11: равные углы, совпадающие лучи, сложные многолучевые чертежи, полный перебор углов, общие вершины и стороны.'};"],
+            ["Полностью готовы 37 интерактивных уроков.","Полностью готовы 38 интерактивных уроков."]
+          ]);
+
+          edit('src/App.tsx',[["i===1?'17 уроков готовы'","i===1?'18 уроков готовы'"]]);
+
+          edit('tests/pedagogical-practice-quality.spec.ts',[["lessonNumber<=37","lessonNumber<=38"]]);
+          edit('tests/extended-practice-count.spec.ts',[["lessonNumber<=34","lessonNumber<=38"]]);
+          edit('tests/extended-practice-all-lessons.spec.ts',[["36:30,37:29};","36:30,37:29,38:35};"]]);
+
+          edit('tests/course-plan.spec.ts',[
+            ["through lesson 37","through lesson 38"],
+            ["toHaveCount(35);","toHaveCount(36);"],
+            ["toHaveCount(37);","toHaveCount(38);"],
+            ["await expect(lessons.nth(37)).toContainText('Угол. Обозначение углов');\n  await expect(lessons.nth(37)).toBeDisabled();","await expect(lessons.nth(37)).toContainText('Угол. Обозначение углов');\n  await expect(lessons.nth(37)).toBeEnabled();\n  await expect(lessons.nth(37)).toHaveClass(/is-interactive/);\n  await expect(lessons.nth(38)).toContainText('Виды углов. Измерение углов');\n  await expect(lessons.nth(38)).toBeDisabled();"],
+            ["Полностью готовы 37 интерактивных уроков.","Полностью готовы 38 интерактивных уроков."]
+          ]);
+          NODE
+          git diff --check
+      - name: Commit lesson 38 integration
+        run: |
+          git config user.name "gunya999-cmd"
+          git config user.email "gunya999@gmail.com"
+          git add src tests
+          git commit -m "Wire lesson 38 into course"
+          git push origin HEAD:feat/lesson-38-angle-mastery
