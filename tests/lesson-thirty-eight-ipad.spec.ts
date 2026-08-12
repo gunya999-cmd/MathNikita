@@ -54,7 +54,7 @@ test('lesson 38 closes §11 with equal angles, complex diagrams, persistence and
   await expect(page.locator('.extended-practice[data-practice-task="l38-extra-01"]')).toBeVisible();
 
   const practice=page.locator('.extended-practice');
-  await practice.getByRole('button',{name:'Совпадают при наложении'}).click();
+  await practice.getByRole('button',{name:'Совпадающие при наложении'}).click();
   await practice.locator('.extended-practice-check').click();
   await expect(practice.locator('.extended-practice-feedback.is-correct')).toBeVisible();
 
