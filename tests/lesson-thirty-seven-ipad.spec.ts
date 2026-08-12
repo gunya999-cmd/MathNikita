@@ -26,7 +26,7 @@ async function nextStage(page:Page,currentId:string,nextId:string){
 test('lesson 37 teaches angle notation visually, persists progress and exposes one 20-task practice gate',async({page})=>{
   await openLesson37(page);
   await expect(page.locator('[data-stage-id="l37-mission"]')).toBeVisible();
-  await expect(page.locator('.lesson-runtime:not([hidden]) .lesson-controls')).toContainText('Этап 1 из 30');
+  await expect(page.locator('.lesson-runtime:not([hidden]) .lesson-controls')).toContainText('Этап 1 из 29');
   await expect(page.locator('.lesson-runtime:not([hidden]) .angle-diagram svg')).toBeVisible();
   await nextStage(page,'l37-mission','l37-parts');
   await nextStage(page,'l37-parts','l37-practice1');
@@ -47,7 +47,7 @@ test('lesson 37 teaches angle notation visually, persists progress and exposes o
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l37-practice2"]')).toBeVisible();
 
-  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:37,stageIndex:29}})));
+  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:37,stageIndex:28}})));
   await expect(page.locator('[data-stage-id="l37-summary"]')).toBeVisible();
   await expect(page.locator('.lesson-reflection')).toHaveCount(1);
   await expect(page.locator('.extended-practice')).toHaveCount(1);
