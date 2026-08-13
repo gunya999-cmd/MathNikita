@@ -1,0 +1,27 @@
+name: Release voice gate
+on:
+  push:
+    branches: [fix/release-gate-1-39-green4]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npm run build
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test tests/voice-navigation-interruption.spec.ts tests/studio-voice-priority.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - run: npx playwright test tests/voice-navigation-interruption.spec.ts --config=playwright.config.ts --workers=1
