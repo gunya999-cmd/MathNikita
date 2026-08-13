@@ -1,7 +1,7 @@
 import {expect,test} from '@playwright/test';
 import {extendedPracticeByLesson} from '../src/data/extendedPracticeData';
 
-for(let lessonNumber=1;lessonNumber<=38;lessonNumber+=1){
+for(let lessonNumber=1;lessonNumber<=39;lessonNumber+=1){
   if(lessonNumber===20||lessonNumber===33)continue;
   test(`lesson ${lessonNumber} has exactly twenty mandatory-practice tasks`,()=>{
     const practice=extendedPracticeByLesson[lessonNumber];
