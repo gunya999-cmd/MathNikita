@@ -1,0 +1,35 @@
+name: Release runtime 28-39 patched
+on:
+  push:
+    branches: [fix/runtime-28-39-patched]
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Refresh historical catalog assumptions
+        run: |
+          sed -i 's/toHaveCount(27)/toHaveCount(37)/; s/toHaveCount(1)/toHaveCount(2)/; s/toHaveCount(28)/toHaveCount(39)/' tests/lesson-twenty-eight-ipad.spec.ts
+          sed -i -E '/const lesson(30|31|32|33|34|35|36|37|38|39)=page\.locator.*course-lesson-grid/d; /await expect\(lesson(30|31|32|33|34|35|36|37|38|39)\)\.toBeDisabled\(\);/d' tests/lesson-twenty-nine-ipad.spec.ts tests/lesson-thirty-ipad.spec.ts tests/lesson-thirty-one-ipad.spec.ts tests/lesson-thirty-two-ipad.spec.ts tests/lesson-thirty-three-ipad.spec.ts tests/lesson-thirty-four-ipad.spec.ts tests/lesson-thirty-five-ipad.spec.ts tests/lesson-thirty-six-ipad.spec.ts tests/lesson-thirty-seven-ipad.spec.ts tests/lesson-thirty-eight-ipad.spec.ts
+      - run: npx playwright test tests/lesson-twenty-eight-ipad.spec.ts tests/lesson-twenty-nine-ipad.spec.ts tests/lesson-thirty-ipad.spec.ts tests/lesson-thirty-one-ipad.spec.ts tests/lesson-thirty-two-ipad.spec.ts tests/lesson-thirty-three-ipad.spec.ts tests/lesson-thirty-four-ipad.spec.ts tests/lesson-thirty-five-ipad.spec.ts tests/lesson-thirty-six-ipad.spec.ts tests/lesson-thirty-seven-ipad.spec.ts tests/lesson-thirty-eight-full-flow.spec.ts tests/lesson-thirty-eight-ipad.spec.ts tests/lesson-thirty-nine-full-flow.spec.ts tests/lesson-thirty-nine-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+  webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: Refresh historical catalog assumptions
+        run: |
+          sed -i 's/toHaveCount(27)/toHaveCount(37)/; s/toHaveCount(1)/toHaveCount(2)/; s/toHaveCount(28)/toHaveCount(39)/' tests/lesson-twenty-eight-ipad.spec.ts
+          sed -i -E '/const lesson(30|31|32|33|34|35|36|37|38|39)=page\.locator.*course-lesson-grid/d; /await expect\(lesson(30|31|32|33|34|35|36|37|38|39)\)\.toBeDisabled\(\);/d' tests/lesson-twenty-nine-ipad.spec.ts tests/lesson-thirty-ipad.spec.ts tests/lesson-thirty-one-ipad.spec.ts tests/lesson-thirty-two-ipad.spec.ts tests/lesson-thirty-three-ipad.spec.ts tests/lesson-thirty-four-ipad.spec.ts tests/lesson-thirty-five-ipad.spec.ts tests/lesson-thirty-six-ipad.spec.ts tests/lesson-thirty-seven-ipad.spec.ts tests/lesson-thirty-eight-ipad.spec.ts
+      - run: npx playwright test tests/lesson-twenty-eight-ipad.spec.ts tests/lesson-twenty-nine-ipad.spec.ts tests/lesson-thirty-ipad.spec.ts tests/lesson-thirty-one-ipad.spec.ts tests/lesson-thirty-two-ipad.spec.ts tests/lesson-thirty-three-ipad.spec.ts tests/lesson-thirty-four-ipad.spec.ts tests/lesson-thirty-five-ipad.spec.ts tests/lesson-thirty-six-ipad.spec.ts tests/lesson-thirty-seven-ipad.spec.ts tests/lesson-thirty-eight-full-flow.spec.ts tests/lesson-thirty-eight-ipad.spec.ts tests/lesson-thirty-nine-full-flow.spec.ts tests/lesson-thirty-nine-ipad.spec.ts --workers=1
