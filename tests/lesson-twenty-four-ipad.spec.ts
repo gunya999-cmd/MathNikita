@@ -21,9 +21,9 @@ const answers:Record<string,Answer>={
 
 async function openLesson(page:Page){
   await page.goto('/');
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(26);
-  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(1);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(27);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(37);
+  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(2);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(39);
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   const isOpen=await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open);
   if(!isOpen)await chapterTwo.locator('summary').click();
