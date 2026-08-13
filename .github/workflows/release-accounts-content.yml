@@ -1,0 +1,33 @@
+name: Release accounts and content
+on:
+  push:
+    branches: [fix/accounts-gate]
+permissions:
+  contents: read
+jobs:
+  content:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/course-plan.spec.ts tests/pedagogical-practice-quality.spec.ts tests/lesson-analytics-engagement.spec.ts tests/extended-practice-all-lessons.spec.ts tests/extended-practice-count.spec.ts --config=playwright.desktop.config.ts --workers=1
+  accounts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npm run build
+      - run: node scripts/cloud-api-smoke.mjs
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test tests/cloud-student-ui.spec.ts tests/cloud-sync-races.spec.ts tests/student-profiles.spec.ts --config=playwright.profile.config.ts --workers=1
+      - run: npx playwright test tests/multi-student-cloud-isolation.spec.ts --config=playwright.profile.config.ts --workers=1
+      - run: npx playwright test tests/multi-student-cloud-isolation.spec.ts --config=playwright.profile.ipad.config.ts --workers=1
+      - run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
