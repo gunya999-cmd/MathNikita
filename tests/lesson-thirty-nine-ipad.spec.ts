@@ -8,7 +8,7 @@ async function openLesson39(page:Page){
   if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
   const lesson39=page.getByRole('button',{name:/Открыть урок 39:/});
   const lesson40=page.locator('.course-lesson-grid > button').nth(39);
-  await expect(lesson39).toBeVisible();await expect(lesson39).toBeEnabled();await expect(lesson40).toBeDisabled();
+  await expect(lesson39).toBeVisible();await expect(lesson39).toBeEnabled();await expect(lesson40).toBeEnabled();
   await lesson39.click();await expect(page.locator('.lesson-opening')).toContainText('Виды углов. Измерение углов');await page.locator('.lesson-opening-start').click();
 }
 
