@@ -40,7 +40,7 @@ async function solveCurrent(page:Page,stageId:string){
   const stage=page.locator(`.lesson-runtime:not([hidden]) [data-stage-id="${stageId}"]`);
   if(answer.type==='choice')await stage.getByRole('button',{name:answer.value,exact:true}).click();
   else if(answer.type==='input')await stage.locator('.inline-answer input').fill(answer.value);
-  else await stage.locator('input[type="range"]').evaluate((node,value)=>{const input=node as HTMLInputElement;input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}))},answer.value);
+  else await stage.locator('input[type="range"]').evaluate((node,value)=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;if(!setter)throw new Error('range value setter is unavailable');setter.call(node,String(value));node.dispatchEvent(new Event('input',{bubbles:true}));node.dispatchEvent(new Event('change',{bubbles:true}))},answer.value);
   await stage.locator('.check-button').click();
   await expect(stage.locator('.instant-feedback.good')).toBeVisible();
 }
