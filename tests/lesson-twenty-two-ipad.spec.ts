@@ -23,7 +23,7 @@ const answers:Record<string,Answer>={
 
 async function openLesson(page:Page){
   await page.goto('/');
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(27);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(39);
   await page.locator('.course-chapter-group').nth(1).locator('summary').click();
   const lesson=page.getByRole('button',{name:/Открыть урок 22:/});
   await expect(lesson).toBeVisible();

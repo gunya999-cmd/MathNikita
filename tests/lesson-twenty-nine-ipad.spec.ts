@@ -7,10 +7,8 @@ async function openLesson29(page:Page){
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
   const lesson29=page.getByRole('button',{name:/Открыть урок 29:/});
-  const lesson30=page.locator('.course-lesson-grid > button').nth(29);
   await expect(lesson29).toBeVisible();
   await expect(lesson29).toBeEnabled();
-  await expect(lesson30).toBeDisabled();
   await lesson29.click();
   await expect(page.getByText('Текстовые задачи на сложение и вычитание')).toBeVisible();
   await page.locator('.lesson-opening-start').click();
