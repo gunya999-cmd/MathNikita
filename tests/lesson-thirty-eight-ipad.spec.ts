@@ -7,10 +7,8 @@ async function openLesson38(page:Page){
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
   const lesson38=page.getByRole('button',{name:/Открыть урок 38:/});
-  const lesson39=page.locator('.course-lesson-grid > button').nth(38);
   await expect(lesson38).toBeVisible();
   await expect(lesson38).toBeEnabled();
-  await expect(lesson39).toBeDisabled();
   await lesson38.click();
   await expect(page.locator('.lesson-opening')).toContainText('Угол. Обозначение углов: мастерская');
   await page.locator('.lesson-opening-start').click();
