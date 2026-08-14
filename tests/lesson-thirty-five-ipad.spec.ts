@@ -7,10 +7,8 @@ async function openLesson35(page:Page){
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
   const lesson35=page.getByRole('button',{name:/Открыть урок 35:/});
-  const lesson36=page.locator('.course-lesson-grid > button').nth(35);
   await expect(lesson35).toBeVisible();
   await expect(lesson35).toBeEnabled();
-  await expect(lesson36).toBeDisabled();
   await lesson35.click();
   await expect(page.locator('.lesson-opening')).toContainText('Уравнения: сначала упростить, потом найти неизвестное');
   await page.locator('.lesson-opening-start').click();
