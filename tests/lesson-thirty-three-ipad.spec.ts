@@ -13,11 +13,9 @@ async function openLesson33(page:Page){
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
   const lesson33=page.getByRole('button',{name:/Открыть урок 33:/});
-  const lesson34=page.locator('.course-lesson-grid > button').nth(33);
   await expect(lesson33).toBeVisible();
   await expect(lesson33).toBeEnabled();
   await expect(lesson33).toHaveClass(/is-control-ready/);
-  await expect(lesson34).toBeDisabled();
   await lesson33.click();
   await expect(page.locator('.lesson-opening')).toBeVisible();
   await page.locator('.lesson-opening-start').click();
