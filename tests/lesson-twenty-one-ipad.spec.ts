@@ -32,7 +32,7 @@ async function openLesson(page:Page){
   await expect(page.getByRole('heading',{name:'Сложение натуральных чисел'}).first()).toBeVisible();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l21-mission"]')).toBeVisible();
-  await expect(page.locator('.cat-mentor-collapsed,.cat-mentor-panel')).toBeVisible();
+  await expect(page.locator('.cat-mentor-collapsed')).toBeVisible({timeout:10_000});
 }
 
 async function answerStage(page:Page,answer:Answer){
