@@ -1,0 +1,140 @@
+name: Final runtime certification 1-39
+
+on:
+  push:
+    branches: [fix/release-gate-1-39-green4]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: final-runtime-1-39-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-1-27:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: >-
+          npx playwright test
+          tests/lessons-one-to-four-full-walkthrough.spec.ts
+          tests/lesson-five-mastery.spec.ts
+          tests/lesson-six-mastery.spec.ts
+          tests/lessons-six-to-sixteen-runtime-and-pythagoras.spec.ts
+          tests/lessons-seventeen-to-twenty-three-runtime-and-pythagoras.spec.ts
+          tests/lesson-seventeen-ipad.spec.ts
+          tests/lesson-eighteen-ipad.spec.ts
+          tests/lesson-nineteen-ipad.spec.ts
+          tests/lesson-twenty-ipad.spec.ts
+          tests/lesson-twenty-correction.spec.ts
+          tests/lesson-twenty-one-ipad.spec.ts
+          tests/lesson-twenty-two-ipad.spec.ts
+          tests/lesson-twenty-three-ipad.spec.ts
+          tests/lesson-twenty-four-ipad.spec.ts
+          tests/lesson-twenty-five-ipad.spec.ts
+          tests/lesson-twenty-six-ipad.spec.ts
+          tests/lesson-twenty-seven-ipad.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+
+  webkit-1-27:
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: >-
+          npx playwright test
+          tests/four-lessons-ipad.spec.ts
+          tests/lesson-five-ipad.spec.ts
+          tests/lesson-six-ipad.spec.ts
+          tests/lesson-seven-ipad.spec.ts
+          tests/lesson-eight-ipad.spec.ts
+          tests/lesson-nine-ipad.spec.ts
+          tests/lesson-ten-ipad.spec.ts
+          tests/lesson-eleven-ipad.spec.ts
+          tests/lesson-twelve-ipad.spec.ts
+          tests/lesson-thirteen-ipad.spec.ts
+          tests/lesson-fourteen-ipad.spec.ts
+          tests/lesson-fifteen-ipad.spec.ts
+          tests/lesson-sixteen-ipad.spec.ts
+          tests/lesson-seventeen-ipad.spec.ts
+          tests/lesson-eighteen-ipad.spec.ts
+          tests/lesson-nineteen-ipad.spec.ts
+          tests/lesson-twenty-ipad.spec.ts
+          tests/lesson-twenty-correction.spec.ts
+          tests/lesson-twenty-one-ipad.spec.ts
+          tests/lesson-twenty-two-ipad.spec.ts
+          tests/lesson-twenty-three-ipad.spec.ts
+          tests/lesson-twenty-four-ipad.spec.ts
+          tests/lesson-twenty-five-ipad.spec.ts
+          tests/lesson-twenty-six-ipad.spec.ts
+          tests/lesson-twenty-seven-ipad.spec.ts
+          --workers=1
+
+  chromium-28-39:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: >-
+          npx playwright test
+          tests/lesson-twenty-eight-ipad.spec.ts
+          tests/lesson-twenty-nine-ipad.spec.ts
+          tests/lesson-thirty-ipad.spec.ts
+          tests/lesson-thirty-one-ipad.spec.ts
+          tests/lesson-thirty-two-ipad.spec.ts
+          tests/lesson-thirty-three-ipad.spec.ts
+          tests/lesson-thirty-four-ipad.spec.ts
+          tests/lesson-thirty-five-ipad.spec.ts
+          tests/lesson-thirty-six-ipad.spec.ts
+          tests/lesson-thirty-seven-ipad.spec.ts
+          tests/lesson-thirty-eight-full-flow.spec.ts
+          tests/lesson-thirty-eight-ipad.spec.ts
+          tests/lesson-thirty-nine-full-flow.spec.ts
+          tests/lesson-thirty-nine-ipad.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+
+  webkit-28-39:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: >-
+          npx playwright test
+          tests/lesson-twenty-eight-ipad.spec.ts
+          tests/lesson-twenty-nine-ipad.spec.ts
+          tests/lesson-thirty-ipad.spec.ts
+          tests/lesson-thirty-one-ipad.spec.ts
+          tests/lesson-thirty-two-ipad.spec.ts
+          tests/lesson-thirty-three-ipad.spec.ts
+          tests/lesson-thirty-four-ipad.spec.ts
+          tests/lesson-thirty-five-ipad.spec.ts
+          tests/lesson-thirty-six-ipad.spec.ts
+          tests/lesson-thirty-seven-ipad.spec.ts
+          tests/lesson-thirty-eight-full-flow.spec.ts
+          tests/lesson-thirty-eight-ipad.spec.ts
+          tests/lesson-thirty-nine-full-flow.spec.ts
+          tests/lesson-thirty-nine-ipad.spec.ts
+          --workers=1
