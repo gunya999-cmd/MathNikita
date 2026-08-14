@@ -20,6 +20,12 @@ const answers:Record<string,Answer>={
   'l21-challenge':{type:'input',value:'5'},
 };
 
+async function expectResponsiveMentor(page:Page){
+  const width=page.viewportSize()?.width??1280;
+  if(width<=1279)await expect(page.locator('.cat-mentor-collapsed')).toBeVisible({timeout:10_000});
+  else await expect(page.locator('.cat-mentor-panel')).toBeVisible({timeout:10_000});
+}
+
 async function openLesson(page:Page){
   await page.goto('/');
   await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(40);
@@ -32,7 +38,7 @@ async function openLesson(page:Page){
   await expect(page.getByRole('heading',{name:'Сложение натуральных чисел'}).first()).toBeVisible();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l21-mission"]')).toBeVisible();
-  await expect(page.locator('.cat-mentor-collapsed')).toBeVisible({timeout:10_000});
+  await expectResponsiveMentor(page);
 }
 
 async function answerStage(page:Page,answer:Answer){
