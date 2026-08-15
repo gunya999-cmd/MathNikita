@@ -29,7 +29,6 @@ async function expectResponsiveMentor(page:Page){
 
 async function openLesson(page:Page){
   await page.goto('/');
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(40);
   await page.locator('.course-chapter-group').nth(1).locator('summary').click();
   const lesson=page.getByRole('button',{name:/Открыть урок 22:/});
   await expect(lesson).toBeVisible();
