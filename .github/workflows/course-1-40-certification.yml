@@ -1,4 +1,4 @@
-name: Course 1-39 certification
+name: Course 1-40 certification
 
 on:
   workflow_dispatch:
@@ -12,14 +12,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: course-1-39-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: course-1-40-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build-content:
-    name: Build + content + pedagogy 1-39
+    name: Build + content + pedagogy 1-40
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 28
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,6 +36,11 @@ jobs:
           tests/extended-practice-all-lessons.spec.ts
           tests/extended-practice-count.spec.ts
           --config=playwright.desktop.config.ts --workers=1
+      - name: Complete all 20 lesson 40 practice tasks with Sulafat and persistence
+        env:
+          PRACTICE_START: 40
+          PRACTICE_END: 40
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   chromium-1-27:
     name: Chromium runtime 1-27
@@ -109,10 +114,10 @@ jobs:
           tests/lesson-twenty-seven-ipad.spec.ts
           --workers=1
 
-  chromium-28-39:
-    name: Chromium runtime 28-39
+  chromium-28-40:
+    name: Chromium runtime 28-40
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 34
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -136,12 +141,14 @@ jobs:
           tests/lesson-thirty-eight-ipad.spec.ts
           tests/lesson-thirty-nine-full-flow.spec.ts
           tests/lesson-thirty-nine-ipad.spec.ts
+          tests/lesson-forty-full-flow.spec.ts
+          tests/lesson-forty-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
-  webkit-28-39:
-    name: iPad WebKit runtime 28-39
+  webkit-28-40:
+    name: iPad WebKit runtime 28-40
     runs-on: ubuntu-latest
-    timeout-minutes: 32
+    timeout-minutes: 36
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -165,12 +172,14 @@ jobs:
           tests/lesson-thirty-eight-ipad.spec.ts
           tests/lesson-thirty-nine-full-flow.spec.ts
           tests/lesson-thirty-nine-ipad.spec.ts
+          tests/lesson-forty-full-flow.spec.ts
+          tests/lesson-forty-ipad.spec.ts
           --workers=1
 
   voice:
-    name: Sulafat voice + sequencing + interruption 1-39
+    name: Sulafat voice + sequencing + interruption 1-40
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 42
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -198,8 +207,9 @@ jobs:
           tests/lesson-thirty-seven-voice.spec.ts
           tests/lesson-thirty-eight-voice.spec.ts
           tests/lesson-thirty-nine-voice.spec.ts
+          tests/lesson-forty-voice.spec.ts
           --config=playwright.desktop.config.ts --workers=1
-      - run: npx playwright test tests/voice-navigation-interruption.spec.ts --config=playwright.config.ts --workers=1
+      - run: npx playwright test tests/voice-navigation-interruption.spec.ts tests/lesson-forty-voice.spec.ts --config=playwright.config.ts --workers=1
 
   accounts-cloud:
     name: Accounts + D1 + cloud isolation + dashboards
@@ -220,14 +230,14 @@ jobs:
       - run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   certified:
-    name: COURSE 1-39 CERTIFIED
+    name: COURSE 1-40 CERTIFIED
     if: always()
     needs:
       - build-content
       - chromium-1-27
       - webkit-1-27
-      - chromium-28-39
-      - webkit-28-39
+      - chromium-28-40
+      - webkit-28-40
       - voice
       - accounts-cloud
     runs-on: ubuntu-latest
@@ -237,8 +247,8 @@ jobs:
           BUILD_CONTENT: ${{ needs.build-content.result }}
           CHROMIUM_1_27: ${{ needs.chromium-1-27.result }}
           WEBKIT_1_27: ${{ needs.webkit-1-27.result }}
-          CHROMIUM_28_39: ${{ needs.chromium-28-39.result }}
-          WEBKIT_28_39: ${{ needs.webkit-28-39.result }}
+          CHROMIUM_28_40: ${{ needs.chromium-28-40.result }}
+          WEBKIT_28_40: ${{ needs.webkit-28-40.result }}
           VOICE: ${{ needs.voice.result }}
           ACCOUNTS: ${{ needs.accounts-cloud.result }}
         run: |
@@ -246,14 +256,14 @@ jobs:
             "build-content=$BUILD_CONTENT" \
             "chromium-1-27=$CHROMIUM_1_27" \
             "webkit-1-27=$WEBKIT_1_27" \
-            "chromium-28-39=$CHROMIUM_28_39" \
-            "webkit-28-39=$WEBKIT_28_39" \
+            "chromium-28-40=$CHROMIUM_28_40" \
+            "webkit-28-40=$WEBKIT_28_40" \
             "voice=$VOICE" \
             "accounts-cloud=$ACCOUNTS"
           test "$BUILD_CONTENT" = success
           test "$CHROMIUM_1_27" = success
           test "$WEBKIT_1_27" = success
-          test "$CHROMIUM_28_39" = success
-          test "$WEBKIT_28_39" = success
+          test "$CHROMIUM_28_40" = success
+          test "$WEBKIT_28_40" = success
           test "$VOICE" = success
           test "$ACCOUNTS" = success

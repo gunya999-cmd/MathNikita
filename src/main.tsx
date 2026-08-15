@@ -9,6 +9,7 @@ import './designRefresh.css';
 import './designRefreshPatch.css';
 import './topbarResponsive.css';
 import './controlWorkTwo.css';
+import './protractorPractice.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

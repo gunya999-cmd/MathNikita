@@ -21,9 +21,15 @@ const answers:Record<string,Answer>={
   'l22-challenge':{type:'input',value:'190'},
 };
 
+async function expectResponsiveMentor(page:Page){
+  const width=page.viewportSize()?.width??1280;
+  if(width<=1279)await expect(page.locator('.cat-mentor-collapsed')).toBeVisible({timeout:10_000});
+  else await expect(page.locator('.cat-mentor-panel')).toBeVisible({timeout:10_000});
+}
+
 async function openLesson(page:Page){
   await page.goto('/');
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(39);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(40);
   await page.locator('.course-chapter-group').nth(1).locator('summary').click();
   const lesson=page.getByRole('button',{name:/Открыть урок 22:/});
   await expect(lesson).toBeVisible();
@@ -31,7 +37,7 @@ async function openLesson(page:Page){
   await expect(page.getByRole('heading',{name:'Свойства сложения'}).first()).toBeVisible();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('[data-stage-id="l22-mission"]')).toBeVisible();
-  await expect(page.locator('.cat-mentor-collapsed,.cat-mentor-panel')).toBeVisible();
+  await expectResponsiveMentor(page);
 }
 
 async function answerStage(page:Page,answer:Answer){

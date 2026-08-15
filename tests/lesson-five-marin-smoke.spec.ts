@@ -32,26 +32,31 @@ async function expectOnDemandThenCached(page:Page,requests:NarrationRequest[],bu
   expect(requests.filter(item=>item.id===id).length).toBe(calls);
 }
 
-test('lesson 5 opening and first stage prefetch unified AI voice on iPad WebKit',async({page})=>{
+test('lesson 5 opening is on-demand and first stage auto-narrates through unified AI voice on iPad WebKit',async({page})=>{
   test.setTimeout(35_000);const requests:NarrationRequest[]=[];await installStudioMocks(page);await routeStudioStatus(page);
   await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-mock-audio'})});
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));
   const narrator=page.locator('.voice-narrator > button').first();await expect(narrator).toContainText('Слушать · AI',{timeout:5_000});
-  await expect.poll(()=>requests.some(item=>item.id==='lesson-05-opening'),{timeout:5_000}).toBe(true);const opening=requests.find(item=>item.id==='lesson-05-opening')!;expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');expect(opening.text).toContain('Десятичная запись');
-  await startLessonFromDom(page);await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});await expect.poll(()=>requests.some(item=>item.id==='lesson-05-stage-l5-story'),{timeout:5_000}).toBe(true);
+  expect(requests.filter(item=>item.id==='lesson-05-opening').length).toBe(0);
+  const openingPlays=await audioPlays(page);await domClick(narrator);
+  await expect.poll(()=>requests.filter(item=>item.id==='lesson-05-opening').length,{timeout:5_000}).toBe(1);
+  await expect.poll(()=>audioPlays(page),{timeout:5_000}).toBeGreaterThan(openingPlays);
+  const opening=requests.find(item=>item.id==='lesson-05-opening')!;expect(opening.version).toBe('ru-teacher-gemini-sulafat-v2');expect(opening.text).toContain('Десятичная запись');
+  await page.waitForTimeout(140);const openingCalls=requests.filter(item=>item.id==='lesson-05-opening').length;const replayPlays=await audioPlays(page);await domClick(narrator);await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(replayPlays);expect(requests.filter(item=>item.id==='lesson-05-opening').length).toBe(openingCalls);
+  await page.waitForTimeout(140);await startLessonFromDom(page);await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});await expect.poll(()=>requests.some(item=>item.id==='lesson-05-stage-l5-story'),{timeout:5_000}).toBe(true);
   const stage=requests.find(item=>item.id==='lesson-05-stage-l5-story')!;expect(stage.version).toBe('ru-teacher-gemini-sulafat-v2');expect(stage.text).toMatch(/[А-Яа-яЁё]/);
   const audit=await page.evaluate(()=>(window as unknown as {__lessonFiveVoiceAudit:{systemSpeech:number}}).__lessonFiveVoiceAudit);expect(audit.systemSpeech).toBe(0);
 });
 
-test('lesson 5 CatMentor warms hint only and caches manual Sulafat actions on demand',async({page})=>{
+test('lesson 5 CatMentor does not speculate and caches all manual Sulafat actions on demand',async({page})=>{
   test.setTimeout(35_000);const requests:NarrationRequest[]=[];await installStudioMocks(page);await routeStudioStatus(page);
   await page.route('**/api/narration',async route=>{requests.push(route.request().postDataJSON() as NarrationRequest);await new Promise(resolve=>setTimeout(resolve,80));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-mock-audio'})});
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});await domClick(page.getByRole('button',{name:/Открыть урок 5:/}));await startLessonFromDom(page);await expect(page.locator('[data-stage-id="l5-story"]')).toBeVisible({timeout:5_000});
+  await expect.poll(()=>requests.filter(item=>item.id==='lesson-05-stage-l5-story').length,{timeout:5_000}).toBe(1);await page.waitForTimeout(180);
   const collapsed=page.locator('.cat-mentor-collapsed');if(await collapsed.isVisible().catch(()=>false))await domClick(collapsed);
-  await expect.poll(()=>requests.filter(item=>item.id==='mentor-l5-intro-hint').length,{timeout:5_000}).toBe(1);
-  expect(requests.filter(item=>/^mentor-l5-intro-(different|example|why)$/.test(item.id)).length).toBe(0);
+  expect(requests.filter(item=>item.id.startsWith('mentor-l5-intro-')).length).toBe(0);
   const actions=page.locator('.cat-mentor-actions');
-  const hintButton=actions.getByRole('button',{name:/Подсказка/});const hintCalls=requests.filter(item=>item.id==='mentor-l5-intro-hint').length;const hintPlays=await audioPlays(page);await domClick(hintButton);await expect.poll(()=>audioPlays(page),{timeout:700}).toBeGreaterThan(hintPlays);expect(requests.filter(item=>item.id==='mentor-l5-intro-hint').length).toBe(hintCalls);
+  await expectOnDemandThenCached(page,requests,actions.getByRole('button',{name:/Подсказка/}),'mentor-l5-intro-hint');
   await expectOnDemandThenCached(page,requests,actions.getByRole('button',{name:/Объясни иначе/}),'mentor-l5-intro-different');
   await expectOnDemandThenCached(page,requests,actions.getByRole('button',{name:/Дай пример/}),'mentor-l5-intro-example');
   await expectOnDemandThenCached(page,requests,actions.getByRole('button',{name:/Почему так\?/}),'mentor-l5-intro-why');
