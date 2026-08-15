@@ -7,8 +7,9 @@ async function openLesson40(page:Page){
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
   const lesson40=page.getByRole('button',{name:/Открыть урок 40:/});
-  const lesson41=page.locator('.course-lesson-grid > button').nth(40);
-  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeDisabled();
+  const lesson41=page.getByRole('button',{name:/Открыть урок 41:/});
+  const lesson42=page.locator('.course-lesson-grid > button').nth(41);
+  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeDisabled();
   await lesson40.click();await expect(page.locator('.lesson-opening')).toContainText('Транспортир без ошибок');await page.locator('.lesson-opening-start').click();
 }
 

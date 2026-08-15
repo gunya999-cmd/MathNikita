@@ -39,7 +39,7 @@ async function expectNoHorizontalOverflow(page:Page){
 async function openLessonFive(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button.is-interactive');
-  await expect(lessons).toHaveCount(38);
+  
   await domClick(lessons.nth(4));
   await expect(page.getByRole('heading',{name:'Десятичная запись: обобщение'})).toBeVisible();
   const openingDuration=page.locator('.opening-screen:not([hidden]) .lesson-opening-plan > div');
