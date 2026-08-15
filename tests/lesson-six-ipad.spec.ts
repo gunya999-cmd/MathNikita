@@ -79,6 +79,7 @@ async function waitForMeasuredDuration(page:Page){
 async function openLessonSix(page:Page){
   console.log('[l6-ipad] open: goto');
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(38,{timeout:5_000});
 
   console.log('[l6-ipad] open: catalog lesson 6');
   const opened=await page.evaluate(()=>{
@@ -215,6 +216,7 @@ test('lesson 6 v3 preserves all 18 completed v2 tasks but relocks final completi
     localStorage.setItem('mathnikita:reflection:6','старый итоговый ответ');
   });
   await page.goto('/',{waitUntil:'domcontentloaded',timeout:10_000});
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(38,{timeout:5_000});
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:extended-practice:6:v3'))).toBe('18');
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:extended-practice:6:v2'))).toBeNull();
   expect(await page.evaluate(()=>localStorage.getItem('mathnikita:lesson-complete:6'))).toBeNull();
