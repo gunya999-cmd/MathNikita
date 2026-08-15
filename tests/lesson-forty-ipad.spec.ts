@@ -9,8 +9,9 @@ async function openLesson40(page:Page){
   const lesson40=page.getByRole('button',{name:/Открыть урок 40:/});
   const lesson41=page.getByRole('button',{name:/Открыть урок 41:/});
   const lesson42=page.getByRole('button',{name:/Открыть урок 42:/});
-  const lesson43=page.locator('.course-lesson-grid > button').nth(42);
-  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeEnabled();await expect(lesson43).toBeDisabled();
+  const lesson43=page.getByRole('button',{name:/Открыть урок 43:/});
+  const lesson44=page.locator('.course-lesson-grid > button').nth(43);
+  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeEnabled();await expect(lesson43).toBeEnabled();await expect(lesson44).toBeDisabled();
   await lesson40.click();await expect(page.locator('.lesson-opening')).toContainText('Транспортир без ошибок');await page.locator('.lesson-opening-start').click();
 }
 
