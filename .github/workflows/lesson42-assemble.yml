@@ -1,4 +1,4 @@
-name: Lesson 42 atomic assembly
+name: Lesson 42 integration
 
 on:
   push:
@@ -9,25 +9,19 @@ permissions:
   contents: write
 
 jobs:
-  assemble:
-    if: github.event.head_commit.message != 'Add lesson 42: geometric angle problems'
+  integrate:
+    if: github.event.head_commit.message != 'Integrate lesson 42 into course'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: feature/lesson-42-angle-problems
           fetch-depth: 0
-      - name: Assemble lesson 42 and release gate
+      - name: Integrate lesson 42
         run: |
           python - <<'PY'
           from pathlib import Path
-          import base64, json, re
-
-          files = json.loads('{"src/LessonFortyTwoOpening.ts": "aW1wb3J0IHR5cGUgeyBMZXNzb25PcGVuaW5nRGF0YSB9IGZyb20gJy4vTGVzc29uT3BlbmluZyc7CgpleHBvcnQgY29uc3QgbGVzc29uRm9ydHlUd29PcGVuaW5nOkxlc3Nvbk9wZW5pbmdEYXRhPXsKICBraWNrZXI6J9Cj0YDQvtC6IDQyIMK3INCz0LvQsNCy0LAgMiDCtyDCpyAxMiDCtyDQt9Cw0LrRgNC10L/Qu9C10L3QuNC1JywKICB0aXRsZTon0JPQtdC+0LzQtdGC0YDQuNGH0LXRgdC60LjQtSDQt9Cw0LTQsNGH0Lgg0L3QsCDQs9GA0LDQtNGD0YHQvdGD0Y4g0LzQtdGA0YMnLAogIGludHJvOidQotC10L/QtdGA0Ywg0L/RgNC+0YHRgtC+0LPQviDQstGL0YfQuNGC0LDQvdC40Y8g0YfQsNGB0YLQuCDQuNC3INGG0LXQu9C+0LPQviDQvdC10LTQvtGB0YLQsNGC0L7Rh9C90L4uINCSINC30LDQtNCw0YfQsNGFINC90LXRgdC60L7Qu9GM0LrQviDRg9Cz0LvQvtCyINC80L7Qs9GD0YIg0L/QtdGA0LXQutGA0YvQstCw0YLRjNGB0Y86INC+0LTQuNC9INC4INGC0L7RgiDQttC1INCy0L3Rg9GC0YDQtdC90L3QuNC5INGD0LPQvtC7INCy0YXQvtC00LjRgiDRgdGA0LDQt9GDINCyINC00LLQtSDQuNC30LLQtdGB0YLQvdGL0LUg0LPRgNCw0LTRg9GB0L3Ri9C1INC80LXRgNGLLiDQndCw0YPRh9C40LzRgdGPINGH0LjRgtCw0YLRjCDRgtCw0LrQvtC5INGH0LXRgNGC0ZHQtiwg0YHRgtGA0L7QuNGC0Ywg0LPQuNC/0L7RgtC10LfRgywg0LLRi9Cy0L7QtNC40YLRjCDRgNCw0LLQtdC90YHRgtCy0L4sINC/0YDQvtCy0LXRgNGP0YLRjCDRgNC10LfRg9C70YzRgtCw0YIg0Lgg0L/RgNC40LzQtdC90Y/RgtGMINGC0L7RgiDQttC1INC/0L7QtNGF0L7QtCDQuiDQv9GA0Y/QvNC+0LzRgyDQuCDRgNCw0LfQstGR0YDQvdGD0YLQvtC80YMg0YPQs9C70LDQvC4nLAogIHF1ZXN0aW9uOidQmtCw0Log0L3QsNC50YLQuCDQvdC10LjQt9Cy0LXRgdGC0L3Ri9C5INGD0LPQvtC7LCDQtdGB0LvQuCDQtNCy0LUg0LjQt9Cy0LXRgdGC0L3Ri9C1INCz0YDQsNC00YPRgdC90YvQtSDQvNC10YDRiyDQv9C10YDQtdC60YDRi9Cy0LDRjtGC0YHRjywg0Lgg0LrQsNC6INC00L7QutCw0LfQsNGC0YwsINGH0YLQviDQstGL0YfQuNGB0LvQtdC90LjQtSDRgdC+0LPQu9Cw0YHRg9C10YLRgdGPINGB0L4g0LLRgdC10Lwg0YfQtdGA0YLQtdC20L7QvD8nLAogIGdvYWxzOlsKICAgICfRgNC10YjQsNGC0Ywg0LPQtdC+0LzQtdGC0YDQuNGH0LXRgdC60LjQtSDQt9Cw0LTQsNGH0Lgg0L3QsCDQvdCw0YXQvtC20LTQtdC90LjQtSDQs9GA0LDQtNGD0YHQvdC+0Lkg0LzQtdGA0Ysg0YPQs9C70LAnLAogICAgJ9GA0LDRgdC/0L7Qt9C90LDQstCw0YLRjCDQv9C10YDQtdC60YDRi9Cy0LDRjtGJ0LjQtdGB0Y8g0YHQvtGB0YLQsNCy0L3Ri9C1INGD0LPQu9GLINC90LAg0L7QtNC90L7QvCDRh9C10YDRgtC10LbQtScsCiAgICAn0LjRgdC/0L7Qu9GM0LfQvtCy0LDRgtGMINC/0YDRj9C80L7QuSDRg9Cz0L7QuyA5MMKwINC4INGA0LDQt9Cy0ZHRgNC90YPRgtGL0Lkg0YPQs9C+0LsgMTgwwrAg0LrQsNC6INC40LfQstC10YHRgtC90L7QtSDRhtC10LvQvtC1JywKICAgICfQstGL0LLQvtC00LjRgtGMINGE0L7RgNC80YPQu9GDINC+0LHRidC10Lkg0YfQsNGB0YLQuDog0YHRg9C80LzQsCDQtNCy0YPRhSDQv9C10YDQtdC60YDRi9Cy0LDRjtGJ0LjRhdGB0Y8g0YPQs9C70L7QsiDQvNC40L3Rg9GBINGG0LXQu9GL0Lkg0YPQs9C+0LsnLAogICAgJ9C/0YDQvtCy0LXRgNGP0YLRjCDQvdCw0LnQtNC10L3QvdGD0Y4g0LzQtdGA0YMg0LLQvtGB0YHRgtCw0L3QvtCy0LvQtdC90LjQtdC8INCy0YHQtdGFINGH0LDRgdGC0LXQuSDRh9C10YDRgtC10LbQtScsCiAgICAn0L7RhtC10L3QuNCy0LDRgtGMINC40YHRgtC40L3QvdC+0YHRgtGMINYP0YLQstC10YDQttC00LXQvdC40Lkg0L7QsSDQvtGB0YLRgNGL0YUsINC/0YDRj9C80YvRhSwg0YLRg9C/0YvRhSDQuCDRgNCw0LfQstGR0YDQvdGD0YLRi9GFINGD0LPQu9Cw0YUnLAogICAgJ9C+0LHQvtGB0L3QvtCy0YvQstCw0YLRjCDQvtGC0LLQtdGCINC60L7QvdGC0YDQv9GA0LjQvNC10YDQvtC8LCDQtdGB0LvQuCDRg9GC0LLQtdGA0LbQtNC10L3QuNC1INC90LXQstC10YDQvdC+JywKICAgICfQvdCw0YXQvtC00LjRgtGMINC80LXQvdGM0YjQuNC5INGD0LPQvtC7INC80LXQttC00YMg0YHRgtGA0LXQu9C60LDQvNC4INGH0LDRgdC+0LIg0LIg0YbQtdC70YvQtSDRh9Cw0YHRiycsCiAgICAn0LLRi9C00LLQuNCz0LDRgtGMINCz0LjQv9C+0YLQtdC30YMg0LTQviDQstGL0YfQuNGB0LvQtdC90LjRjyDQuCDQvtCx0Y/Qt9Cw0YLQtdC70YzQvdC+INC/0YDQvtCy0LXRgNGP0YLRjCDQtdGRJywKICAgICfQt9Cw0LzQtdGH0LDRgtGMINC90LXQstC+0LfQvNC+0LbQvdGL0LUg0L7RgtCy0LXRgtGLINC/0L4g0LLQuNC00YMg0Lgg0LTQuNCw0L/QsNC30L7QvdGDINGD0LPQu9CwJywKICBdLAogIGR1cmF0aW9uTWludXRlczo1MCwKICBpY29uOifiiKAnLAp9Owo=", "src/OverlappingAngleProblemsPlayer.tsx": "aW1wb3J0IHt1c2VFZmZlY3QsdXNlTWVtbyx1c2VTdGF0ZX0gZnJvbSAncmVhY3QnOwppbXBvcnQgJy4vbGVzc29uUGxheWVyLmNzcyc7CmltcG9ydCAnLi90aGVvcnlFeHBlcmllbmNlLmNzcyc7CmltcG9ydCAnLi9hZGRpdGlvblByb3BlcnRpZXMuY3NzJzsKaW1wb3J0ICcuL2FuZ2xlTGVzc29uLmNzcyc7CmltcG9ydCAnLi9hbmdsZU1lYXN1cmVtZW50LmNzcyc7CmltcG9ydCAnLi9wcm90cmFjdG9yUHJhY3RpY2UuY3NzJzsKCnR5cGUgQWN0aXZpdHk9e2lkOnN0cmluZzt0eXBlOidjaG9pY2UnfCdpbnB1dCc7cHJvbXB0OnN0cmluZztvcHRpb25zPzpzdHJpbmdbXTthbnN3ZXI6c3RyaW5nO2V4cGxhbmF0aW9uOnN0cmluZztoaW50OnN0cmluZztwbGFjZWhvbGRlcj86c3RyaW5nfTsKdHlwZSBEaWFncmFtPSdyaWdodC1vdmVybGFwJ3wnc3RyYWlnaHQtb3ZlcmxhcCd8J2Zvcm11bGEnfCd0cnV0aCd8J2Nsb2NrJ3wnY2hlY2snfCdlcnJvcic7CnR5cGUgU3RhZ2U9e2lkOnN0cmluZzt0aXRsZTpzdHJpbmc7ZXllYnJvdzpzdHJpbmc7a2luZDonc3RvcnknfCdtb2RlbCd8J2d1aWRlZCd8J3ByYWN0aWNlJ3wncXVpeid8J2NoYWxsZW5nZSd8J3N1bW1hcnknO2JvZHk6c3RyaW5nO25vdGU/OnN0cmluZzthY3Rpdml0eT86QWN0aXZpdHk7ZGlhZ3JhbT86RGlhZ3JhbX07CnR5cGUgU2F2ZWQ9e3ZlcnNpb246MTtzdGFnZUluZGV4Om51bWJlcjtyZXNwb25zZXM6UmVjb3JkPHN0cmluZyxzdHJpbmc+O2NoZWNrZWQ6UmVjb3JkPHN0cmluZyxib29sZWFuPjtyZXN1bHRzOlJlY29yZDxzdHJpbmcsYm9vbGVhbj59Owp0eXBlIFN0YWdlSnVtcERldGFpbD17bGVzc29uTnVtYmVyPzpudW1iZXI7c3RhZ2VJbmRleD86bnVtYmVyfTsKCmNvbnN0IEtFWT0nbWF0aG5pa2l0YS1sZXNzb24tNDItcHJvZ3Jlc3MtdjEnOwpjb25zdCBub3JtYWxpemU9KHZhbHVlOnN0cmluZyk9PnZhbHVlLnRyaW0oKS50b0xvY2FsZVVwcGVyQ2FzZSgncnUtUlUnKS5yZXBsYWNlKC9ccysvZywnJykucmVwbGFjZSgvW8Kwvl0vZywnJykucmVwbGFjZSgv0IEvZywn0JUnKTsKCmV4cG9ydCBjb25zdCBsZXNzb25Gb3J0eVR3b1N0YWdlczpTdGFnZVtdPVsKICB7aWQ6J2w0Mi1taXNzaW9uJyxraW5kOidzdG9yeScsZXllYnJvdzon0KPRgNC+0LogNDIgwrcgwqcgMTIgwrcg0LfQsNC60YDQtdC/0LvQtdC90LjQtScsdGl0bGU6J9Ca0L7Qs9C00LAg0LjQt9Cy0LXRgdGC0L3Ri9C1INGD0LPQu9GLINC/0LXRgNC10LrRgNGL0LLQsNGO0YLRgdGPJyxib2R5OidQndCwINC/0YDQvtGI0LvQvtC8INGD0YDQvtC60LUg0LzRiyDQuNGB0LrQsNC70Lgg0L3QtdC40LfQstC10YHRgtC90YPRjiDRh9Cw0YHRgtGMINCy0L3Rg9GC0YDQuCDQvtC00L3QvtCz0L4g0YbQtdC70L7Qs9C+LiDQotC10L/QtdGA0Ywg0YHQuNGC0YPQsNGG0LjRjyDRgdC70L7QttC90LXQtTog0LTQstCwINC40LfQstC10YHRgtC90YvRhSDRg9Cz0LvQsCDQvNC+0LPRg9GCINC40LzQtdGC0Ywg0L7QsdGJ0YPRjiDQstC90YPRgtGA0LXQvdC90Y7RjiDRh9Cw0YHRgtGMLiD...TRUNCATED...","tests/lesson-forty-two-voice.spec.ts":"aW1wb3J0IHtleHBlY3QsdGVzdCx0eXBlIFBhZ2V9IGZyb20gJ0BwbGF5d3JpZ2h0L3Rlc3QnOwoKdHlwZSBBdWRpdEV2ZW50PXtraW5kOidyZXF1ZXN0J3wncGxheSd8J3BhdXNlJztpZDpzdHJpbmd9O3R5cGUgQXVkaXRTdGF0ZT17ZXZlbnRzOkF1ZGl0RXZlbnRbXX07CmFzeW5jIGZ1bmN0aW9uIGluc3RhbGxWb2ljZUF1ZGl0KHBhZ2U6UGFnZSl7YXdhaXQgcGFnZS5hZGRJbml0U2NyaXB0KCgpPT57Y29uc3QgYXVkaXQ6QXVkaXRTdGF0ZT17ZXZlbnRzOltdfTtjb25zdCBibG9iSWRzPW5ldyBXZWFrTWFwPEJsb2Isc3RyaW5nPigpO2NvbnN0IG5hdGl2ZUZldGNoPXdpbmRvdy5mZXRjaC5iaW5kKHdpbmRvdyk7Y29uc3QgbmF0aXZlQ3JlYXRlT2JqZWN0VVJMPVVSTC5jcmVhdGVPYmplY3RVUkwuYmluZChVUkwpO3dpbmRvdy5mZXRjaD1hc3luYyhpbnB1dDpSZXF1ZXN0SW5mb3xVUkwsaW5pdD86UmVxdWVzdEluaXQpPT57Y29uc3QgdXJsPXR5cGVvZiBpbnB1dD09PSdzdHJpbmcnP2lucHV0OmlucHV0IGluc3RhbmNlb2YgVVJMP2lucHV0LmhyZWY6aW5wdXQudXJsO2xldCBuYXJyYXRpb25JZD0nJztpZih1cmwuaW5jbHVkZXMoJy9hcGkvbmFycmF0aW9uJykpe2xldCByYXdCb2R5PWluaXQ/LmJvZHk7aWYocmF3Qm9keT09bnVsbCYmaW5wdXQgaW5zdGFuY2VvZiBSZXF1ZXN0KXt0cnl7cmF3Qm9keT1hd2FpdCBpbnB1dC5jbG9uZSgpLnRleHQoKX1jYXRjaHt9fWlmKHR5cGVvZiByYXdCb2R5PT09J3N0cmluZycpe3RyeXtuYXJyYXRpb25JZD0oSlNPTi5wYXJzZShyYXdCb2R5KSBhcyB7aWQ/OnN0cmluZ30pLmlkPz8nJ31jYXRjaHt9fWlmKG5hcnJhdGlvbklkKWF1ZGl0LmV2ZW50cy5wdXNoKHtraW5kOidyZXF1ZXN0JyxpZDpuYXJyYXRpb25JZH0pfWNvbnN0IHJlc3BvbnNlPWF3YWl0IG5hdGl2ZUZldGNoKGlucHV0LGluaXQpO2lmKCFuYXJyYXRpb25JZClyZXR1cm4gcmVzcG9uc2U7cmV0dXJuIG5ldyBQcm94eShyZXNwb25zZSx7Z2V0KHRhcmdldCxwcm9wZXJ0eSl7aWYocHJvcGVydHk9PT0nYmxvYicpcmV0dXJuIGFzeW5jKCk9Pntjb25zdCBibG9iPWF3YWl0IHRhcmdldC5ibG9iKCk7YmxvYklkcy5zZXQoYmxvYixuYXJyYXRpb25JZCk7cmV0dXJuIGJsb2J9O2NvbnN0IHZhbHVlPVJlZmxlY3QuZ2V0KHRhcmdldCxwcm9wZXJ0eSx0YXJnZXQpO3JldHVybiB0eXBlb2YgdmFsdWU9PT0nZnVuY3Rpb24nP3ZhbHVlLmJpbmQodGFyZ2V0KTp2YWx1ZX19KX07VVJMLmNyZWF0ZU9iamVjdFVSTD0oYmxvYjpCbG9ifE1lZGlhU291cmNlKT0+e2lmKGJsb2IgaW5zdGFuY2VvZiBCbG9iKXtjb25zdCBpZD1ibG9iSWRzLmdldChibG9iKTtpZihpZClyZXR1cm5gYmxvYjpsNDItdm9pY2UvJHtlbmNvZGVVUklDb21wb25lbnQoaWQpfWB9cmV0dXJuIG5hdGl2ZUNyZWF0ZU9iamVjdFVSTChibG9iKX07Y2xhc3MgTW9ja0F1ZGlve3NyYz0nJztwcmVsb2FkPScnO3BsYXliYWNrUmF0ZT0xO2N1cnJlbnRUaW1lPTA7b25lbmRlZDooKCk9PnZvaWQpfG51bGw9bnVsbDtvbmVycm9yOigoKT0+dm9pZCl8bnVsbD1udWxsO3ByaXZhdGUgdGltZXI6bnVtYmVyfG51bGw9bnVsbDtwcml2YXRlIHN0YXJ0ZWQ9ZmFsc2U7Y29uc3RydWN0b3Ioc291cmNlPScnKXt0aGlzLnNyYz1zb3VyY2V9aWQoKXtjb25zdCBwcmVmaXg9J2Jsb2I6bDQyLXZvaWNlLyc7cmV0dXJuIHRoaXMuc3JjLnN0YXJ0c1dpdGgocHJlZml4KT9kZWNvZGVVUklDb21wb25lbnQodGhpcy5zcmMuc2xpY2UocHJlZml4Lmxlbmd0aCkpOnRoaXMuc3JjfXBhdXNlKCl7aWYodGhpcy5zdGFydGVkKWF1ZGl0LmV2ZW50cy5wdXNoKHtraW5kOidwYXVzZScsaWQ6dGhpcy5pZCgpfSk7dGhpcy5zdGFydGVkPWZhbHNlO2lmKHRoaXMudGltZXIhPT1udWxsKXt3aW5kb3cuY2xlYXJUaW1lb3V0KHRoaXMudGltZXIpO3RoaXMudGltZXI9bnVsbH19cGxheSgpe3RoaXMucGF1c2UoKTt0aGlzLnN0YXJ0ZWQ9dHJ1ZTthdWRpdC5ldmVudHMucHVzaCh7a2luZDoncGxheScsaWQ6dGhpcy5pZCgpfSk7dGhpcy50aW1lcj13aW5kb3cuc2V0VGltZW91dCgoKT0+e3RoaXMudGltZXI9bnVsbDt0aGlzLnN0YXJ0ZWQ9ZmFsc2U7dGhpcy5vbmVuZGVkPy4oKX0sNTAwMCk7cmV0dXJuIFByb21pc2UucmVzb2x2ZSgpfX1PYmplY3QuZGVmaW5lUHJvcGVydHkod2luZG93LCdBdWRpbycse2NvbmZpZ3VyYWJsZTp0cnVlLHdyaXRhYmxlOnRydWUsdmFsdWU6TW9ja0F1ZGlvfSk7KHdpbmRvdyBhcyB1bmtub3duIGFzIHtfX2w0MlZvaWNlOkF1ZGl0U3RhdGV9KS5fX2w0MlZvaWNlPWF1ZGl0O2xvY2FsU3RvcmFnZS5zZXRJdGVtKCdtYXRobmlraXRhLXZvaWNlLXNldHRpbmdzLXY0JyxKU09OLnN0cmluZ2lmeSh7ZW5naW5lOidzdHVkaW8nLHJhdGU6Ljk0fSkpO2xvY2FsU3RvcmFnZS5zZXRJdGVtKCdtYXRobmlraXRhLW1lbnRvci1hdXRvLWd1aWRlJywnZmFsc2UnKX0pfQphc3luYyBmdW5jdGlvbiBldmVudHMocGFnZTpQYWdlKXtyZXR1cm4gcGFnZS5ldmFsdWF0ZSgoKT0+KHdpbmRvdyBhcyB1bmtub3duIGFzIHtfX2w0MlZvaWNlOkF1ZGl0U3RhdGV9KS5fX2w0MlZvaWNlLmV2ZW50cyl9Cgp0ZXN0KCdsZXNzb24gNDIgaW1tZWRpYXRlbHkgc3RvcHMgb2xkIFN1bGFmYXQgYW5kIG5hcnJhdGVzIHRoZSBuZXdseSBzZWxlY3RlZCBzdGFnZScsYXN5bmMoe3BhZ2V9KT0+e3Rlc3Quc2V0VGltZW91dCg5MF8wMDApO2F3YWl0IGluc3RhbGxWb2ljZUF1ZGl0KHBhZ2UpO2F3YWl0IHBhZ2Uucm91dGUoJyoqL2FwaS9uYXJyYXRpb24tc3RhdHVzJyxyb3V0ZT0+cm91dGUuZnVsZmlsbCh7c3RhdHVzOjIwMCxjb250ZW50VHlwZTonYXBwbGljYXRpb24vanNvbicsYm9keTpKU09OLnN0cmluZ2lmeSh7b2s6dHJ1ZSxzdHVkaW9Db25maWd1cmVkOnRydWUscHJvdmlkZXI6J2dlbWluaScsdm9pY2U6J1N1bGFmYXQnfSl9KSk7YXdhaXQgcGFnZS5yb3V0ZSgnKiovYXBpL25hcnJhdGlvbicscm91dGU9PnJvdXRlLmZ1bGZpbGwoe3N0YXR1czoyMDAsY29udGVudFR5cGU6J2F1ZGlvL3dhdicsYm9keTonUklGRi1sZXNzb240Mid9KSk7YXdhaXQgcGFnZS5nb3RvKCcvJyk7Y29uc3QgY2hhcHRlclR3bz1wYWdlLmxvY2F0b3IoJy5jb3Vyc2UtY2hhcHRlci1ncm91cCcpLm50aCgxKTtpZighKGF3YWl0IGNoYXB0ZXJUd28uZXZhbHVhdGUoZWxlbWVudD0+KGVsZW1lbnQgYXMgSFRNTERldGFpbHNFbGVtZW50KS5vcGVuKSkpYXdhaXQgY2hhcHRlclR3by5sb2NhdG9yKCdzdW1tYXJ5JykuY2xpY2soKTthd2FpdCBwYWdlLmdldEJ5Um9sZSgnYnV0dG9uJyx7bmFtZTov0J7RgtC60YDRi9GC0Ywg0YPRgNC+0LogNDI6L30pLmNsaWNrKCk7YXdhaXQgcGFnZS5sb2NhdG9yKCcubGVzc29uLW9wZW5pbmctc3RhcnQnKS5jbGljaygpO2NvbnN0IHN0YWdlPXBhZ2UubG9jYXRvcignLmxlc3Nvbi1ydW50aW1lOm5vdChbaGlkZGVuXSkgLmludGVyYWN0aXZlLXN0YWdlW2RhdGEtc3RhZ2UtaWRdJyk7YXdhaXQgZXhwZWN0KHN0YWdlKS50b0hhdmVBdHRyaWJ1dGUoJ2RhdGEtc3RhZ2UtaWQnLCdsNDItbWlzc2lvbicpO2NvbnN0IHByZWZpeD0nbGVzc29uLTQyLXN0YWdlLSc7YXdhaXQgZXhwZWN0LnBvbGwoYXN5bmMoKT0+e2NvbnN0IGF1ZGl0PWF3YWl0IGV2ZW50cyhwYWdlKTtyZXR1cm4gYXVkaXQuZmluZExhc3QoZXZlbnQ9PmV2ZW50LmtpbmQ9PT0ncGxheScmJmV2ZW50LmlkLnN0YXJ0c1dpdGgocHJlZml4KSk/LmlkPz8nJ30se3RpbWVvdXQ6MTJfMDAwfSkubm90LnRvQmUoJycpO2NvbnN0IGJlZm9yZT1hd2FpdCBldmVudHMocGFnZSk7Y29uc3Qgb2xkSWQ9YmVmb3JlLmZpbmRMYXN0KGV2ZW50PT5ldmVudC5raW5kPT09J3BsYXknJiZldmVudC5pZC5zdGFydHNXaXRoKHByZWZpeCkpPy5pZDtleHBlY3Qob2xkSWQpLnRvQmVUcnV0aHkoKTthd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT57KHdpbmRvdyBhcyB1bmtub3duIGFzIHtfX2w0MlZvaWNlOkF1ZGl0U3RhdGV9KS5fX2w0MlZvaWNlLmV2ZW50cz1bXX0pO2NvbnN0IG5leHQ9cGFnZS5sb2NhdG9yKCcubGVzc29uLWNvbnRyb2xzIC5wcmltYXJ5Jyk7YXdhaXQgbmV4dC5kaXNwYXRjaEV2ZW50KCdjbGljaycpO2NvbnN0IGltbWVkaWF0ZT1hd2FpdCBldmVudHMocGFnZSk7ZXhwZWN0KGltbWVkaWF0ZS5zb21lKGV2ZW50PT5ldmVudC5raW5kPT09J3BhdXNlJyYmZXZlbnQuaWQ9PT1vbGRJZCkpLnRvQmVUcnV0aHkoKTthd2FpdCBleHBlY3Qoc3RhZ2UpLnRvSGF2ZUF0dHJpYnV0ZSgnZGF0YS1zdGFnZS1pZCcsJ2w0Mi1icmlkZ2UnKTthd2FpdCBleHBlY3QucG9sbChhc3luYygpPT57Y29uc3QgYXVkaXQ9YXdhaXQgZXZlbnRzKHBhZ2UpO3JldHVybiBhdWRpdC5zb21lKGV2ZW50PT5ldmVudC5raW5kPT09J3BsYXknJiZldmVudC5pZC5zdGFydHNXaXRoKHByZWZpeCkmJmV2ZW50LmlkIT09b2xkSWQpfSx7dGltZW91dDoxMl8wMDB9KS50b0JlVHJ1dGh5KCl9KTsK"}')
-          for path, encoded in files.items():
-              target=Path(path)
-              target.parent.mkdir(parents=True,exist_ok=True)
-              target.write_bytes(base64.b64decode(encoded))
+          import re
 
           def replace_exact(path, old, new, expected=1):
               p=Path(path); s=p.read_text()
@@ -37,26 +31,62 @@ jobs:
               p.write_text(s.replace(old,new))
 
           replace_exact('src/data/yearPlan.ts','available:segment.from+offset<=41','available:segment.from+offset<=42')
-          replace_exact('src/LessonCourseShell.tsx',"import { CompositeAnglePracticePlayer } from './CompositeAnglePracticePlayer';","import { CompositeAnglePracticePlayer } from './CompositeAnglePracticePlayer';import { OverlappingAngleProblemsPlayer } from './OverlappingAngleProblemsPlayer';")
-          replace_exact('src/LessonCourseShell.tsx',"import { lessonFortyOneOpening } from './LessonFortyOneOpening';","import { lessonFortyOneOpening } from './LessonFortyOneOpening';import { lessonFortyTwoOpening } from './LessonFortyTwoOpening';")
+
+          replace_exact('src/LessonCourseShell.tsx',
+              "import { CompositeAnglePracticePlayer } from './CompositeAnglePracticePlayer';",
+              "import { CompositeAnglePracticePlayer } from './CompositeAnglePracticePlayer';import { OverlappingAngleProblemsPlayer } from './OverlappingAngleProblemsPlayer';")
+          replace_exact('src/LessonCourseShell.tsx',
+              "import { lessonFortyOneOpening } from './LessonFortyOneOpening';",
+              "import { lessonFortyOneOpening } from './LessonFortyOneOpening';import { lessonFortyTwoOpening } from './LessonFortyTwoOpening';")
           replace_exact('src/LessonCourseShell.tsx','Array.from({length:41},(_,i)=>i+1)','Array.from({length:42},(_,i)=>i+1)')
           replace_exact('src/LessonCourseShell.tsx','lessonFortyOpening,lessonFortyOneOpening];','lessonFortyOpening,lessonFortyOneOpening,lessonFortyTwoOpening];')
-          replace_exact('src/LessonCourseShell.tsx','const runtime=selectedLesson===41?<CompositeAnglePracticePlayer key="lesson-41"/>:','const runtime=selectedLesson===42?<OverlappingAngleProblemsPlayer key="lesson-42"/>:selectedLesson===41?<CompositeAnglePracticePlayer key="lesson-41"/>:')
-          replace_exact('src/CourseCatalog.tsx',"41:'Закрепление § 12: составные углы, сумма соседних частей, неизвестная градусная мера, прямой угол 90°, развёрнутый угол 180°, несколько лучей и проверка вычислений.'};","41:'Закрепление § 12: составные углы, сумма соседних частей, неизвестная градусная мера, прямой угол 90°, развёрнутый угол 180°, несколько лучей и проверка вычислений.',42:'Закрепление § 12: геометрические задачи на перекрывающиеся углы, прямой и развёрнутый угол, проверка гипотез, контрпримеры и углы между стрелками часов.'};")
-          replace_exact('src/CourseCatalog.tsx','Полностью готов 41 интерактивный урок. Остальные сохранены в точной последовательности учебного года.','Полностью готовы 42 урока. Остальные сохранены в точной последовательности учебного года.')
-          replace_exact('src/data/extendedPracticeData.ts',"import { extendedPracticeLesson41 } from './extendedPracticeLesson41';","import { extendedPracticeLesson41 } from './extendedPracticeLesson41';\nimport { extendedPracticeLesson42 } from './extendedPracticeLesson42';")
-          replace_exact('src/data/extendedPracticeData.ts','40:extendedPracticeLesson40,41:extendedPracticeLesson41};','40:extendedPracticeLesson40,41:extendedPracticeLesson41,42:extendedPracticeLesson42};')
-          replace_exact('src/data/extendedPracticeData.ts','39:[],40:[],41:[]};','39:[],40:[],41:[],42:[]};')
-          replace_exact('tests/course-plan.spec.ts',"test('catalog follows the official 175-lesson Merzlyak plan through lesson 41'","test('catalog follows the official 175-lesson Merzlyak plan through lesson 42'")
-          replace_exact('tests/course-plan.spec.ts',"await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(39);","await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(40);")
-          replace_exact('tests/course-plan.spec.ts',"await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(41);","await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(42);")
-          replace_exact('tests/course-plan.spec.ts',"  await expect(lessons.nth(41)).toContainText('Виды углов. Измерение углов');\n  await expect(lessons.nth(41)).toBeDisabled();","  await expect(lessons.nth(41)).toContainText('Виды углов. Измерение углов');\n  await expect(lessons.nth(41)).toBeEnabled();\n  await expect(lessons.nth(41)).toHaveClass(/is-interactive/);\n  await expect(lessons.nth(42)).toContainText('Виды углов. Измерение углов');\n  await expect(lessons.nth(42)).toBeDisabled();")
-          replace_exact('tests/course-plan.spec.ts',"await expect(page.getByText('Полностью готов 41 интерактивный урок.')).toBeVisible();","await expect(page.getByText('Полностью готовы 42 урока.')).toBeVisible();")
+          replace_exact('src/LessonCourseShell.tsx',
+              'const runtime=selectedLesson===41?<CompositeAnglePracticePlayer key="lesson-41"/>:',
+              'const runtime=selectedLesson===42?<OverlappingAngleProblemsPlayer key="lesson-42"/>:selectedLesson===41?<CompositeAnglePracticePlayer key="lesson-41"/>:')
+
+          replace_exact('src/CourseCatalog.tsx',
+              "41:'Закрепление § 12: составные углы, сумма соседних частей, неизвестная градусная мера, прямой угол 90°, развёрнутый угол 180°, несколько лучей и проверка вычислений.'};",
+              "41:'Закрепление § 12: составные углы, сумма соседних частей, неизвестная градусная мера, прямой угол 90°, развёрнутый угол 180°, несколько лучей и проверка вычислений.',42:'Закрепление § 12: геометрические задачи на перекрывающиеся углы, прямой и развёрнутый угол, проверка гипотез, контрпримеры и углы между стрелками часов.'};")
+          replace_exact('src/CourseCatalog.tsx',
+              'Полностью готов 41 интерактивный урок. Остальные сохранены в точной последовательности учебного года.',
+              'Полностью готовы 42 урока. Остальные сохранены в точной последовательности учебного года.')
+
+          replace_exact('src/data/extendedPracticeData.ts',
+              "import { extendedPracticeLesson41 } from './extendedPracticeLesson41';",
+              "import { extendedPracticeLesson41 } from './extendedPracticeLesson41';\nimport { extendedPracticeLesson42 } from './extendedPracticeLesson42';")
+          replace_exact('src/data/extendedPracticeData.ts',
+              '40:extendedPracticeLesson40,41:extendedPracticeLesson41};',
+              '40:extendedPracticeLesson40,41:extendedPracticeLesson41,42:extendedPracticeLesson42};')
+          replace_exact('src/data/extendedPracticeData.ts',
+              '39:[],40:[],41:[]};',
+              '39:[],40:[],41:[],42:[]};')
+
+          replace_exact('tests/course-plan.spec.ts',
+              "test('catalog follows the official 175-lesson Merzlyak plan through lesson 41'",
+              "test('catalog follows the official 175-lesson Merzlyak plan through lesson 42'")
+          replace_exact('tests/course-plan.spec.ts',
+              "await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(39);",
+              "await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(40);")
+          replace_exact('tests/course-plan.spec.ts',
+              "await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(41);",
+              "await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(42);")
+          replace_exact('tests/course-plan.spec.ts',
+              "  await expect(lessons.nth(41)).toContainText('Виды углов. Измерение углов');\n  await expect(lessons.nth(41)).toBeDisabled();",
+              "  await expect(lessons.nth(41)).toContainText('Виды углов. Измерение углов');\n  await expect(lessons.nth(41)).toBeEnabled();\n  await expect(lessons.nth(41)).toHaveClass(/is-interactive/);\n  await expect(lessons.nth(42)).toContainText('Виды углов. Измерение углов');\n  await expect(lessons.nth(42)).toBeDisabled();")
+          replace_exact('tests/course-plan.spec.ts',
+              "await expect(page.getByText('Полностью готов 41 интерактивный урок.')).toBeVisible();",
+              "await expect(page.getByText('Полностью готовы 42 урока.')).toBeVisible();")
+
           replace_exact('tests/extended-practice-all-lessons.spec.ts','40:36,41:36};','40:36,41:36,42:36};')
           replace_exact('tests/extended-practice-count.spec.ts','lessonNumber<=41','lessonNumber<=42')
           replace_exact('tests/pedagogical-practice-quality.spec.ts','lessonNumber<=41','lessonNumber<=42')
-          replace_exact('tests/lesson-forty-ipad.spec.ts',"  const lesson42=page.locator('.course-lesson-grid > button').nth(41);\n  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeDisabled();","  const lesson42=page.getByRole('button',{name:/Открыть урок 42:/});\n  const lesson43=page.locator('.course-lesson-grid > button').nth(42);\n  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeEnabled();await expect(lesson43).toBeDisabled();")
-          replace_exact('tests/lesson-forty-one-ipad.spec.ts',"async function openLesson41(page:Page){await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();const lesson41=page.getByRole('button',{name:/Открыть урок 41:/});const lesson42=page.locator('.course-lesson-grid > button').nth(41);await expect(lesson41).toBeVisible();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeDisabled();await lesson41.click();","async function openLesson41(page:Page){await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();const lesson41=page.getByRole('button',{name:/Открыть урок 41:/});const lesson42=page.getByRole('button',{name:/Открыть урок 42:/});const lesson43=page.locator('.course-lesson-grid > button').nth(42);await expect(lesson41).toBeVisible();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeEnabled();await expect(lesson43).toBeDisabled();await lesson41.click();")
+
+          replace_exact('tests/lesson-forty-ipad.spec.ts',
+              "  const lesson42=page.locator('.course-lesson-grid > button').nth(41);\n  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeDisabled();",
+              "  const lesson42=page.getByRole('button',{name:/Открыть урок 42:/});\n  const lesson43=page.locator('.course-lesson-grid > button').nth(42);\n  await expect(lesson40).toBeVisible();await expect(lesson40).toBeEnabled();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeEnabled();await expect(lesson43).toBeDisabled();")
+          replace_exact('tests/lesson-forty-one-ipad.spec.ts',
+              "async function openLesson41(page:Page){await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();const lesson41=page.getByRole('button',{name:/Открыть урок 41:/});const lesson42=page.locator('.course-lesson-grid > button').nth(41);await expect(lesson41).toBeVisible();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeDisabled();await lesson41.click();",
+              "async function openLesson41(page:Page){await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();const lesson41=page.getByRole('button',{name:/Открыть урок 41:/});const lesson42=page.getByRole('button',{name:/Открыть урок 42:/});const lesson43=page.locator('.course-lesson-grid > button').nth(42);await expect(lesson41).toBeVisible();await expect(lesson41).toBeEnabled();await expect(lesson42).toBeEnabled();await expect(lesson43).toBeDisabled();await lesson41.click();")
 
           old=Path('.github/workflows/course-1-41-certification.yml')
           new=Path('.github/workflows/course-1-42-certification.yml')
@@ -74,10 +104,15 @@ jobs:
           marker='          tests/lesson-forty-one-voice.spec.ts\n          --config=playwright.desktop.config.ts --workers=1'
           if wf.count(marker)!=1: raise SystemExit(f'workflow voice marker count={wf.count(marker)}')
           wf=wf.replace(marker,'          tests/lesson-forty-one-voice.spec.ts\n          tests/lesson-forty-two-voice.spec.ts\n          --config=playwright.desktop.config.ts --workers=1')
-          wf=wf.replace('tests/voice-navigation-interruption.spec.ts tests/lesson-forty-one-voice.spec.ts --config=playwright.config.ts','tests/voice-navigation-interruption.spec.ts tests/lesson-forty-two-voice.spec.ts --config=playwright.config.ts')
+          if 'tests/voice-navigation-interruption.spec.ts tests/lesson-forty-one-voice.spec.ts --config=playwright.config.ts' not in wf:
+              raise SystemExit('workflow WebKit voice marker missing')
+          wf=wf.replace('tests/voice-navigation-interruption.spec.ts tests/lesson-forty-one-voice.spec.ts --config=playwright.config.ts',
+                        'tests/voice-navigation-interruption.spec.ts tests/lesson-forty-two-voice.spec.ts --config=playwright.config.ts')
           wf=wf.replace('timeout-minutes: 30','timeout-minutes: 32',1)
           wf=wf.replace('timeout-minutes: 36','timeout-minutes: 38',1)
-          wf=wf.replace('timeout-minutes: 38','timeout-minutes: 40',1)
+          webkit_marker='  webkit-28-42:\n    name: iPad WebKit runtime 28-42\n    runs-on: ubuntu-latest\n    timeout-minutes: 38'
+          if webkit_marker not in wf: raise SystemExit('webkit timeout marker missing')
+          wf=wf.replace(webkit_marker,webkit_marker.replace('timeout-minutes: 38','timeout-minutes: 40'),1)
           wf=wf.replace('timeout-minutes: 44','timeout-minutes: 46',1)
           new.write_text(wf)
           old.unlink()
@@ -86,20 +121,21 @@ jobs:
           if len(re.findall(r"^\s*\{id:'l42-",p,re.M))!=36: raise SystemExit('lesson42 must have exactly 36 stages')
           e=Path('src/data/extendedPracticeLesson42.ts').read_text()
           if len(set(re.findall(r"l42-extra-\d{2}",e)))!=20: raise SystemExit('lesson42 mandatory practice must have exactly 20 unique ids')
+          for path in ['tests/lesson-forty-two-full-flow.spec.ts','tests/lesson-forty-two-ipad.spec.ts','tests/lesson-forty-two-voice.spec.ts']:
+              if not Path(path).exists(): raise SystemExit(f'missing {path}')
           if 'lessonFortyTwoOpening' not in Path('src/LessonCourseShell.tsx').read_text(): raise SystemExit('opening integration missing')
           if 'selectedLesson===42?<OverlappingAngleProblemsPlayer' not in Path('src/LessonCourseShell.tsx').read_text(): raise SystemExit('runtime integration missing')
           if 'available:segment.from+offset<=42' not in Path('src/data/yearPlan.ts').read_text(): raise SystemExit('lesson42 availability missing')
           if Path('.github/workflows/course-1-41-certification.yml').exists(): raise SystemExit('old certification workflow still exists')
           if not Path('.github/workflows/course-1-42-certification.yml').exists(): raise SystemExit('new certification workflow missing')
-
-          print('Lesson 42 assembled:', len(re.findall(r"^\s*\{id:'l42-",p,re.M)), 'stages,', len(set(re.findall(r"l42-extra-\d{2}",e))), 'practice tasks')
+          print('Lesson 42 integration complete: 36 stages, 20 mandatory tasks, Course 1-42')
 
           PY
-      - name: Commit atomic lesson 42 assembly
+      - name: Commit integrated course
         run: |
           rm .github/workflows/lesson42-assemble.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Add lesson 42: geometric angle problems"
+          git commit -m "Integrate lesson 42 into course"
           git push origin HEAD:feature/lesson-42-angle-problems
