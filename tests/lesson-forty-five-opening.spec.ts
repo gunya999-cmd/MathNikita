@@ -1,0 +1,3 @@
+import {expect,test} from '@playwright/test';
+
+test('lesson 45 opening presents §13 consolidation and construction goals',async({page})=>{await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();await page.getByRole('button',{name:/Открыть урок 45:/}).click();const opening=page.locator('.lesson-opening');await expect(opening).toContainText('§ 13');await expect(opening).toContainText('урок 2 из 2');await expect(opening).toContainText('проводим диагонали');await expect(opening).toContainText('n − 3');await expect(opening).toContainText('n(n − 3) : 2');await expect(page.locator('.lesson-opening-start')).toBeEnabled()});
