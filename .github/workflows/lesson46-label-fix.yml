@@ -1,0 +1,43 @@
+name: Lesson 46 SVG label alignment
+on:
+  push:
+    branches: [agent/lesson-46-triangle-types]
+permissions:
+  contents: write
+jobs:
+  align:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lesson-46-triangle-types
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Align vertex labels and construction marks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/TriangleTypesPlayer.tsx'); t=p.read_text()
+          old="if(kind==='perimeter')return <div className=\"triangle-lesson-diagram\" data-diagram=\"perimeter\"><div className=\"triangle-passport\"><span>P=a+b+c</span><span>равнобедренный: P=2a+b</span></div></div>;\n  return <div className=\"triangle-lesson-diagram\" data-diagram={kind} data-angle-type={config.angle} data-side-type={config.side}><svg viewBox=\"0 0 600 290\" role=\"img\" aria-label={`Треугольник: ${config.angle}, ${config.side}`}><polygon className=\"triangle-shape\" points={config.points}/><text className=\"triangle-label\" x=\"55\" y=\"265\">A</text><text className=\"triangle-label\" x=\"285\" y=\"45\">B</text><text className=\"triangle-label\" x=\"535\" y=\"260\">C</text>{kind==='right'?<path className=\"right-angle-marker\" data-right-angle-marker=\"true\" d=\"M105 215 L130 215 L130 240\"/>:null}"
+          new="if(kind==='perimeter')return <div className=\"triangle-lesson-diagram\" data-diagram=\"perimeter\"><div className=\"triangle-passport\"><span>P=a+b+c</span><span>равнобедренный: P=2a+b</span></div></div>;\n  const labels=kind==='right'?{a:[92,265],b:[92,62],c:[300,265]}:kind==='equilateral'?{a:[145,270],b:[292,18],c:[440,270]}:kind==='obtuse'?{a:[30,265],b:[220,60],c:[535,265]}:{a:[55,265],b:[275,45],c:[525,265]};\n  return <div className=\"triangle-lesson-diagram\" data-diagram={kind} data-angle-type={config.angle} data-side-type={config.side}><svg viewBox=\"0 0 600 290\" role=\"img\" aria-label={`Треугольник: ${config.angle}, ${config.side}`}><polygon className=\"triangle-shape\" points={config.points}/><text className=\"triangle-label\" x={labels.a[0]} y={labels.a[1]}>A</text><text className=\"triangle-label\" x={labels.b[0]} y={labels.b[1]}>B</text><text className=\"triangle-label\" x={labels.c[0]} y={labels.c[1]}>C</text>{kind==='right'?<path className=\"right-angle-marker\" data-right-angle-marker=\"true\" d=\"M120 215 L145 215 L145 240\"/>:null}"
+          if old not in t and new not in t: raise SystemExit('label block not found')
+          t=t.replace(old,new)
+          t=t.replace('d=\"M180 135 L193 151\"/><path className=\"triangle-side-mark\" data-equal-side-mark=\"2\" d=\"M407 151 L420 135\"/><path className=\"triangle-side-mark\" data-equal-side-mark=\"3\" d=\"M290 224 L290 246\"/>','d=\"M220 137 L238 147\"/><path className=\"triangle-side-mark\" data-equal-side-mark=\"2\" d=\"M362 147 L380 137\"/><path className=\"triangle-side-mark\" data-equal-side-mark=\"3\" d=\"M300 234 L300 256\"/>')
+          p.write_text(t)
+          PY
+      - name: Verify
+        run: |
+          npm install
+          npm run build
+          npx playwright install --with-deps chromium
+          npx playwright test tests/lesson-forty-six-full-flow.spec.ts tests/lesson-forty-six-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/TriangleTypesPlayer.tsx
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Align lesson 46 SVG labels and marks'
+          git push origin HEAD:agent/lesson-46-triangle-types
