@@ -19,7 +19,7 @@ const pointById=new Map(points.map(point=>[point.id,point]));
 const normalize=(value:string)=>value.trim().toLocaleUpperCase('ru-RU').replace(/\s+/g,'').replace(/Ё/g,'Е');
 const orientation=(a:Point,b:Point,c:Point)=>(b.x-a.x)*(c.y-a.y)-(b.y-a.y)*(c.x-a.x);
 function segmentsCross(first:Segment,second:Segment){const o1=orientation(first.a,first.b,second.a);const o2=orientation(first.a,first.b,second.b);const o3=orientation(second.a,second.b,first.a);const o4=orientation(second.a,second.b,first.b);return o1*o2<0&&o3*o4<0}
-function buildSegments(order:string[]){if(order.length<2)return[];const segments:Segment[]=[];for(let index=0;index<order.length-1;index+=1){const a=pointById.get(order[index]);const b=pointById.get(order[index+1]);if(a&&b)segments.push({a,b})}if(order.length===points.length){const a=pointById.get(order.at(-1)!);const b=pointById.get(order[0]);if(a&&b)segments.push({a,b})}return segments}
+function buildSegments(order:string[]){if(order.length<2)return[];const segments:Segment[]=[];for(let index=0;index<order.length-1;index+=1){const a=pointById.get(order[index]);const b=pointById.get(order[index+1]);if(a&&b)segments.push({a,b})}if(order.length===points.length){const a=pointById.get(order[order.length-1]);const b=pointById.get(order[0]);if(a&&b)segments.push({a,b})}return segments}
 function hasSelfIntersection(order:string[]){const segments=buildSegments(order);for(let i=0;i<segments.length;i+=1){for(let j=i+1;j<segments.length;j+=1){const adjacent=j===i+1||(i===0&&j===segments.length-1);if(adjacent)continue;if(segmentsCross(segments[i],segments[j]))return true}}return false}
 
 export const lessonFortyFiveStages:Stage[]=[
