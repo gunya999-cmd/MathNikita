@@ -62,6 +62,9 @@ Do not expose API keys in chat or frontend.
 
 ## Recent completed work
 
+- Lessons 1–47 of the Merzlyak grade-5 course are production-ready; lesson 48 remains locked.
+- Lesson 47 is the § 14 consolidation lesson: 36 stages, 23 interactive checks, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad and full-flow certification tests.
+- The next course item is lesson 48, «Построение треугольников».
 - Fixed Cloudflare API routing with `run_worker_first = ["/api/*"]` in Wrangler config.
 - Added Gemini provider before OpenAI fallback.
 - Improved tutor prompt so the student question has priority over diagnostic weak topics.

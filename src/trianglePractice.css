@@ -1,0 +1,22 @@
+.triangle-practice-player{--triangle-practice-accent:#315f9c}
+.triangle-practice-diagram{margin:18px 0;padding:16px;border:1px solid rgba(61,91,128,.18);border-radius:20px;background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(235,244,255,.72));color:#203554}
+.triangle-practice-diagram svg{display:block;width:100%;max-width:650px;height:auto;margin:0 auto;overflow:visible}
+.triangle-practice-shape{fill:rgba(66,139,225,.12);stroke:currentColor;stroke-width:5;stroke-linejoin:round}
+.triangle-practice-label,.triangle-practice-value{font-weight:900;fill:currentColor}
+.triangle-practice-label{font-size:19px}.triangle-practice-value{font-size:17px}
+.triangle-practice-mark{fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round}
+.triangle-practice-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.triangle-practice-steps span{display:grid;place-items:center;min-height:68px;padding:11px;border-radius:14px;background:#fff;border:1px solid rgba(49,95,156,.15);text-align:center;font-weight:850;line-height:1.35}
+.triangle-practice-steps b{display:inline-grid;place-items:center;width:25px;height:25px;margin-right:6px;border-radius:50%;background:#315f9c;color:#fff;font-size:.78rem}
+.triangle-practice-matrix{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.triangle-practice-matrix span{display:grid;place-items:center;min-height:66px;padding:9px;border-radius:13px;background:#fff;text-align:center;font-size:.82rem;font-weight:800;line-height:1.3}
+.triangle-practice-matrix span[data-possible="false"]{background:#f5f6f8;color:#7c8798;text-decoration:line-through}
+.triangle-practice-measures,.triangle-practice-formulas{display:grid;gap:10px;max-width:680px;margin:0 auto}
+.triangle-practice-measures>div,.triangle-practice-formulas>span{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 15px;border-radius:13px;background:#fff;border:1px solid rgba(49,95,156,.12);font-weight:800}
+.triangle-practice-measures strong,.triangle-practice-formulas b{color:#234f88;font-size:1.05rem}
+.triangle-practice-formulas>span{justify-content:flex-start;line-height:1.4}
+.triangle-practice-equation{font-size:clamp(1rem,2.4vw,1.3rem)}
+.triangle-practice-verdict{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;font-size:1.06rem;font-weight:900}
+.triangle-practice-verdict span{padding:10px 14px;border-radius:999px;background:#fff}
+.triangle-practice-verdict b{color:#a53e32}
+@media(max-width:720px){.triangle-practice-diagram{padding:11px}.triangle-practice-steps,.triangle-practice-matrix{grid-template-columns:1fr}.triangle-practice-diagram svg{max-height:285px}.triangle-practice-measures>div{align-items:flex-start;flex-direction:column;gap:5px}}
