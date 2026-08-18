@@ -62,11 +62,12 @@ Do not expose API keys in chat or frontend.
 
 ## Recent completed work
 
-- Lessons 1–49 of the Merzlyak grade-5 course are production-ready; lesson 50 remains locked.
+- Lessons 1–50 of the Merzlyak grade-5 course are production-ready; lesson 51 remains locked.
 - Lesson 47 is the § 14 consolidation lesson: 36 stages, 23 interactive checks, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad and full-flow certification tests.
 - Lesson 48, «Построение треугольников», follows examples 1–2 of § 14 and tasks № 350, 352 and 357: 36 stages, 23 interactive checks, exact SAS/ASA SVG constructions, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
 - Lesson 49, «Прямоугольник. Ось симметрии фигуры», opens § 15 with tasks № 359–365: 36 stages, 23 interactive checks, exact rectangle/square/symmetry SVG models, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
-- The next locked course item is lesson 50, the second lesson on «Прямоугольник. Ось симметрии фигуры».
+- Lesson 50 continues § 15 with textbook tasks № 366–374 and workbook tasks № 158–160, 164: 36 stages, 23 interactive checks, exact figures 137–139 and 220, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
+- The next locked course item is lesson 51, the final lesson on «Прямоугольник. Ось симметрии фигуры».
 - Fixed Cloudflare API routing with `run_worker_first = ["/api/*"]` in Wrangler config.
 - Added Gemini provider before OpenAI fallback.
 - Improved tutor prompt so the student question has priority over diagnostic weak topics.
