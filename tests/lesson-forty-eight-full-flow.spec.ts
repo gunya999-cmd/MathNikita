@@ -1,0 +1,15 @@
+import {expect,test,type Page} from '@playwright/test';
+
+const answers:Record<string,string>={
+  'l48-sas-order-gate':'Угол → две длины → соединить концы','l48-tool-gate':'Линейка и транспортир','l48-protractor-scale-gate':'По шкале с нулём на исходном луче','l48-sas-length-step':'3','l48-sas-connect-step':'Соединить B и C','l48-sas-data-gate':'Две стороны и угол между ними',
+  'l48-source350-1-classify':'Тупоугольный разносторонний','l48-source350-2':'Тупоугольный разносторонний','l48-source350-3':'Остроугольный равнобедренный','l48-asa-base-gate':'2','l48-asa-angle-a':'40','l48-asa-angle-b':'110','l48-third-angle-gate':'30','l48-same-side-gate':'По одну сторону от прямой AB','l48-feasibility-gate':'10',
+  'l48-source350-4':'80','l48-source350-5':'Тупоугольный разносторонний','l48-source350-6':'Прямоугольный разносторонний','l48-source350-7':'Прямоугольный равнобедренный','l48-source350-8':'Остроугольный равносторонний','l48-method-choice':'По двум сторонам и углу между ними','l48-source352':'Нет, точка может лежать внутри стороны','l48-final-gate':'110'
+};
+
+async function openLesson48(page:Page){await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();await page.getByRole('button',{name:/Открыть урок 48:/}).click();await expect(page.locator('.lesson-opening')).toContainText('Построение треугольников');await page.locator('.lesson-opening-start').click()}
+
+test('lesson 48 completes all 36 construction stages and reaches mandatory practice',async({page})=>{
+  test.setTimeout(120_000);await page.addInitScript(()=>localStorage.setItem('mathnikita-mentor-auto-guide','false'));await openLesson48(page);const visited:string[]=[];
+  for(let index=0;index<36;index+=1){const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');await expect(stage).toBeVisible();const id=await stage.getAttribute('data-stage-id');expect(id).toBeTruthy();visited.push(id!);await expect(stage.locator('.lesson-controls')).toContainText(`Этап ${index+1} из 36`);const answer=answers[id!];if(answer){if(await stage.locator('.choice-grid').count())await stage.getByRole('button',{name:answer,exact:true}).click();else await stage.locator('.inline-answer input').fill(answer);await stage.locator('.check-button').click();await expect(stage.locator('.instant-feedback.good')).toBeVisible()}if(index<35)await stage.locator('.lesson-controls .primary').click()}
+  expect(new Set(visited).size).toBe(36);expect(visited[0]).toBe('l48-mission');expect(visited[35]).toBe('l48-summary');expect(Object.keys(answers)).toHaveLength(23);await expect(page.locator('.lesson-reflection')).toBeVisible();await expect(page.locator('.extended-practice[data-practice-task="l48-extra-01"]')).toBeVisible();const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-lesson-48-progress-v1')??'null'));expect(saved?.stageIndex).toBe(35);expect(saved?.results?.['l48-p23']).toBe(true)
+});
