@@ -1,13 +1,13 @@
 import { expect,test } from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 50',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 52',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(48);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(50);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(50);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(52);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(2);
   await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(28)).toContainText('Вычитание натуральных чисел');
@@ -15,7 +15,7 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 50',a
   await expect(lessons.nth(32)).toContainText('Контрольная работа № 2');
   await expect(lessons.nth(32)).toBeEnabled();
   await expect(lessons.nth(32)).toHaveClass(/is-control-ready/);
-  for(let index=33;index<=49;index+=1){await expect(lessons.nth(index)).toBeEnabled();await expect(lessons.nth(index)).toHaveClass(/is-interactive/)}
+  for(let index=33;index<=50;index+=1){await expect(lessons.nth(index)).toBeEnabled();await expect(lessons.nth(index)).toHaveClass(/is-interactive/)}
   await expect(lessons.nth(38)).toContainText('Виды углов. Измерение углов');
   await expect(lessons.nth(42)).toContainText('Виды углов. Измерение углов');
   await expect(lessons.nth(43)).toContainText('Многоугольники. Равные фигуры');
@@ -32,9 +32,13 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 50',a
   await expect(lessons.nth(49)).toContainText('Прямоугольник. Ось симметрии фигуры');
   await expect(lessons.nth(49)).toBeEnabled();
   await expect(lessons.nth(50)).toContainText('Прямоугольник. Ось симметрии фигуры');
-  await expect(lessons.nth(50)).toBeDisabled();
+  await expect(lessons.nth(50)).toBeEnabled();
+  await expect(lessons.nth(51)).toContainText('Повторение и систематизация учебного материала');
+  await expect(lessons.nth(51)).toBeEnabled();
+  await expect(lessons.nth(52)).toContainText('Контрольная работа № 3');
+  await expect(lessons.nth(52)).toBeDisabled();
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 50 уроков.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 52 урока.')).toBeVisible();
 });
