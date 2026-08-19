@@ -8,7 +8,7 @@ async function openLesson51(page:Page){
   if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
   const lesson51=page.getByRole('button',{name:/Открыть урок 51:/});
   const lesson52=page.locator('.course-lesson-grid > button').nth(51);
-  await expect(lesson51).toBeEnabled();await expect(lesson52).toBeDisabled();
+  await expect(lesson51).toBeEnabled();await expect(lesson52).toBeEnabled();
   await lesson51.click();await page.locator('.lesson-opening-start').click();
 }
 async function jump(page:Page,index:number,id:string){await page.evaluate(({index})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:51,stageIndex:index}})),{index});await expect(page.locator(`[data-stage-id="${id}"]`)).toBeVisible()}

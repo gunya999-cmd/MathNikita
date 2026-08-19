@@ -1,13 +1,13 @@
 import { expect,test } from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 51',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 52',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(49);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(51);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(50);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(52);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(2);
   await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(28)).toContainText('Вычитание натуральных чисел');
@@ -34,9 +34,11 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 51',a
   await expect(lessons.nth(50)).toContainText('Прямоугольник. Ось симметрии фигуры');
   await expect(lessons.nth(50)).toBeEnabled();
   await expect(lessons.nth(51)).toContainText('Повторение и систематизация учебного материала');
-  await expect(lessons.nth(51)).toBeDisabled();
+  await expect(lessons.nth(51)).toBeEnabled();
+  await expect(lessons.nth(52)).toContainText('Контрольная работа № 3');
+  await expect(lessons.nth(52)).toBeDisabled();
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готов 51 урок.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 52 урока.')).toBeVisible();
 });

@@ -13,7 +13,7 @@ async function openLesson49(page:Page){
   await expect(lesson49).toBeEnabled();
   await expect(lesson50).toBeEnabled();
   await expect(lesson51).toBeEnabled();
-  await expect(lesson52).toBeDisabled();
+  await expect(lesson52).toBeEnabled();
   await lesson49.click();
   await page.locator('.lesson-opening-start').click();
 }

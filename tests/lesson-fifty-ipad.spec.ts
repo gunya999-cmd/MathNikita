@@ -11,7 +11,7 @@ async function openLesson50(page:Page){
   const lesson52=page.locator('.course-lesson-grid > button').nth(51);
   await expect(lesson50).toBeEnabled();
   await expect(lesson51).toBeEnabled();
-  await expect(lesson52).toBeDisabled();
+  await expect(lesson52).toBeEnabled();
   await lesson50.click();
   await page.locator('.lesson-opening-start').click();
 }
