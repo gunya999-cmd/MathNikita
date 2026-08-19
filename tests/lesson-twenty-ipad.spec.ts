@@ -4,7 +4,7 @@ async function openControl(page:Page){
   await page.goto('/');
   const lessons=page.locator('.course-lesson-grid > button');
   
-  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(2);
+  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(3);
   
   await expect(lessons.nth(19)).toBeEnabled();
   await lessons.nth(19).click();
