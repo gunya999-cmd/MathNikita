@@ -9,9 +9,11 @@ async function openLesson49(page:Page){
   const lesson49=page.getByRole('button',{name:/Открыть урок 49:/});
   const lesson50=page.locator('.course-lesson-grid > button').nth(49);
   const lesson51=page.locator('.course-lesson-grid > button').nth(50);
+  const lesson52=page.locator('.course-lesson-grid > button').nth(51);
   await expect(lesson49).toBeEnabled();
   await expect(lesson50).toBeEnabled();
-  await expect(lesson51).toBeDisabled();
+  await expect(lesson51).toBeEnabled();
+  await expect(lesson52).toBeDisabled();
   await lesson49.click();
   await page.locator('.lesson-opening-start').click();
 }

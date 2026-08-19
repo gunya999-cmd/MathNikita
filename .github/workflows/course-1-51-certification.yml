@@ -1,4 +1,4 @@
-name: Course 1-50 certification
+name: Course 1-51 certification
 
 on:
   workflow_dispatch:
@@ -12,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: course-1-50-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: course-1-51-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build-content:
-    name: Build + content + pedagogy 1-50
+    name: Build + content + pedagogy 1-51
     runs-on: ubuntu-latest
     timeout-minutes: 38
     steps:
@@ -36,10 +36,10 @@ jobs:
           tests/extended-practice-all-lessons.spec.ts
           tests/extended-practice-count.spec.ts
           --config=playwright.desktop.config.ts --workers=1
-      - name: Complete all 20 lesson 50 practice tasks with Sulafat and persistence
+      - name: Complete all 20 lesson 51 practice tasks with Sulafat and persistence
         env:
-          PRACTICE_START: 50
-          PRACTICE_END: 50
+          PRACTICE_START: 51
+          PRACTICE_END: 51
         run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   chromium-1-27:
@@ -114,8 +114,8 @@ jobs:
           tests/lesson-twenty-seven-ipad.spec.ts
           --workers=1
 
-  chromium-28-50:
-    name: Chromium runtime 28-50
+  chromium-28-51:
+    name: Chromium runtime 28-51
     runs-on: ubuntu-latest
     timeout-minutes: 46
     steps:
@@ -163,10 +163,12 @@ jobs:
           tests/lesson-forty-nine-ipad.spec.ts
           tests/lesson-fifty-full-flow.spec.ts
           tests/lesson-fifty-ipad.spec.ts
+          tests/lesson-fifty-one-full-flow.spec.ts
+          tests/lesson-fifty-one-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
-  webkit-28-50:
-    name: iPad WebKit runtime 28-50
+  webkit-28-51:
+    name: iPad WebKit runtime 28-51
     runs-on: ubuntu-latest
     timeout-minutes: 48
     steps:
@@ -214,10 +216,12 @@ jobs:
           tests/lesson-forty-nine-ipad.spec.ts
           tests/lesson-fifty-full-flow.spec.ts
           tests/lesson-fifty-ipad.spec.ts
+          tests/lesson-fifty-one-full-flow.spec.ts
+          tests/lesson-fifty-one-ipad.spec.ts
           --workers=1
 
   voice:
-    name: Sulafat voice + sequencing + interruption 1-50
+    name: Sulafat voice + sequencing + interruption 1-51
     runs-on: ubuntu-latest
     timeout-minutes: 54
     steps:
@@ -258,8 +262,9 @@ jobs:
           tests/lesson-forty-eight-voice.spec.ts
           tests/lesson-forty-nine-voice.spec.ts
           tests/lesson-fifty-voice.spec.ts
+          tests/lesson-fifty-one-voice.spec.ts
           --config=playwright.desktop.config.ts --workers=1
-      - run: npx playwright test tests/voice-navigation-interruption.spec.ts tests/lesson-forty-six-voice.spec.ts tests/lesson-forty-seven-voice.spec.ts tests/lesson-forty-eight-voice.spec.ts tests/lesson-forty-nine-voice.spec.ts tests/lesson-fifty-voice.spec.ts --config=playwright.config.ts --workers=1
+      - run: npx playwright test tests/voice-navigation-interruption.spec.ts tests/lesson-forty-six-voice.spec.ts tests/lesson-forty-seven-voice.spec.ts tests/lesson-forty-eight-voice.spec.ts tests/lesson-forty-nine-voice.spec.ts tests/lesson-fifty-voice.spec.ts tests/lesson-fifty-one-voice.spec.ts --config=playwright.config.ts --workers=1
 
   accounts-cloud:
     name: Accounts + D1 + cloud isolation + dashboards
@@ -280,9 +285,9 @@ jobs:
       - run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   certified:
-    name: COURSE 1-50 CERTIFIED
+    name: COURSE 1-51 CERTIFIED
     if: always()
-    needs: [build-content, chromium-1-27, webkit-1-27, chromium-28-50, webkit-28-50, voice, accounts-cloud]
+    needs: [build-content, chromium-1-27, webkit-1-27, chromium-28-51, webkit-28-51, voice, accounts-cloud]
     runs-on: ubuntu-latest
     steps:
       - name: Fail unless every release lane passed
@@ -290,8 +295,8 @@ jobs:
           BUILD_CONTENT: ${{ needs.build-content.result }}
           CHROMIUM_1_27: ${{ needs.chromium-1-27.result }}
           WEBKIT_1_27: ${{ needs.webkit-1-27.result }}
-          CHROMIUM_28_50: ${{ needs.chromium-28-50.result }}
-          WEBKIT_28_50: ${{ needs.webkit-28-50.result }}
+          CHROMIUM_28_51: ${{ needs.chromium-28-51.result }}
+          WEBKIT_28_51: ${{ needs.webkit-28-51.result }}
           VOICE: ${{ needs.voice.result }}
           ACCOUNTS: ${{ needs.accounts-cloud.result }}
         run: |
@@ -299,14 +304,14 @@ jobs:
             "build-content=$BUILD_CONTENT" \
             "chromium-1-27=$CHROMIUM_1_27" \
             "webkit-1-27=$WEBKIT_1_27" \
-            "chromium-28-50=$CHROMIUM_28_50" \
-            "webkit-28-50=$WEBKIT_28_50" \
+            "chromium-28-51=$CHROMIUM_28_51" \
+            "webkit-28-51=$WEBKIT_28_51" \
             "voice=$VOICE" \
             "accounts-cloud=$ACCOUNTS"
           test "$BUILD_CONTENT" = success
           test "$CHROMIUM_1_27" = success
           test "$WEBKIT_1_27" = success
-          test "$CHROMIUM_28_50" = success
-          test "$WEBKIT_28_50" = success
+          test "$CHROMIUM_28_51" = success
+          test "$WEBKIT_28_51" = success
           test "$VOICE" = success
           test "$ACCOUNTS" = success
