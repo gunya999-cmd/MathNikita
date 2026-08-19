@@ -13,11 +13,11 @@ async function jump(page:Page,index:number,id:string){await page.evaluate(({inde
 test('lesson 53 preserves exact geometry, persistence and the control-only contract on iPad',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('mathnikita-mentor-auto-guide','false'));
   await openLesson53(page);
-  await expect(page.locator('[data-stage-id="l53-rules"] .lesson-controls')).toContainText('Этап 1 из 9');
+  await expect(page.locator('.lesson-controls')).toContainText('Этап 1 из 9');
   await expect(page.locator('.cat-mentor,.progressive-hint-coach,.lesson-reflection,.extended-practice')).toHaveCount(0);
 
   await jump(page,1,'l53-task1');const task1=page.locator('[data-stage-id="l53-task1"]');const construction=task1.locator('[data-source-control="3-1"]');
-  const slider=construction.getByRole('slider',{name:'Положение луча KC'});await slider.evaluate((element,value)=>{const input=element as HTMLInputElement;input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));},37);
+  const slider=construction.getByRole('slider',{name:'Положение луча KC'});for(let step=0;step<6;step+=1)await slider.press('ArrowRight');
   await expect(construction).toHaveAttribute('data-total-angle','74');await expect(construction).toHaveAttribute('data-angle-mkc','37');await expect(construction).toHaveAttribute('data-angle-cka','37');
   const rayAngle=await construction.locator('line[data-ray-angle]').evaluate(line=>{const x1=Number(line.getAttribute('x1'));const y1=Number(line.getAttribute('y1'));const x2=Number(line.getAttribute('x2'));const y2=Number(line.getAttribute('y2'));return Math.atan2(y1-y2,x2-x1)*180/Math.PI});expect(rayAngle).toBeCloseTo(37,1);
   await task1.locator('#l53-1a').fill('∠CKA, ∠MKC');await task1.locator('#l53-1b-mkc').fill('37');await task1.locator('#l53-1b-cka').fill('37');

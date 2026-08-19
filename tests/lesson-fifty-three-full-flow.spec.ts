@@ -30,7 +30,7 @@ test('lesson 53 completes the exact six-task source variant and submits 9/9',asy
   const task1=page.locator('[data-stage-id="l53-task1"]');
   await expect(task1).toContainText('градусная мера которого равна 74°');
   const construction=task1.locator('[data-source-control="3-1"]');
-  await construction.getByRole('slider',{name:'Положение луча KC'}).evaluate((element,value)=>{const input=element as HTMLInputElement;input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));},32);
+  await construction.getByRole('slider',{name:'Положение луча KC'}).press('ArrowRight');
   await expect(construction).toHaveAttribute('data-angle-mkc','42');
   await expect(construction).toHaveAttribute('data-angle-cka','32');
   await task1.locator('#l53-1a').fill('∠MKC, ∠CKA');

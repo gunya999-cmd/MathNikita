@@ -21,7 +21,7 @@ const answers:Record<string,Answer>={
 async function openLesson(page:Page){
   await page.goto('/');
   
-  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(2);
+  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(3);
   
   const chapterTwo=page.locator('.course-chapter-group').nth(1);
   const isOpen=await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open);
