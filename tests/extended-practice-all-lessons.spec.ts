@@ -9,7 +9,7 @@ type VoiceAudit={playedIds:string[];audioPlays:number};
 
 const startLesson=Number(process.env.PRACTICE_START??1);
 const endLesson=Number(process.env.PRACTICE_END??27);
-const specialStageCounts:Record<number,number>={18:24,20:11,34:28,35:28,36:30,37:29,38:35,39:35,40:36,41:36,42:36,46:36,47:36,48:36,49:36,50:36,51:36,52:36};
+const specialStageCounts:Record<number,number>={18:24,20:11,33:13,34:28,35:28,36:30,37:29,38:35,39:35,40:36,41:36,42:36,46:36,47:36,48:36,49:36,50:36,51:36,52:36,53:9};
 
 async function installVoiceAudit(page:Page){
   await page.addInitScript(()=>{
@@ -88,9 +88,9 @@ async function solveTask(page:Page,task:ExtendedPracticeTask){
 }
 
 for(let lessonNumber=startLesson;lessonNumber<=endLesson;lessonNumber+=1){
-  if(lessonNumber===20){
-    test('lesson 20 remains a standalone control work without mandatory-practice reflection gate',async({page})=>{
-      await openLesson(page,20);await jumpToSummary(page,20);
+  if(lessonNumber===20||lessonNumber===33||lessonNumber===53){
+    test(`lesson ${lessonNumber} remains a standalone control work without mandatory-practice reflection gate`,async({page})=>{
+      await openLesson(page,lessonNumber);await jumpToSummary(page,lessonNumber);
       await expect(page.locator('.lesson-reflection')).toHaveCount(0);
       await expect(page.locator('.extended-practice')).toHaveCount(0);
     });

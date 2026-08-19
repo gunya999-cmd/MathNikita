@@ -130,6 +130,24 @@ test('lesson 33 control auto-switches Sulafat without exposing tutoring feedback
   await expect(page.locator('.instant-feedback.good, .instant-feedback.bad')).toHaveCount(0);
 });
 
+test('lesson 53 control auto-switches Sulafat without exposing tutoring feedback',async({page})=>{
+  test.setTimeout(90_000);
+  await installAudit(page);await routeNarration(page);await openLesson(page,53);
+  const oldStage='l53-rules';const nextStage='l53-task1';
+  const oldId='lesson-53-stage-l53-rules';const nextId='lesson-53-stage-l53-task1';
+  await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toHaveAttribute('data-stage-id',oldStage);
+  await expect(page.locator('.cat-mentor')).toHaveCount(0);
+  await expect(page.locator('.progressive-hint-coach')).toHaveCount(0);
+  await waitForEvent(page,'play',oldId);
+  await clearAudit(page);
+  await page.locator('.lesson-controls button').last().dispatchEvent('click');
+  const immediate=await audit(page);
+  expect(immediate.some(event=>event.kind==='pause'&&event.id===oldId),'Lesson 53: old control narration was still alive after navigation click').toBeTruthy();
+  await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toHaveAttribute('data-stage-id',nextStage);
+  await waitForEvent(page,'play',nextId);
+  await expect(page.locator('.instant-feedback.good, .instant-feedback.bad')).toHaveCount(0);
+});
+
 test('late Sulafat response from an abandoned stage never starts playing',async({page})=>{
   test.setTimeout(90_000);
   const lessonNumber=22;const staleId='lesson-22-stage-l22-mission';
