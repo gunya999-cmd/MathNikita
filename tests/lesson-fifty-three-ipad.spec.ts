@@ -4,8 +4,8 @@ test.use({viewport:{width:1024,height:1366},userAgent:'Mozilla/5.0 (iPad; CPU OS
 
 async function openLesson53(page:Page){
   await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();
-  const lesson53=page.getByRole('button',{name:/Открыть урок 53:/});const lesson54=page.locator('.course-lesson-grid > button').nth(53);const lesson55=page.locator('.course-lesson-grid > button').nth(54);const lesson56=page.locator('.course-lesson-grid > button').nth(55);
-  await expect(lesson53).toBeEnabled();await expect(lesson53).toHaveClass(/is-control-ready/);await expect(lesson54).toBeEnabled();await expect(lesson55).toBeEnabled();await expect(lesson56).toBeDisabled();
+  const lesson53=page.getByRole('button',{name:/Открыть урок 53:/});const lesson54=page.locator('.course-lesson-grid > button').nth(53);const lesson55=page.locator('.course-lesson-grid > button').nth(54);const lesson56=page.locator('.course-lesson-grid > button').nth(55);const lesson57=page.locator('.course-lesson-grid > button').nth(56);
+  await expect(lesson53).toBeEnabled();await expect(lesson53).toHaveClass(/is-control-ready/);await expect(lesson54).toBeEnabled();await expect(lesson55).toBeEnabled();await expect(lesson56).toBeEnabled();await expect(lesson57).toBeDisabled();
   await lesson53.click();await page.locator('.lesson-opening-start').click();
 }
 async function jump(page:Page,index:number,id:string){await page.evaluate(({index})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:53,stageIndex:index}})),{index});await expect(page.locator(`[data-stage-id="${id}"]`)).toBeVisible()}
