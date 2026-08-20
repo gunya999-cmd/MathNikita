@@ -9,7 +9,7 @@ type VoiceAudit={playedIds:string[];audioPlays:number};
 
 const startLesson=Number(process.env.PRACTICE_START??1);
 const endLesson=Number(process.env.PRACTICE_END??27);
-const specialStageCounts:Record<number,number>={18:24,20:11,33:13,34:28,35:28,36:30,37:29,38:35,39:35,40:36,41:36,42:36,46:36,47:36,48:36,49:36,50:36,51:36,52:36,53:9};
+const specialStageCounts:Record<number,number>={18:24,20:11,33:13,34:28,35:28,36:30,37:29,38:35,39:35,40:36,41:36,42:36,46:36,47:36,48:36,49:36,50:36,51:36,52:36,53:9,54:36};
 
 async function installVoiceAudit(page:Page){
   await page.addInitScript(()=>{
@@ -57,7 +57,8 @@ async function routeNarration(page:Page,requests:NarrationRequest[]){
 
 async function openLesson(page:Page,lessonNumber:number){
   await page.goto('/',{waitUntil:'domcontentloaded'});
-  if(lessonNumber>=21){const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click()}
+  if(lessonNumber>=54){const chapterThree=page.locator('.course-chapter-group').nth(2);if(!(await chapterThree.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterThree.locator('summary').click()}
+  else if(lessonNumber>=21){const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click()}
   await page.getByRole('button',{name:new RegExp(`Открыть урок ${lessonNumber}:`)}).click();
   await page.locator('.lesson-opening-start').click();
   await expect(page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]')).toBeVisible();
