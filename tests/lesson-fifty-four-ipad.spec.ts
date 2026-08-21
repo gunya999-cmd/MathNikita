@@ -10,7 +10,8 @@ async function openLesson54(page:Page){
   const lesson55=page.locator('.course-lesson-grid > button').nth(54);
   const lesson56=page.locator('.course-lesson-grid > button').nth(55);
   const lesson57=page.locator('.course-lesson-grid > button').nth(56);
-  await expect(lesson54).toBeEnabled();await expect(lesson54).toHaveClass(/is-interactive/);await expect(lesson55).toBeEnabled();await expect(lesson56).toBeEnabled();await expect(lesson57).toBeDisabled();
+  const lesson58=page.locator('.course-lesson-grid > button').nth(57);
+  await expect(lesson54).toBeEnabled();await expect(lesson54).toHaveClass(/is-interactive/);await expect(lesson55).toBeEnabled();await expect(lesson56).toBeEnabled();await expect(lesson57).toBeEnabled();await expect(lesson58).toBeDisabled();
   await lesson54.click();await page.locator('.lesson-opening-start').click();
 }
 async function jump(page:Page,index:number,id:string){await page.evaluate(({index})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:54,stageIndex:index}})),{index});await expect(page.locator('[data-stage-id="'+id+'"]')).toBeVisible()}
