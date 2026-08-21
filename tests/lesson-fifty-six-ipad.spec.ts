@@ -8,7 +8,8 @@ async function openLesson56(page:Page){
   if(!(await chapterThree.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterThree.locator('summary').click();
   const lesson56=page.getByRole('button',{name:/Открыть урок 56:/});
   const lesson57=page.locator('.course-lesson-grid > button').nth(56);
-  await expect(lesson56).toBeEnabled();await expect(lesson56).toHaveClass(/is-interactive/);await expect(lesson57).toBeDisabled();
+  const lesson58=page.locator('.course-lesson-grid > button').nth(57);
+  await expect(lesson56).toBeEnabled();await expect(lesson56).toHaveClass(/is-interactive/);await expect(lesson57).toBeEnabled();await expect(lesson58).toBeDisabled();
   await lesson56.click();await page.locator('.lesson-opening-start').click();
 }
 async function jump(page:Page,index:number,id:string){await page.evaluate(({index})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:56,stageIndex:index}})),{index});await expect(page.locator('[data-stage-id="'+id+'"]')).toBeVisible()}
