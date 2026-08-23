@@ -7,7 +7,8 @@ async function openLesson62(page:Page){
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons.nth(61)).toContainText('Деление: вычисления и задачи');
   await expect(lessons.nth(61)).toBeEnabled();
-  await expect(lessons.nth(62)).toBeDisabled();
+  await expect(lessons.nth(62)).toContainText('Деление: текстовые задачи');
+  await expect(lessons.nth(62)).toBeEnabled();
   await page.getByRole('button',{name:/Открыть урок 62:/}).click();
   await expect(page.locator('.lesson-opening')).toContainText('Деление: вычисления и задачи');
   await page.locator('.lesson-opening-start').click();

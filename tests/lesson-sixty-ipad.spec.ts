@@ -4,8 +4,8 @@ test.use({viewport:{width:1024,height:1366},userAgent:'Mozilla/5.0 (iPad; CPU OS
 
 async function openLesson60(page:Page){
   await page.goto('/');const chapterThree=page.locator('.course-chapter-group').nth(2);if(!(await chapterThree.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterThree.locator('summary').click();
-  const lesson60=page.getByRole('button',{name:/Открыть урок 60:/});const lesson61=page.locator('.course-lesson-grid > button').nth(60);const lesson62=page.locator('.course-lesson-grid > button').nth(61);
-  await expect(lesson60).toBeEnabled();await expect(lesson60).toHaveClass(/is-interactive/);await expect(lesson61).toBeEnabled();await expect(lesson62).toBeDisabled();
+  const lesson60=page.getByRole('button',{name:/Открыть урок 60:/});const lesson61=page.locator('.course-lesson-grid > button').nth(60);
+  await expect(lesson60).toBeEnabled();await expect(lesson60).toHaveClass(/is-interactive/);await expect(lesson61).toBeEnabled();
   await lesson60.click();await page.locator('.lesson-opening-start').click();
 }
 async function jump(page:Page,index:number,id:string){await page.evaluate(({index})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:60,stageIndex:index}})),{index});await expect(page.locator('[data-stage-id="'+id+'"]')).toBeVisible()}

@@ -14,8 +14,8 @@ async function openLesson52(page:Page){
   const lesson57=page.locator('.course-lesson-grid > button').nth(56);
   const lesson58=page.locator('.course-lesson-grid > button').nth(57);
   const lesson59=page.locator('.course-lesson-grid > button').nth(58);
-  const lesson60=page.locator('.course-lesson-grid > button').nth(59);const lesson61=page.locator('.course-lesson-grid > button').nth(60);const lesson62=page.locator('.course-lesson-grid > button').nth(61);
-  await expect(lesson52).toBeEnabled();await expect(lesson53).toBeEnabled();await expect(lesson54).toBeEnabled();await expect(lesson55).toBeEnabled();await expect(lesson56).toBeEnabled();await expect(lesson57).toBeEnabled();await expect(lesson58).toBeEnabled();await expect(lesson59).toBeEnabled();await expect(lesson60).toBeEnabled();await expect(lesson61).toBeEnabled();await expect(lesson62).toBeDisabled();
+  const lesson60=page.locator('.course-lesson-grid > button').nth(59);const lesson61=page.locator('.course-lesson-grid > button').nth(60);
+  await expect(lesson52).toBeEnabled();await expect(lesson53).toBeEnabled();await expect(lesson54).toBeEnabled();await expect(lesson55).toBeEnabled();await expect(lesson56).toBeEnabled();await expect(lesson57).toBeEnabled();await expect(lesson58).toBeEnabled();await expect(lesson59).toBeEnabled();await expect(lesson60).toBeEnabled();await expect(lesson61).toBeEnabled();
   await lesson52.click();await page.locator('.lesson-opening-start').click();
 }
 async function jump(page:Page,index:number,id:string){await page.evaluate(({index})=>window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage',{detail:{lessonNumber:52,stageIndex:index}})),{index});await expect(page.locator(`[data-stage-id="${id}"]`)).toBeVisible()}
