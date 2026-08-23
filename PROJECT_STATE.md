@@ -32,13 +32,13 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official year plan: 175 lessons, Merzlyak grade 5.
-- Ready course sequence after this change: lessons **1–63**.
-- Lesson 64 stays locked and is the next course item to implement after its method-guide route is verified.
+- Ready course sequence after this change: lessons **1–64**.
+- Lesson 65 stays locked and is the next course item to implement after its method-guide route is verified.
 - Control works 1–3 are integrated at lessons 20, 33 and 53.
 - Current release protection is split into:
   - full regression gates protecting the already released course;
-  - lesson-63 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete mandatory-practice run.
-- Lesson-specific regression tests no longer assert that a future lesson must remain locked; current unlock state is checked centrally in `course-plan.spec.ts`, preventing false failures when the next lesson is released.
+  - lesson-64 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete mandatory-practice run.
+- Lesson-specific regression tests do not assert that arbitrary future lessons must remain locked; current unlock state is checked centrally in `course-plan.spec.ts`, preventing false failures when the next lesson is released.
 
 ## Recent completed lessons
 
@@ -53,6 +53,7 @@ Use this file as the compact handoff context for continuing development without 
 - Lesson 61 — `Смысл деления`, §18, №447–453; 36 stages, 21 checked activities, 20 mandatory-practice tasks / 50 responses.
 - Lesson 62 — `Деление: вычисления и задачи`, §18 reinforcement based on the official lesson-62 methodology map. Main textbook route: №452, 455, 465, 466, 468, 470; homework/transfer practice uses №453, 456, 467, 469, 471. It has 36 stages, 21 checked activities and 20 mandatory-practice tasks / exactly 50 responses. It covers round divisors, order of operations, inverse checking, proportional word problems, current/river motion and meeting motion.
 - Lesson 63 — `Деление: текстовые задачи арифметическим способом`, §18, based on the official lesson-63 method guide and textbook tasks №454, 472, 474, 476, 478, 480. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses. The route covers meeting motion, different start times, catch-up motion, S=v·t relations, unit conversion, schedules/time-of-day, inverse checking and semantic validation of intermediate quantities.
+- Lesson 64 — `Деление: решение уравнений`, §18, based on the official lesson-64 method guide. It teaches the links between unknown factor, dividend and divisor using the textbook examples `12x=84`, `x:21=16`, `576:x=18`, then completes exercises №457–458 and transfers the same reasoning to №459–460. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses, with root verification by substitution.
 
 ## Lesson quality contract
 
