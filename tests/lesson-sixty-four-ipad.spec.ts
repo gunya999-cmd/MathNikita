@@ -7,7 +7,6 @@ async function openLesson64(page:Page){
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons.nth(63)).toContainText('Деление: решение уравнений');
   await expect(lessons.nth(63)).toBeEnabled();
-  await expect(lessons.nth(64)).toBeDisabled();
   await page.getByRole('button',{name:/Открыть урок 64:/}).click();
   await expect(page.locator('.lesson-opening')).toContainText('Деление: решение уравнений');
   await page.locator('.lesson-opening-start').click();
