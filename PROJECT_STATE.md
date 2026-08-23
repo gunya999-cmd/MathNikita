@@ -7,96 +7,77 @@ Use this file as the compact handoff context for continuing development without 
 - App: MathNikita — AI math tutor web app.
 - Repository: `gunya999-cmd/MathNikita`
 - Production URL: `https://mathnikita.gunya999.workers.dev`
-- Deployment: GitHub `main` -> Cloudflare Workers & Pages.
-- Hosting rule: Cloudflare-first only. Do not move production hosting to Vercel, Netlify, Lovable hosting, or another platform unless explicitly requested.
-- Build command: `npm run build`
-- Deploy command: `npm run cf:deploy` or `npx wrangler deploy`
-- Root directory: `/`
+- Production branch: `main`.
+- Deployment: GitHub `main` -> Cloudflare Worker + static assets.
+- Hosting rule: Cloudflare-first only. Do not move production hosting unless explicitly requested.
+- Build command: `npm run build`.
+- Deploy command: `npm run cf:deploy` or `npx wrangler deploy`.
 
 ## Stack
 
 - Frontend: Vite + React + TypeScript.
 - Backend: Cloudflare Worker with static assets and API routes.
-- Auth/DB: Supabase.
-- AI provider: Gemini API as primary free provider.
-- OpenAI: configured as backup, but current OpenAI API quota is exhausted.
+- Auth/DB: Cloudflare D1 student/profile/progress flow; legacy Supabase-related code/config may still exist and must not be treated as the source of truth without checking current code.
+- AI tutor: Gemini primary with local fallback; OpenAI is optional backup.
+- Narration: studio narration path with Sulafat plus interruption/fallback handling.
 
-## Cloudflare workflow
+## Production/deployment invariants
 
-- Production is deployed through Cloudflare Workers & Pages.
-- GitHub `main` is the production source branch for Cloudflare deploys.
+- `main` is the source of truth for production.
 - `wrangler.jsonc` is the source of truth for Worker/static asset routing.
 - `/api/*` must continue to run through the Worker via `run_worker_first`.
-- Frontend environment variables must be Cloudflare build variables.
-- Server-only AI keys must be Cloudflare Worker secrets.
-- If a failed deployment is retried, Cloudflare may rebuild that old commit; create or select a fresh deployment from latest `main` instead.
+- Production deploy workflow builds the exact merged Git SHA, deploys it to Cloudflare, then checks `/api/version` until the deployed SHA equals `main`.
+- Never claim production is updated until the `/api/version` verification job succeeds.
 
-## Working Cloudflare routes
+## Current course checkpoint
 
-- `/api/tutor-status` — checks configured AI secrets.
-- `/api/tutor-test` — tests active AI provider.
-- `/api/tutor` — chat endpoint used by the frontend.
+- Official year plan: 175 lessons, Merzlyak grade 5.
+- Ready course sequence after this change: lessons **1–62**.
+- Lesson 63 stays locked and is the next course item to implement.
+- Control works 1–3 are integrated at lessons 20, 33 and 53.
+- Current release protection is split into:
+  - full regression gate for lessons 1–61;
+  - lesson-62 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete mandatory-practice run.
 
-## Secrets / environment
+## Recent completed lessons
 
-Cloudflare build variables:
+- Lesson 53 — `Контрольная работа № 3`.
+- Lesson 54 — `Умножение. Переместительное свойство умножения`.
+- Lesson 55 — multiplication practice / round factors.
+- Lesson 56 — `Письменное умножение на однозначное число`.
+- Lesson 57 — `Итоговая практика умножения`.
+- Lesson 58 — `Сочетательное свойство умножения`.
+- Lesson 59 — `Распределительное свойство умножения`.
+- Lesson 60 — `Стратегии свойств умножения`.
+- Lesson 61 — `Смысл деления`, §18, №447–453; 36 stages, 21 checked activities, 20 mandatory-practice tasks / 50 responses.
+- Lesson 62 — `Деление: вычисления и задачи`, §18 reinforcement based on the official lesson-62 methodology map. Main textbook route: №452, 455, 465, 466, 468, 470; homework/transfer practice uses №453, 456, 467, 469, 471. It has 36 stages, 21 checked activities and 20 mandatory-practice tasks / exactly 50 responses. It covers round divisors, order of operations, inverse checking, proportional word problems, current/river motion and meeting motion.
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
+## Lesson quality contract
 
-Cloudflare Worker secrets:
+For normal interactive lessons, preserve the established release standard unless the source material requires a deliberate exception:
 
-- `GEMINI_API_KEY`
-- `OPENAI_API_KEY` optional backup only
+- about 36 meaningful learning stages, not filler;
+- textbook/method-guide fidelity first;
+- interactive checked activities embedded in the main lesson;
+- mandatory practice: exactly 20 tasks, with at least 12 curated tasks and no more than 8 parametric tasks;
+- for the current mature lesson series, keep the 50-response practice contract;
+- Pythagoras progressive help, persistence and learner analytics;
+- Sulafat narration and immediate cancellation of stale narration when the learner navigates forward/back/jumps to another stage;
+- Chromium and iPad/WebKit full-flow/regression coverage;
+- do not unlock the next lesson until the current lesson is implemented and release-tested.
 
-Do not expose API keys in chat or frontend.
+## Working platform status
 
-## Current working status
-
-- Cloudflare deploy works from GitHub commits.
-- Supabase Auth works.
-- Email confirmation works.
-- Supabase profile/progress sync works.
-- Gemini AI chat works and has produced responses labeled `AI-репетитор Gemini`.
-- Local fallback tutor remains available if AI fails.
-
-## Recent completed work
-
-- Lessons 1–52 of the Merzlyak grade-5 course are production-ready; lesson 53 remains locked.
-- Lesson 47 is the § 14 consolidation lesson: 36 stages, 23 interactive checks, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad and full-flow certification tests.
-- Lesson 48, «Построение треугольников», follows examples 1–2 of § 14 and tasks № 350, 352 and 357: 36 stages, 23 interactive checks, exact SAS/ASA SVG constructions, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
-- Lesson 49, «Прямоугольник. Ось симметрии фигуры», opens § 15 with tasks № 359–365: 36 stages, 23 interactive checks, exact rectangle/square/symmetry SVG models, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
-- Lesson 50 continues § 15 with textbook tasks № 366–374 and workbook tasks № 158–160, 164: 36 stages, 23 interactive checks, exact figures 137–139 and 220, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
-- Lesson 51 completes § 15 with textbook tasks № 375–383 and workbook tasks № 161–163, 165–166: 36 stages, 23 interactive checks, exact figures 221–223, eight mirror completions and three solved equal-part grids, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
-- Lesson 52, «Повторение и систематизация учебного материала», covers the chapter 2 summary and all 12 questions of textbook test № 2 on pages 102–105: 36 stages, 23 interactive checks, exact angle/triangle models, 20 curated mandatory-practice tasks, Sulafat/Pythagoras support, persistence, iPad/full-flow/voice tests.
-- The next locked course item is lesson 53, «Контрольная работа № 3».
-- Fixed Cloudflare API routing with `run_worker_first = ["/api/*"]` in Wrangler config.
-- Added Gemini provider before OpenAI fallback.
-- Improved tutor prompt so the student question has priority over diagnostic weak topics.
-- Began extending the app toward a 12-grade international math curriculum.
-- Added grade switching and grade-aware dashboard/diagnostic/practice/chat in PR #1.
-- Fixed circular TypeScript lesson type dependency after Cloudflare build failure.
-
-## Current feature goal
-
-Build an extended version with:
-
-1. 12 school grades for mathematics.
-2. Curriculum inspired by strong international tracks: Singapore Math, Cambridge, IB, Common Core.
-3. Ability to switch between grades.
-4. Dashboard / Lesson of the Day adapts to selected grade.
-5. Profile stores selected grade.
-6. Chat remains fast and should use concise context only.
-7. All production deployment and API routing stays on Cloudflare.
+- Cloudflare deployment workflow is active.
+- D1-backed student authentication/profile/progress flows have production regression coverage.
+- Multi-student isolation and learner/parent dashboards have automated regression coverage.
+- Gemini tutor endpoint and local fallback exist in the Worker flow.
+- Voice sequencing/interruption is protected by automated tests.
 
 ## Development rule for future ChatGPT work
 
-To avoid slow or heavy chats:
-
-- Keep responses short.
-- Do not paste full files unless necessary.
-- Make small GitHub commits.
-- After each step, report only: what changed, commit SHA, what to test.
-- Use this `PROJECT_STATE.md` as the project memory.
-- Treat Cloudflare as the default production platform.
-- For each completed MathNikita lesson, push the implementation, merge it into `main`, deploy the merged SHA to Cloudflare, and verify production by default unless the user explicitly asks not to publish.
+- Use this file as the handoff checkpoint instead of relying on a long conversation.
+- Keep GitHub commits small and inspect CI failures rather than guessing.
+- For each completed lesson: implement -> add/extend tests -> open PR -> pass release gates -> merge to `main` -> allow Cloudflare deploy -> verify exact production SHA through `/api/version`.
+- After completion, update this checkpoint to the newly ready lesson and identify the next locked lesson.
+- Keep production on Cloudflare by default.
