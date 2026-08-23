@@ -49,6 +49,6 @@ test('lesson 62 is usable on iPad, preserves retry state and reaches 50-response
   await expect(page.locator('.lesson-reflection')).toBeVisible();
   await expect(page.locator('.extended-practice')).toHaveAttribute('data-practice-response-count','50');
   await expect(page.locator('.extended-practice[data-practice-task="l62-extra-01"]')).toBeVisible();
-  await expect(page.locator('.cat-mentor-actions button')).toHaveCount(4);
+  await expect(page.locator('.practice-pythagoras-actions button')).toHaveCount(4);
   expect(await noHorizontalOverflow(page)).toBeTruthy();
 });
