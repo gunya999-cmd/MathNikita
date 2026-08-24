@@ -1,3 +1,4 @@
+# Production SHA verification probe; this branch will not be merged.
 name: Worker version endpoint
 
 on:
