@@ -1,0 +1,209 @@
+name: Course 62-67 hard certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-62-67-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Build + course contract 1-67
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Verify course plan, pedagogy and exact practice counts
+        run: >-
+          npx playwright test
+          tests/course-plan.spec.ts
+          tests/pedagogical-practice-quality.spec.ts
+          tests/extended-practice-count.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+
+  chromium-62-64:
+    name: Chromium hard runtime 62-64
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: >-
+          npx playwright test
+          tests/lesson-sixty-two-full-flow.spec.ts tests/lesson-sixty-two-ipad.spec.ts
+          tests/lesson-sixty-three-full-flow.spec.ts tests/lesson-sixty-three-ipad.spec.ts
+          tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+
+  chromium-65-67:
+    name: Chromium hard runtime 65-67
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: >-
+          npx playwright test
+          tests/lesson-sixty-five-full-flow.spec.ts tests/lesson-sixty-five-ipad.spec.ts
+          tests/lesson-sixty-six-full-flow.spec.ts tests/lesson-sixty-six-ipad.spec.ts
+          tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+
+  webkit-62-64:
+    name: iPad WebKit hard runtime 62-64
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: >-
+          npx playwright test
+          tests/lesson-sixty-two-full-flow.spec.ts tests/lesson-sixty-two-ipad.spec.ts
+          tests/lesson-sixty-three-full-flow.spec.ts tests/lesson-sixty-three-ipad.spec.ts
+          tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
+          --workers=1
+
+  webkit-65-67:
+    name: iPad WebKit hard runtime 65-67
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: >-
+          npx playwright test
+          tests/lesson-sixty-five-full-flow.spec.ts tests/lesson-sixty-five-ipad.spec.ts
+          tests/lesson-sixty-six-full-flow.spec.ts tests/lesson-sixty-six-ipad.spec.ts
+          tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts
+          --workers=1
+
+  practice-62-67:
+    name: Complete 120 tasks / 300 responses 62-67
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PRACTICE_START: 62
+      PRACTICE_END: 67
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Solve every mandatory-practice task with voice, reload and persistence checks
+        run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  voice-62-67:
+    name: Sulafat sequencing + interruption 62-67 Chromium and WebKit
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Chromium voice hard pass
+        run: >-
+          npx playwright test
+          tests/voice-navigation-interruption.spec.ts
+          tests/lesson-sixty-two-voice.spec.ts tests/lesson-sixty-three-voice.spec.ts
+          tests/lesson-sixty-four-voice.spec.ts tests/lesson-sixty-five-voice.spec.ts
+          tests/lesson-sixty-six-voice.spec.ts tests/lesson-sixty-seven-voice.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - name: iPad WebKit voice hard pass
+        run: >-
+          npx playwright test
+          tests/voice-navigation-interruption.spec.ts
+          tests/lesson-sixty-two-voice.spec.ts tests/lesson-sixty-three-voice.spec.ts
+          tests/lesson-sixty-four-voice.spec.ts tests/lesson-sixty-five-voice.spec.ts
+          tests/lesson-sixty-six-voice.spec.ts tests/lesson-sixty-seven-voice.spec.ts
+          --workers=1
+
+  cloud-d1:
+    name: D1 + cloud + multi-student regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+      - run: node scripts/cloud-api-smoke.mjs
+      - run: npx playwright install --with-deps chromium webkit
+      - name: Chromium profiles, sync races and dashboards
+        run: npx playwright test tests/cloud-student-ui.spec.ts tests/cloud-sync-races.spec.ts tests/student-profiles.spec.ts tests/learner-dashboard.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: Chromium multi-student isolation
+        run: npx playwright test tests/multi-student-cloud-isolation.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: iPad WebKit multi-student isolation
+        run: npx playwright test tests/multi-student-cloud-isolation.spec.ts --config=playwright.profile.ipad.config.ts --workers=1
+
+  hard-certified:
+    name: COURSE 1-67 HARD CERTIFIED
+    if: always()
+    needs:
+      - contract
+      - chromium-62-64
+      - chromium-65-67
+      - webkit-62-64
+      - webkit-65-67
+      - practice-62-67
+      - voice-62-67
+      - cloud-d1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every hard-certification lane passed
+        env:
+          CONTRACT: ${{ needs.contract.result }}
+          CHROMIUM_A: ${{ needs.chromium-62-64.result }}
+          CHROMIUM_B: ${{ needs.chromium-65-67.result }}
+          WEBKIT_A: ${{ needs.webkit-62-64.result }}
+          WEBKIT_B: ${{ needs.webkit-65-67.result }}
+          PRACTICE: ${{ needs.practice-62-67.result }}
+          VOICE: ${{ needs.voice-62-67.result }}
+          CLOUD_D1: ${{ needs.cloud-d1.result }}
+        run: |
+          test "$CONTRACT" = success
+          test "$CHROMIUM_A" = success
+          test "$CHROMIUM_B" = success
+          test "$WEBKIT_A" = success
+          test "$WEBKIT_B" = success
+          test "$PRACTICE" = success
+          test "$VOICE" = success
+          test "$CLOUD_D1" = success
+          echo "Lessons 1-67 are cumulatively hard-certified: 1-61 by the established full regression gate and 62-67 by this hard gate."
