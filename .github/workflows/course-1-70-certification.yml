@@ -35,6 +35,7 @@ jobs:
           tests/pedagogical-practice-quality.spec.ts
           tests/extended-practice-count.spec.ts
           tests/lesson-seventy-source.spec.ts
+          tests/lesson-seventy-route.spec.ts
           tests/lesson-seventy-full-flow.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - name: Complete all 20 mandatory practice tasks / 50 responses for lesson 70
