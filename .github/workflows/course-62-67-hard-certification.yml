@@ -1,4 +1,4 @@
-name: Course 62-67 hard certification
+name: Course 62-68 hard certification
 
 on:
   workflow_dispatch:
@@ -12,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: course-62-67-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: course-62-68-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   contract:
-    name: Build + course contract 1-67
+    name: Build + course contract 1-68
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -34,6 +34,7 @@ jobs:
           tests/course-plan.spec.ts
           tests/pedagogical-practice-quality.spec.ts
           tests/extended-practice-count.spec.ts
+          tests/lesson-sixty-eight-source.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
   chromium-62-64:
@@ -54,10 +55,10 @@ jobs:
           tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
-  chromium-65-67:
-    name: Chromium hard runtime 65-67
+  chromium-65-68:
+    name: Chromium hard runtime 65-68
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -70,6 +71,7 @@ jobs:
           tests/lesson-sixty-five-full-flow.spec.ts tests/lesson-sixty-five-ipad.spec.ts
           tests/lesson-sixty-six-full-flow.spec.ts tests/lesson-sixty-six-ipad.spec.ts
           tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts
+          tests/lesson-sixty-eight-full-flow.spec.ts tests/lesson-sixty-eight-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
   webkit-62-64:
@@ -90,10 +92,10 @@ jobs:
           tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
           --workers=1
 
-  webkit-65-67:
-    name: iPad WebKit hard runtime 65-67
+  webkit-65-68:
+    name: iPad WebKit hard runtime 65-68
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -106,15 +108,16 @@ jobs:
           tests/lesson-sixty-five-full-flow.spec.ts tests/lesson-sixty-five-ipad.spec.ts
           tests/lesson-sixty-six-full-flow.spec.ts tests/lesson-sixty-six-ipad.spec.ts
           tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts
+          tests/lesson-sixty-eight-full-flow.spec.ts tests/lesson-sixty-eight-ipad.spec.ts
           --workers=1
 
-  practice-62-67:
-    name: Complete 120 tasks / 300 responses 62-67
+  practice-62-68:
+    name: Complete 140 tasks / 350 responses 62-68
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     env:
       PRACTICE_START: 62
-      PRACTICE_END: 67
+      PRACTICE_END: 68
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -125,10 +128,10 @@ jobs:
       - name: Solve every mandatory-practice task with voice, reload and persistence checks
         run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
 
-  voice-62-67:
-    name: Sulafat sequencing + interruption 62-67 Chromium and WebKit
+  voice-62-68:
+    name: Sulafat sequencing + interruption 62-68 Chromium and WebKit
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -143,6 +146,7 @@ jobs:
           tests/lesson-sixty-two-voice.spec.ts tests/lesson-sixty-three-voice.spec.ts
           tests/lesson-sixty-four-voice.spec.ts tests/lesson-sixty-five-voice.spec.ts
           tests/lesson-sixty-six-voice.spec.ts tests/lesson-sixty-seven-voice.spec.ts
+          tests/lesson-sixty-eight-voice.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - name: iPad WebKit voice hard pass
         run: >-
@@ -151,6 +155,7 @@ jobs:
           tests/lesson-sixty-two-voice.spec.ts tests/lesson-sixty-three-voice.spec.ts
           tests/lesson-sixty-four-voice.spec.ts tests/lesson-sixty-five-voice.spec.ts
           tests/lesson-sixty-six-voice.spec.ts tests/lesson-sixty-seven-voice.spec.ts
+          tests/lesson-sixty-eight-voice.spec.ts
           --workers=1
 
   cloud-d1:
@@ -176,16 +181,16 @@ jobs:
         run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   hard-certified:
-    name: COURSE 1-67 HARD CERTIFIED
+    name: COURSE 1-68 HARD CERTIFIED
     if: always()
     needs:
       - contract
       - chromium-62-64
-      - chromium-65-67
+      - chromium-65-68
       - webkit-62-64
-      - webkit-65-67
-      - practice-62-67
-      - voice-62-67
+      - webkit-65-68
+      - practice-62-68
+      - voice-62-68
       - cloud-d1
     runs-on: ubuntu-latest
     steps:
@@ -193,11 +198,11 @@ jobs:
         env:
           CONTRACT: ${{ needs.contract.result }}
           CHROMIUM_A: ${{ needs.chromium-62-64.result }}
-          CHROMIUM_B: ${{ needs.chromium-65-67.result }}
+          CHROMIUM_B: ${{ needs.chromium-65-68.result }}
           WEBKIT_A: ${{ needs.webkit-62-64.result }}
-          WEBKIT_B: ${{ needs.webkit-65-67.result }}
-          PRACTICE: ${{ needs.practice-62-67.result }}
-          VOICE: ${{ needs.voice-62-67.result }}
+          WEBKIT_B: ${{ needs.webkit-65-68.result }}
+          PRACTICE: ${{ needs.practice-62-68.result }}
+          VOICE: ${{ needs.voice-62-68.result }}
           CLOUD_D1: ${{ needs.cloud-d1.result }}
         run: |
           test "$CONTRACT" = success
@@ -208,4 +213,4 @@ jobs:
           test "$PRACTICE" = success
           test "$VOICE" = success
           test "$CLOUD_D1" = success
-          echo "Lessons 1-67 are cumulatively hard-certified: 1-61 by the established full regression gate and 62-67 by this hard gate."
+          echo "Lessons 1-68 are cumulatively hard-certified: 1-61 by the established full regression gate and 62-68 by this hard gate."
