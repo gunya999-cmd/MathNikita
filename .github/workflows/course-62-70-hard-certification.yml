@@ -37,6 +37,7 @@ jobs:
           tests/lesson-sixty-eight-source.spec.ts
           tests/lesson-sixty-nine-source.spec.ts
           tests/lesson-seventy-source.spec.ts
+          tests/lesson-seventy-route.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
   chromium-62-64:
