@@ -1,4 +1,4 @@
-name: Course 62-68 hard certification
+name: Course 62-69 hard certification
 
 on:
   workflow_dispatch:
@@ -12,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: course-62-68-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: course-62-69-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   contract:
-    name: Build + course contract 1-68
+    name: Build + course contract 1-69
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -35,6 +35,7 @@ jobs:
           tests/pedagogical-practice-quality.spec.ts
           tests/extended-practice-count.spec.ts
           tests/lesson-sixty-eight-source.spec.ts
+          tests/lesson-sixty-nine-source.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
   chromium-62-64:
@@ -55,10 +56,10 @@ jobs:
           tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
-  chromium-65-68:
-    name: Chromium hard runtime 65-68
+  chromium-65-69:
+    name: Chromium hard runtime 65-69
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -72,6 +73,7 @@ jobs:
           tests/lesson-sixty-six-full-flow.spec.ts tests/lesson-sixty-six-ipad.spec.ts
           tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts
           tests/lesson-sixty-eight-full-flow.spec.ts tests/lesson-sixty-eight-ipad.spec.ts
+          tests/lesson-sixty-nine-full-flow.spec.ts tests/lesson-sixty-nine-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
   webkit-62-64:
@@ -92,10 +94,10 @@ jobs:
           tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
           --workers=1
 
-  webkit-65-68:
-    name: iPad WebKit hard runtime 65-68
+  webkit-65-69:
+    name: iPad WebKit hard runtime 65-69
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -109,12 +111,13 @@ jobs:
           tests/lesson-sixty-six-full-flow.spec.ts tests/lesson-sixty-six-ipad.spec.ts
           tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts
           tests/lesson-sixty-eight-full-flow.spec.ts tests/lesson-sixty-eight-ipad.spec.ts
+          tests/lesson-sixty-nine-full-flow.spec.ts tests/lesson-sixty-nine-ipad.spec.ts
           --workers=1
 
-  practice-62-68:
-    name: Complete 140 tasks / 350 responses 62-68
+  practice-62-69:
+    name: Complete 160 tasks / 400 responses 62-69
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 65
     env:
       PRACTICE_START: 62
       PRACTICE_END: 68
@@ -125,13 +128,15 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npx playwright install --with-deps chromium
-      - name: Solve every mandatory-practice task with voice, reload and persistence checks
+      - name: Solve 140 tasks / 350 responses for lessons 62-68 with voice, reload and persistence checks
         run: npx playwright test tests/extended-practice-all-lessons.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Solve all 20 tasks / 50 responses for lesson 69 with persistence checks
+        run: npx playwright test tests/lesson-sixty-nine-practice.spec.ts --config=playwright.desktop.config.ts --workers=1
 
-  voice-62-68:
-    name: Sulafat sequencing + interruption 62-68 Chromium and WebKit
+  voice-62-69:
+    name: Sulafat sequencing + interruption 62-69 Chromium and WebKit
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -146,7 +151,7 @@ jobs:
           tests/lesson-sixty-two-voice.spec.ts tests/lesson-sixty-three-voice.spec.ts
           tests/lesson-sixty-four-voice.spec.ts tests/lesson-sixty-five-voice.spec.ts
           tests/lesson-sixty-six-voice.spec.ts tests/lesson-sixty-seven-voice.spec.ts
-          tests/lesson-sixty-eight-voice.spec.ts
+          tests/lesson-sixty-eight-voice.spec.ts tests/lesson-sixty-nine-voice.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - name: iPad WebKit voice hard pass
         run: >-
@@ -155,7 +160,7 @@ jobs:
           tests/lesson-sixty-two-voice.spec.ts tests/lesson-sixty-three-voice.spec.ts
           tests/lesson-sixty-four-voice.spec.ts tests/lesson-sixty-five-voice.spec.ts
           tests/lesson-sixty-six-voice.spec.ts tests/lesson-sixty-seven-voice.spec.ts
-          tests/lesson-sixty-eight-voice.spec.ts
+          tests/lesson-sixty-eight-voice.spec.ts tests/lesson-sixty-nine-voice.spec.ts
           --workers=1
 
   cloud-d1:
@@ -181,16 +186,16 @@ jobs:
         run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   hard-certified:
-    name: COURSE 1-68 HARD CERTIFIED
+    name: COURSE 1-69 HARD CERTIFIED
     if: always()
     needs:
       - contract
       - chromium-62-64
-      - chromium-65-68
+      - chromium-65-69
       - webkit-62-64
-      - webkit-65-68
-      - practice-62-68
-      - voice-62-68
+      - webkit-65-69
+      - practice-62-69
+      - voice-62-69
       - cloud-d1
     runs-on: ubuntu-latest
     steps:
@@ -198,11 +203,11 @@ jobs:
         env:
           CONTRACT: ${{ needs.contract.result }}
           CHROMIUM_A: ${{ needs.chromium-62-64.result }}
-          CHROMIUM_B: ${{ needs.chromium-65-68.result }}
+          CHROMIUM_B: ${{ needs.chromium-65-69.result }}
           WEBKIT_A: ${{ needs.webkit-62-64.result }}
-          WEBKIT_B: ${{ needs.webkit-65-68.result }}
-          PRACTICE: ${{ needs.practice-62-68.result }}
-          VOICE: ${{ needs.voice-62-68.result }}
+          WEBKIT_B: ${{ needs.webkit-65-69.result }}
+          PRACTICE: ${{ needs.practice-62-69.result }}
+          VOICE: ${{ needs.voice-62-69.result }}
           CLOUD_D1: ${{ needs.cloud-d1.result }}
         run: |
           test "$CONTRACT" = success
@@ -213,4 +218,4 @@ jobs:
           test "$PRACTICE" = success
           test "$VOICE" = success
           test "$CLOUD_D1" = success
-          echo "Lessons 1-68 are cumulatively hard-certified: 1-61 by the established full regression gate and 62-68 by this hard gate."
+          echo "Lessons 1-69 are cumulatively hard-certified: 1-61 by the established full regression gate and 62-69 by this hard gate."
