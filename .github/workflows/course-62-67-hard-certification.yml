@@ -166,12 +166,14 @@ jobs:
       - run: npm run build
       - run: node scripts/cloud-api-smoke.mjs
       - run: npx playwright install --with-deps chromium webkit
-      - name: Chromium profiles, sync races and dashboards
-        run: npx playwright test tests/cloud-student-ui.spec.ts tests/cloud-sync-races.spec.ts tests/student-profiles.spec.ts tests/learner-dashboard.spec.ts --config=playwright.profile.config.ts --workers=1
+      - name: Chromium profiles and sync races
+        run: npx playwright test tests/cloud-student-ui.spec.ts tests/cloud-sync-races.spec.ts tests/student-profiles.spec.ts --config=playwright.profile.config.ts --workers=1
       - name: Chromium multi-student isolation
         run: npx playwright test tests/multi-student-cloud-isolation.spec.ts --config=playwright.profile.config.ts --workers=1
       - name: iPad WebKit multi-student isolation
         run: npx playwright test tests/multi-student-cloud-isolation.spec.ts --config=playwright.profile.ipad.config.ts --workers=1
+      - name: Learner and parent dashboards
+        run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   hard-certified:
     name: COURSE 1-67 HARD CERTIFIED
