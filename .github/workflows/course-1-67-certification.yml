@@ -1,0 +1,98 @@
+# Delta release gate for lesson 67. Earlier certification workflows continue to protect prior lessons.
+name: Course 1-67 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-1-67-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-content:
+    name: Build + content + pedagogy through 67
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: >-
+          npx playwright test
+          tests/course-plan.spec.ts
+          tests/pedagogical-practice-quality.spec.ts
+          tests/extended-practice-count.spec.ts
+          tests/lesson-sixty-seven-full-flow.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - name: Complete all 20 mandatory practice tasks / 50 responses for lesson 67
+        run: npx playwright test tests/lesson-sixty-seven-practice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  chromium-67:
+    name: Chromium runtime 67
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-67:
+    name: iPad WebKit runtime 67
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lesson-sixty-seven-full-flow.spec.ts tests/lesson-sixty-seven-ipad.spec.ts --workers=1
+
+  voice-67:
+    name: Sulafat voice + interruption 67
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/lesson-sixty-seven-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  certified:
+    name: COURSE 1-67 DELTA CERTIFIED
+    if: always()
+    needs: [build-content, chromium-67, webkit-67, voice-67]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every lesson 67 release lane passed
+        env:
+          BUILD_CONTENT: ${{ needs.build-content.result }}
+          CHROMIUM_67: ${{ needs.chromium-67.result }}
+          WEBKIT_67: ${{ needs.webkit-67.result }}
+          VOICE_67: ${{ needs.voice-67.result }}
+        run: |
+          test "$BUILD_CONTENT" = success
+          test "$CHROMIUM_67" = success
+          test "$WEBKIT_67" = success
+          test "$VOICE_67" = success
+          echo "Lesson 67 delta is certified."

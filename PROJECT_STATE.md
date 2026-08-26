@@ -32,12 +32,12 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official year plan: 175 lessons, Merzlyak grade 5.
-- Ready course sequence after this change: lessons **1–66**.
-- Lesson 67 stays locked and is the next course item to implement after its method-guide route is verified.
+- Ready course sequence after this change: lessons **1–67**.
+- Lesson 68 stays locked and is the next course item; it starts § 19 `Деление с остатком` and must be implemented from the exact lesson-68 method-guide route.
 - Control works 1–3 are integrated at lessons 20, 33 and 53.
 - Current release protection is split into:
   - full regression gates protecting the already released course;
-  - lesson-66 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete 20-task / 50-response mandatory-practice run.
+  - lesson-67 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete 20-task / 50-response mandatory-practice run.
 - Lesson-specific regression tests do not assert that arbitrary future lessons must remain locked; current unlock state is checked centrally in `course-plan.spec.ts`, preventing false failures when the next lesson is released.
 
 ## Recent completed lessons
@@ -56,6 +56,7 @@ Use this file as the compact handoff context for continuing development without 
 - Lesson 64 — `Деление: решение уравнений`, §18, based on the official lesson-64 method guide. It teaches the links between unknown factor, dividend and divisor using the textbook examples `12x=84`, `x:21=16`, `576:x=18`, then completes exercises №457–458 and transfers the same reasoning to №459–460. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses, with root verification by substitution.
 - Lesson 65 — `Деление: комплексное закрепление`, §18, based on the official lesson-65 method guide route: №461 (2), 483, 491 (3–4), 499, 501, 512 plus repeat №519. The interactive route uses exact source wording where the uploaded textbook text was recoverable (notably №483 and №519) and explicitly treats partially retrieved exercises as method-guide checkpoints rather than inventing missing wording. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses. Core skills: mixed four-operation reasoning, division and inverse checking, equation components, productivity, units/meaning of intermediate values and multi-step semantic validation.
 - Lesson 66 — `Деление: уравнения и составные задачи`, §18, based on the official lesson-66 method guide route: №461 (3), 485, 493, 503, 505, 513, 515 plus repeat №520; homework transfer №462 (3), 486, 494, 504, 506, 514, 516. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses. Exact textbook material is used where recoverable: №461 (3) control answer 2 044; №485 full squirrel/bag condition with 24 kg and 28 kg answers; №503 control answer 128 perch; №505 control answers 84, 42 and 120 passengers. The route explicitly requires verbal identification of the unknown-component rule for exercises of the №493/494 type and does not fabricate missing source wording.
+- Lesson 67 — `Деление: итоговое обобщение`, final lesson of §18, based on the official lesson-67 method guide: oral №510; consolidation №487, 497, 507, 509, 517; homework transfer №488, 498, 508, 511. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses. №510 is used to reason about how a quotient changes when dividend/divisor are scaled; №487 and №507 use confirmed textbook control answers; partially retrieved №497/509 remain source checkpoints rather than fabricated restatements; №517 is the creative four-twos expression challenge. The lesson closes §18 and deliberately does not pre-teach remainder division from §19.
 
 ## Lesson quality contract
 
