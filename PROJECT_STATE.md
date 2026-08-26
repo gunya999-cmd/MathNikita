@@ -32,14 +32,14 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official year plan: 175 lessons, Merzlyak grade 5.
-- Ready course sequence after this change: lessons **1–70**.
-- Lesson 71 stays locked and is the next course item; it starts § 20 `Степень числа` and must be implemented from the exact lesson-71 method-guide route.
+- Ready course sequence after this change: lessons **1–71**.
+- Lesson 72 stays locked and is the next course item; it is the second § 20 `Степень числа` lesson and must reinforce the exact source route without pre-teaching the following control work.
 - Control works 1–3 are integrated at lessons 20, 33 and 53.
 - Current release protection is split into:
   - the established full regression gate protecting lessons 1–61;
-  - the cumulative hard gate protecting lessons 62–70, including full runtime, Chromium, iPad WebKit, Sulafat sequencing/interruption, cloud/D1 regression and complete mandatory-practice solving;
-  - a lesson-70 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete 20-task / 50-response mandatory-practice run.
-- The cumulative 62–70 practice lane solves **180 mandatory tasks / exactly 450 response slots**.
+  - the cumulative hard gate protecting lessons 62–71, including full runtime, Chromium, iPad WebKit, Sulafat sequencing/interruption, cloud/D1 regression and complete mandatory-practice solving;
+  - a lesson-71 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete 20-task / 50-response mandatory-practice run.
+- The cumulative 62–71 practice lane solves **200 mandatory tasks / exactly 500 response slots**.
 - Lesson-specific regression tests do not lock arbitrary future lessons; current unlock state is checked centrally in `course-plan.spec.ts`.
 
 ## Recent completed lessons
@@ -61,7 +61,8 @@ Use this file as the compact handoff context for continuing development without 
 - Lesson 67 — `Деление: итоговое обобщение`, final lesson of §18, based on the official lesson-67 method guide: oral №510; consolidation №487, 497, 507, 509, 517; homework transfer №488, 498, 508, 511. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses.
 - Lesson 68 — `Деление с остатком: смысл и правило`, first lesson of §19 and a new-material lesson. It follows the verified method-guide route: theory §19; main consolidation №521, 523, 525, 527; repeat №545 (1–2); homework transfer №522, 524, 526. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses.
 - Lesson 69 — `Деление с остатком: задачи и закономерности`, second lesson of §19 and a reinforcement lesson. It follows the verified method-guide route: oral №2–3 on p.132; main №528, 530, 533, 535, 541, 542; repeat №546; homework transfer №529, 534, 536. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses. The incompletely retrieved №530 table remains an explicit textbook checkpoint; structural training rows are labelled as such instead of fabricating source wording.
-- Lesson 70 — `Деление с остатком: итоговое обобщение`, final lesson of §19 and an обобщение/systematization lesson. It follows the verified method-guide route: oral №4–6 on pp.132–133; main №531, 537, 538, 540, 543, 544; repeat №547; homework transfer §19, №532, 539, 545 (3–4). It has 36 meaningful stages, 21 checked activities and 20 fully curated mandatory-practice tasks / exactly 50 responses. Core skills: restore the dividend with `a=b·q+r`; solve inverse remainder problems by requiring `b|(a-r)` and `b>r`; find every possible divisor in №537 and №538; model calendar cycles by remainder; prove that the last decimal digit is the remainder modulo 10; construct non-unique expressions with prescribed remainders; solve the non-uniform rope timing puzzle №547. The exact wording of oral №6 is not reliably recovered and remains a source checkpoint rather than being fabricated. Lesson 70 closes §19; lesson 71 begins §20 `Степень числа`.
+- Lesson 70 — `Деление с остатком: итоговое обобщение`, final lesson of §19 and an обобщение/systematization lesson. It follows the verified method-guide route: oral №4–6 on pp.132–133; main №531, 537, 538, 540, 543, 544; repeat №547; homework transfer §19, №532, 539, 545 (3–4). It has 36 meaningful stages, 21 checked activities and 20 fully curated mandatory-practice tasks / exactly 50 responses. The exact wording of oral №6 is not reliably recovered and remains a source checkpoint rather than being fabricated.
+- Lesson 71 — `Степень числа: основание и показатель`, first lesson of §20 and a new-material lesson. It follows the verified method-guide route: oral №1–2 on p.136; theory §20; primary consolidation №548, 549, 550, 552; repeat №560 (1–2); conclusion questions 1–6; homework transfer §20, questions 1–6, №551, 553, 561. It has 36 meaningful stages, 21 checked activities and 20 fully curated mandatory-practice tasks / exactly 50 responses. Core concepts: `aⁿ` as a product of `n` equal factors `a`; base and exponent; square and cube; `a¹=a`; product ↔ power conversion; the special ellipsis notation in №549(6–8); and the rule that powers are evaluated before ordinary arithmetic operations.
 
 ## Lesson quality contract
 
