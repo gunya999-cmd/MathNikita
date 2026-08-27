@@ -19,43 +19,54 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official plan: 175 Merzlyak grade-5 lessons.
-- Ready after this change: **lessons 1–77**.
-- Next locked lesson: **78 — § 22 `Прямоугольный параллелепипед. Пирамида`**.
+- Ready after this change: **lessons 1–78**.
+- Next locked lesson: **79 — § 22 `Прямоугольный параллелепипед. Пирамида` (закрепление)**.
 - Integrated control works: lessons **20, 33, 53, 73**.
-- Lessons 62–72 and 74–77 are protected by the mature ordinary-lesson contract, including complete mandatory-practice solving.
-- The cumulative ordinary-practice lane is now **300 tasks / exactly 750 response slots for lessons 62–72 and 74–77**. Lesson 73 is a source-exact control work and deliberately does not receive artificial 20-task/50-response practice.
-- Lesson-specific tests do not lock arbitrary future lessons; the current unlock boundary is checked centrally in `tests/course-plan.spec.ts`.
+- Lessons 62–72 and 74–78 are protected by the mature ordinary-lesson contract, including complete mandatory-practice solving.
+- The cumulative ordinary-practice lane is now **320 tasks / exactly 800 response slots for lessons 62–72 and 74–78**. Lesson 73 is a source-exact control work and deliberately does not receive artificial 20-task/50-response practice.
+- The current unlock boundary is checked centrally in `tests/course-plan.spec.ts`; lesson-specific runtime tests must not freeze an obsolete future boundary.
+
+## Lesson 78 — § 22 rectangular parallelepiped foundations
+
+- First §22 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
+- Verified technological route: oral №1–2 p.150; theory §22 pp.145–146; №598, 599, 602; repeat №612; questions 1–12; homework §22, №600, 601, 603.
+- Exact theory establishes:
+  - **6 rectangular faces, 12 edges, 8 vertices**;
+  - three pairs of equal opposite faces;
+  - three measurements: length, width and height;
+  - surface area as the sum of six face areas, represented as `Sпов = 2(ab + bc + ac)`;
+  - cube as a rectangular parallelepiped with all three measurements equal and six equal square faces.
+- Exact oral warm-up:
+  - `13·4·25=1300`;
+  - `4·5·78·5=7800`;
+  - `125·943·8=943000`;
+  - `3a·16b=48ab`, `4m·9n·5k=180mnk`, `7a·2b·50c·8d=5600abcd`.
+- №598 remains dependent on the original textbook figure 169; the app does not invent or approximately redraw its lettered spatial diagram.
+- №599 uses exact dimensions `9 см × 5 см × 6 см`: sum of all edges `80 см`, surface area `258 см²`.
+- №602 uses a cube with edge `5 см`: one face `25 см²`, total surface `150 см²`, sum of edges `60 см`.
+- Homework transfer is exact for №600 (`13,16,21 см`), №601 (`9,24,11 м`) and №603 (cube edge `7 см`).
+- №612 remains an explicit source checkpoint because its full wording was not reliably recovered.
+- Method-guide Dictation 19 provides independent checks, including a cube built from 64 unit cubes (`4 см` edge), wireframe `2×4×5` (`44 см`) and surface `10×20×30` (`2200 см²`).
+- Mandatory practice: **20 tasks / exactly 50 response slots**.
+- Persistence, retry state, Pythagoras help, analytics and completion follow the mature ordinary-lesson contract.
+- Sulafat sequencing and immediate interruption on navigation are covered.
+- Chromium and iPad/WebKit full-flow/practice coverage is included.
 
 ## Lesson 77 — § 21 synthesis
 
 - Fourth and final §21 ordinary lesson; **36 meaningful stages / 21 checked main-lesson actions**.
 - Verified technological route: oral №4 p.142; №584, 586, 587, 593, 594; repeat №597.
-- Exact textbook material is used for №584–587:
-  - №584 — square side `12 см` is equal-area with a rectangle length `18 см`; rectangle width `8 см`, perimeter `52 см`;
-  - №585 is exact adjacent transfer: rectangle `3 см × 12 см` is equal-area with a square; square side `6 см`, perimeter `24 см`;
-  - №586 — width `26 см`, length increased by `4 см`; area increases by `104 см²`;
-  - №587 — increasing each side by factor `4` multiplies perimeter by `4` and area by `16`.
-- Method-guide Dictation 18 provides exact independent synthesis checks for rectangle/square formulas, area units and true/false properties of area.
-- Oral №4 p.142, №593 and №597 remain explicit source checkpoints because their full wording/diagram was not recovered reliably.
-- №594 uses only the verified author indication: `25=3²+4²`, while `36` cannot be represented as the sum of squares of two positive natural numbers. The missing original drawing/statement is not reconstructed.
-- Mandatory practice: **20 tasks / exactly 50 response slots**, curated from verified §21 material rather than invented textbook wording.
-- Persistence, retry state, Pythagoras help, analytics and completion follow the mature ordinary-lesson contract.
-- Sulafat sequencing and immediate interruption on navigation are covered.
-- Chromium and iPad/WebKit full-flow/practice coverage is included.
+- Exact textbook material is used for №584–587; method-guide Dictation 18 supplies independent synthesis checks.
+- Oral №4, №593 and №597 remain source checkpoints where the complete source was not reliably recovered.
+- №594 uses only the verified author indication `25=3²+4²`, while `36` cannot be represented as the sum of squares of two positive natural numbers.
+- Mandatory practice: **20 tasks / exactly 50 response slots**.
 - §21 is complete after lesson 77.
 
-## Lesson 76 — § 21 applied practice
+## Lessons 74–76 — § 21
 
-- Third §21 ordinary lesson; **36 meaningful stages / 21 checked main-lesson actions**.
-- Verified route: oral №3 p.141; №580, 581, 583, 590, 592; homework §21, №582, 591.
-- Exact applied tasks cover field seeding, wall tiles, paint consumption and greenhouse yield.
-- №590 uses the verified factor-pair/table model; №592 uses only the verified equal-halves conclusion; №591 remains a source checkpoint.
-- Mandatory practice: **20 tasks / exactly 50 response slots**.
-
-## Lessons 74–75 — § 21 foundation and reinforcement
-
-- 74 — first §21 lesson: properties of area, unit square, square units, `S=ab`, `S=a²`, equal-area figures; route №564, 565, 566, 567, 569, 571, 572; 36/21 and 20/50.
-- 75 — second §21 lesson: area-unit conversion, inverse `S=ab`, perimeter after recovering a side, equal-area decomposition; route №574, 576, 578, 589 + №596(2); 36/21 and 20/50.
+- 74 — foundations: properties of area, unit square, square units, `S=ab`, `S=a²`, equal-area figures; 36/21 and 20/50.
+- 75 — area-unit conversion, inverse `S=ab`, perimeter after recovering a side, equal-area decomposition; 36/21 and 20/50.
+- 76 — applied area/resource problems, factor-pair search and equal halves; 36/21 and 20/50.
 
 ## Lesson 73 — Control work № 4
 
@@ -63,33 +74,30 @@ Use this file as the compact handoff context for continuing development without 
 - Exact source workload: **7 tasks / 13 evaluated answer fields**.
 - Primary submission is frozen in `submittedResponses`; correction can open only originally incorrect fields and never rewrites the primary score.
 - Control integrity: no Pythagoras, mentor, ordinary lesson feedback or answer reveal before final submission.
-- Chromium and iPad/WebKit coverage protects submission, persistence, correction and immutable primary result.
 
 ## Recent ordinary lessons
 
-- 68 — first §19 lesson: remainder meaning/rule, route №521, 523, 525, 527; 36/21 and 20/50.
-- 69 — §19 reinforcement: №528, 530, 533, 535, 541, 542 + repeat №546.
-- 70 — §19 synthesis: №531, 537, 538, 540, 543, 544 + repeat №547.
-- 71 — first §20 lesson: degree `aⁿ`, base/exponent, square/cube, `a¹=a`, №548, 549, 550, 552 + №560(1–2); 36/21 and 20/50.
-- 72 — §20 reinforcement: oral №3–5; №554, 556, 558; repeat №560(3–4), 562; 36/21 and 20/50.
-- 74 — first §21 lesson; 36/21 and 20/50.
-- 75 — second §21 lesson; 36/21 and 20/50.
-- 76 — third §21 lesson; 36/21 and 20/50.
-- 77 — final §21 synthesis; 36/21 and 20/50.
+- 68 — first §19 lesson: remainder meaning/rule; 36/21 and 20/50.
+- 69 — §19 reinforcement; 36/21 and 20/50.
+- 70 — §19 synthesis; 36/21 and 20/50.
+- 71 — first §20 lesson: degree `aⁿ`, base/exponent, square/cube; 36/21 and 20/50.
+- 72 — §20 reinforcement; 36/21 and 20/50.
+- 74–77 — complete §21 sequence; each ordinary lesson 36/21 and 20/50.
+- 78 — first §22 lesson: rectangular parallelepiped and cube foundations; 36/21 and 20/50.
 
-## Release protection after lesson 77
+## Release protection after lesson 78
 
 - Established full regression gate continues to protect lessons 1–61.
-- `Course 62-77 hard certification` protects the current block:
-  - build + course/source contract through 77;
+- `Course 62-78 hard certification` protects the current block:
+  - build + course/source contract through 78;
   - Chromium hard runtime;
   - iPad/WebKit hard runtime;
-  - complete **300-task/750-response** ordinary practice for 62–72 and 74–77;
-  - Sulafat sequencing/interruption for ordinary lessons 62–72 and 74–77;
+  - complete **320-task/800-response** ordinary practice for 62–72 and 74–78;
+  - Sulafat sequencing/interruption for ordinary lessons 62–72 and 74–78;
   - D1/cloud/multi-student/dashboard regression;
-  - exact lesson-73 control-work runtime/integrity.
-- `Course 1-77 certification` is the lesson-77 delta gate for source fidelity, full flow, mandatory practice, Chromium, iPad/WebKit and Sulafat behavior.
-- Lesson 78 is the centralized locked boundary and starts §22.
+  - exact lesson-73 control-work integrity.
+- `Course 1-78 certification` is the lesson-78 delta gate for source fidelity, full flow, mandatory practice, Chromium, iPad/WebKit and Sulafat behavior.
+- Lesson 79 is the centralized locked boundary.
 
 ## Ordinary interactive lesson quality contract
 
