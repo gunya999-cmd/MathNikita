@@ -1,0 +1,83 @@
+# Delta release gate for control work lesson 73. Prior workflows continue to protect earlier lessons.
+name: Course 1-73 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-1-73-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-content:
+    name: Build + control source contract through 73
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Verify course plan, control source fidelity and immutable result flow
+        run: >-
+          npx playwright test
+          tests/course-plan.spec.ts
+          tests/pedagogical-practice-quality.spec.ts
+          tests/extended-practice-count.spec.ts
+          tests/lesson-seventy-three-source.spec.ts
+          tests/lesson-seventy-three-full-flow.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+
+  chromium-73:
+    name: Chromium control runtime 73
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/lesson-seventy-three-full-flow.spec.ts tests/lesson-seventy-three-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-73:
+    name: iPad WebKit control runtime 73
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lesson-seventy-three-full-flow.spec.ts tests/lesson-seventy-three-ipad.spec.ts --workers=1
+
+  certified:
+    name: COURSE 1-73 DELTA CERTIFIED
+    if: always()
+    needs: [build-content, chromium-73, webkit-73]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every lesson 73 control-work lane passed
+        env:
+          BUILD_CONTENT: ${{ needs.build-content.result }}
+          CHROMIUM_73: ${{ needs.chromium-73.result }}
+          WEBKIT_73: ${{ needs.webkit-73.result }}
+        run: |
+          test "$BUILD_CONTENT" = success
+          test "$CHROMIUM_73" = success
+          test "$WEBKIT_73" = success
+          echo "Lesson 73 control work delta is certified."

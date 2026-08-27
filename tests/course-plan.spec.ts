@@ -1,14 +1,14 @@
 import { expect,test } from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 72',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 73',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
   await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(69);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(72);
-  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(3);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(73);
+  await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(4);
   await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(28)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(29)).toContainText('Числовые и буквенные выражения. Формулы');
@@ -35,9 +35,12 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 72',a
   await expect(lessons.nth(71)).toContainText('Степень числа: закрепление и порядок действий');
   await expect(lessons.nth(71)).toBeEnabled();
   await expect(lessons.nth(72)).toContainText('Контрольная работа № 4');
-  await expect(lessons.nth(72)).toBeDisabled();
+  await expect(lessons.nth(72)).toBeEnabled();
+  await expect(lessons.nth(72)).toHaveClass(/is-control-ready/);
+  await expect(lessons.nth(73)).toContainText('Площадь. Площадь прямоугольника');
+  await expect(lessons.nth(73)).toBeDisabled();
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 72 урока.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 73 урока.')).toBeVisible();
 });

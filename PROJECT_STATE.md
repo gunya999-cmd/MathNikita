@@ -5,92 +5,82 @@ Use this file as the compact handoff context for continuing development without 
 ## Project
 
 - App: MathNikita — AI math tutor web app.
-- Repository: `gunya999-cmd/MathNikita`
-- Production URL: `https://mathnikita.gunya999.workers.dev`
+- Repository: `gunya999-cmd/MathNikita`.
+- Production: `https://mathnikita.gunya999.workers.dev`.
 - Production branch: `main`.
-- Deployment: GitHub `main` -> Cloudflare Worker + static assets.
-- Hosting rule: Cloudflare-first only. Do not move production hosting unless explicitly requested.
-- Build command: `npm run build`.
-- Deploy command: `npm run cf:deploy` or `npx wrangler deploy`.
+- Stack: Vite + React + TypeScript, Cloudflare Worker/static assets, Cloudflare D1 for student/profile/progress data.
+- AI tutor: Gemini primary with local fallback; OpenAI optional backup.
+- Narration: studio Sulafat path with interruption/fallback handling.
 
-## Stack
+## Non-negotiable deployment invariant
 
-- Frontend: Vite + React + TypeScript.
-- Backend: Cloudflare Worker with static assets and API routes.
-- Auth/DB: Cloudflare D1 student/profile/progress flow; legacy Supabase-related code/config may still exist and must not be treated as the source of truth without checking current code.
-- AI tutor: Gemini primary with local fallback; OpenAI is optional backup.
-- Narration: studio narration path with Sulafat plus interruption/fallback handling.
-
-## Production/deployment invariants
-
-- `main` is the source of truth for production.
-- `wrangler.jsonc` is the source of truth for Worker/static asset routing.
-- `/api/*` must continue to run through the Worker via `run_worker_first`.
-- Production deploy workflow builds the exact merged Git SHA, deploys it to Cloudflare, then checks `/api/version` until the deployed SHA equals `main`.
-- Never claim production is updated until the `/api/version` verification job succeeds.
+`main` is the production source of truth. The production workflow builds the exact merged Git SHA, deploys Worker/assets, and polls `/api/version`. Never claim a release is in production until `Production · deployed SHA matches main` succeeds for that exact merge SHA.
 
 ## Current course checkpoint
 
-- Official year plan: 175 lessons, Merzlyak grade 5.
-- Ready course sequence after this change: lessons **1–72**.
-- Lesson 73 stays locked and is the next course item: `Контрольная работа № 4`. It must be implemented from the exact control-work source, without inventing variants or tasks.
-- Control works 1–3 are integrated at lessons 20, 33 and 53; control work 4 is next at lesson 73.
-- Current release protection is split into:
-  - the established full regression gate protecting lessons 1–61;
-  - the cumulative hard gate protecting lessons 62–72, including full runtime, Chromium, iPad WebKit, Sulafat sequencing/interruption, cloud/D1 regression and complete mandatory-practice solving;
-  - a lesson-72 delta gate covering build/content, full-flow, Chromium, iPad WebKit, Sulafat interruption and the complete 20-task / 50-response mandatory-practice run.
-- The cumulative 62–72 practice lane solves **220 mandatory tasks / exactly 550 response slots**.
-- Lesson-specific regression tests do not lock arbitrary future lessons; current unlock state is checked centrally in `course-plan.spec.ts`.
+- Official plan: 175 Merzlyak grade-5 lessons.
+- Ready after this change: **lessons 1–73**.
+- Next locked lesson: **74 — § 21 `Площадь. Площадь прямоугольника`**.
+- Integrated control works: lessons **20, 33, 53, 73**.
+- Lessons 62–72 remain protected by the mature ordinary-lesson contract, including complete mandatory-practice solving.
+- The cumulative ordinary-practice lane remains **220 tasks / exactly 550 response slots for lessons 62–72**. Lesson 73 is a source-exact control work and deliberately does not receive artificial 20-task/50-response practice.
+- Lesson-specific tests do not lock arbitrary future lessons; the current unlock boundary is checked centrally in `tests/course-plan.spec.ts`.
 
-## Recent completed lessons
+## Lesson 73 — Control work № 4
 
-- Lesson 53 — `Контрольная работа № 3`.
-- Lesson 54 — `Умножение. Переместительное свойство умножения`.
-- Lesson 55 — multiplication practice / round factors.
-- Lesson 56 — `Письменное умножение на однозначное число`.
-- Lesson 57 — `Итоговая практика умножения`.
-- Lesson 58 — `Сочетательное свойство умножения`.
-- Lesson 59 — `Распределительное свойство умножения`.
-- Lesson 60 — `Стратегии свойств умножения`.
-- Lesson 61 — `Смысл деления`, §18, №447–453; 36 stages, 21 checked activities, 20 mandatory-practice tasks / 50 responses.
-- Lesson 62 — `Деление: вычисления и задачи`, §18 reinforcement based on the official lesson-62 methodology map. Main textbook route: №452, 455, 465, 466, 468, 470; homework/transfer practice uses №453, 456, 467, 469, 471. It has 36 stages, 21 checked activities and 20 mandatory-practice tasks / exactly 50 responses.
-- Lesson 63 — `Деление: текстовые задачи арифметическим способом`, §18, based on the official lesson-63 method guide and textbook tasks №454, 472, 474, 476, 478, 480. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses.
-- Lesson 64 — `Деление: решение уравнений`, §18, based on the official lesson-64 method guide. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses, with root verification by substitution.
-- Lesson 65 — `Деление: комплексное закрепление`, §18, based on the official lesson-65 method guide route: №461 (2), 483, 491 (3–4), 499, 501, 512 plus repeat №519. Missing source wording is not fabricated.
-- Lesson 66 — `Деление: уравнения и составные задачи`, §18, based on the official lesson-66 method guide route: №461 (3), 485, 493, 503, 505, 513, 515 plus repeat №520; homework transfer №462 (3), 486, 494, 504, 506, 514, 516. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses.
-- Lesson 67 — `Деление: итоговое обобщение`, final lesson of §18, based on the official lesson-67 method guide: oral №510; consolidation №487, 497, 507, 509, 517; homework transfer №488, 498, 508, 511. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses.
-- Lesson 68 — `Деление с остатком: смысл и правило`, first lesson of §19 and a new-material lesson. It follows the verified method-guide route: theory §19; main consolidation №521, 523, 525, 527; repeat №545 (1–2); homework transfer №522, 524, 526. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses.
-- Lesson 69 — `Деление с остатком: задачи и закономерности`, second lesson of §19 and a reinforcement lesson. It follows the verified method-guide route: oral №2–3 on p.132; main №528, 530, 533, 535, 541, 542; repeat №546; homework transfer №529, 534, 536. It has 36 meaningful stages, 21 checked activities and 20 curated mandatory-practice tasks / exactly 50 responses. The incompletely retrieved №530 table remains an explicit textbook checkpoint; structural training rows are labelled as such instead of fabricating source wording.
-- Lesson 70 — `Деление с остатком: итоговое обобщение`, final lesson of §19 and an обобщение/systematization lesson. It follows the verified method-guide route: oral №4–6 on pp.132–133; main №531, 537, 538, 540, 543, 544; repeat №547; homework transfer §19, №532, 539, 545 (3–4). It has 36 meaningful stages, 21 checked activities and 20 fully curated mandatory-practice tasks / exactly 50 responses. The exact wording of oral №6 is not reliably recovered and remains a source checkpoint rather than being fabricated.
-- Lesson 71 — `Степень числа: основание и показатель`, first lesson of §20 and a new-material lesson. It follows the verified method-guide route: oral №1–2 on p.136; theory §20; primary consolidation №548, 549, 550, 552; repeat №560 (1–2); conclusion questions 1–6; homework transfer §20, questions 1–6, №551, 553, 561. It has 36 meaningful stages, 21 checked activities and 20 fully curated mandatory-practice tasks / exactly 50 responses. Core concepts: `aⁿ` as a product of `n` equal factors `a`; base and exponent; square and cube; `a¹=a`; product ↔ power conversion; the special ellipsis notation in №549(6–8); and the rule that powers are evaluated before ordinary arithmetic operations.
-- Lesson 72 — `Степень числа: закрепление и порядок действий`, second and final lesson of §20. It follows the verified method-guide route: oral №3–5 on p.136; main №554, 556, 558; repeat №560 (3–4), 562; homework transfer §20, №555, 557, 559 and optional №563. It has 36 meaningful stages, 21 checked activities and 20 fully curated mandatory-practice tasks / exactly 50 responses. Core skills: substitute values into expressions with powers; respect parentheses and operation order in №554(5–8); represent 9, 27, 81 and 243 as powers of 3; distinguish `a²−b²` from `(a−b)²`; translate verbal descriptions into expressions; solve the repeat equations and the three-digit logic task №562. The exact wording of optional №563 is not reliably recovered and is not fabricated.
+- Source: Merzlyak method guide, **Контрольная работа № 4 — `Умножение и деление натуральных чисел. Свойства умножения`, вариант 1**.
+- Exact source workload: **7 tasks / 13 evaluated answer fields**.
+- Task 1: `36 · 2418`, `175 · 204`, `1456 : 28`, `177 000 : 120`.
+- Task 2: `(326 · 48 − 9 587) : 29`.
+- Task 3: `x · 14 = 364`, `324 : x = 9`, `19x − 12x = 126`.
+- Task 4: `25 · 79 · 4`, `43 · 89 + 89 · 57`, using multiplication properties efficiently.
+- Task 5: 7 kg candies + 9 kg cookies for 1,200 rubles; candies 120 rubles/kg; find cookie price/kg.
+- Task 6: two trains from one station in one direction at 56 and 64 km/h; distance after 6 h.
+- Task 7: number of trailing zeros in the product of all natural numbers from 19 through 35.
+- Exact answers: `87048`, `35700`, `52`, `1475`, `209`, `26`, `36`, `18`, `7900`, `8900`, `40`, `48`, `5`.
+- Control integrity: no Pythagoras, mentor, ordinary lesson feedback or answer reveal before final submission.
+- Learner may revise any response before submission.
+- On submission, `submittedResponses` freezes the primary attempt. The primary score is immutable.
+- Correction mode opens only originally incorrect fields; successful correction never rewrites the primary score.
+- Control progress/completion persists locally and emits the normal lesson-completed event.
+- Chromium and iPad/WebKit full-flow tests cover correct submission, persistence, one-error correction and immutable primary result.
 
-## Lesson quality contract
+## Recent ordinary lessons
 
-For normal interactive lessons, preserve the established release standard unless the source material requires a deliberate exception:
+- 68 — first §19 lesson: remainder meaning/rule, route №521, 523, 525, 527; 36 stages / 21 checks / 20 tasks / 50 responses.
+- 69 — §19 reinforcement: №528, 530, 533, 535, 541, 542 + repeat №546; no fabricated source wording.
+- 70 — §19 synthesis: №531, 537, 538, 540, 543, 544 + repeat №547; no fabricated oral №6 wording.
+- 71 — first §20 lesson: degree `aⁿ`, base/exponent, square/cube, `a¹=a`, №548, 549, 550, 552 + №560(1–2); 36/21 and 20/50.
+- 72 — §20 reinforcement: oral №3–5; №554, 556, 558; repeat №560(3–4), 562; homework №555, 557, 559 and optional №563; 36/21 and 20/50. Optional №563 is not reconstructed where exact wording was unavailable.
 
-- about 36 meaningful learning stages, not filler;
-- textbook/method-guide fidelity first;
-- interactive checked activities embedded in the main lesson;
-- mandatory practice: exactly 20 tasks, with at least 12 curated tasks and no more than 8 parametric tasks;
-- for the current mature lesson series, keep the 50-response practice contract;
-- Pythagoras progressive help, persistence and learner analytics;
-- Sulafat narration and immediate cancellation of stale narration when the learner navigates forward/back/jumps to another stage;
-- Chromium and iPad/WebKit full-flow/regression coverage;
-- do not unlock the next lesson until the current lesson is implemented and release-tested.
+## Release protection after lesson 73
 
-## Working platform status
+- Established full regression gate continues to protect lessons 1–61.
+- `Course 62-73 hard certification` protects the current block:
+  - build + course/source contract through 73;
+  - Chromium hard runtime;
+  - iPad/WebKit hard runtime;
+  - complete 220-task/550-response ordinary practice for 62–72;
+  - Sulafat sequencing/interruption for ordinary lessons 62–72;
+  - D1/cloud/multi-student/dashboard regression;
+  - exact lesson-73 control-work runtime/integrity.
+- `Course 1-73 certification` is the lesson-73 delta gate for source contract, Chromium and iPad/WebKit control runtime.
 
-- Cloudflare deployment workflow is active.
-- D1-backed student authentication/profile/progress flows have production regression coverage.
-- Multi-student isolation and learner/parent dashboards have automated regression coverage.
-- Gemini tutor endpoint and local fallback exist in the Worker flow.
-- Voice sequencing/interruption is protected by automated tests.
+## Ordinary interactive lesson quality contract
 
-## Development rule for future ChatGPT work
+Unless the source requires a deliberate exception:
 
-- Use this file as the handoff checkpoint instead of relying on a long conversation.
-- Keep GitHub commits small and inspect CI failures rather than guessing.
-- For each completed lesson: implement -> add/extend tests -> open PR -> pass release gates -> merge to `main` -> allow Cloudflare deploy -> verify exact production SHA through `/api/version`.
-- After completion, update this checkpoint to the newly ready lesson and identify the next locked lesson.
-- Keep production on Cloudflare by default.
+- about 36 meaningful stages;
+- source fidelity before embellishment;
+- about 21 checked main-lesson activities in the mature series;
+- mandatory practice exactly 20 tasks, at least 12 curated and no more than 8 parametric;
+- exactly 50 response slots in the current mature series;
+- Pythagoras progressive help, persistence and analytics;
+- Sulafat narration with immediate cancellation of stale narration on navigation;
+- Chromium + iPad/WebKit release coverage.
+
+Control works are intentionally different: source-exact assessment workload, no tutoring before submission, frozen primary attempt, and optional correction that cannot alter the primary score.
+
+## Development rule
+
+For every next release: inspect exact textbook/method-guide source -> implement -> add/extend automated tests -> open PR -> require delta/hard gates -> merge exact tested head -> wait for Cloudflare deployment -> verify exact merged SHA through `/api/version` -> only then call production updated.

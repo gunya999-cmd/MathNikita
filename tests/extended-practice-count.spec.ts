@@ -2,8 +2,8 @@ import {expect,test} from '@playwright/test';
 import {extendedPracticeByLesson} from '../src/data/extendedPracticeData';
 import {extendedPracticeSetResponseCount} from '../src/data/extendedPracticeTypes';
 
-for(let lessonNumber=1;lessonNumber<=72;lessonNumber+=1){
-  if(lessonNumber===20||lessonNumber===33||lessonNumber===53)continue;
+for(let lessonNumber=1;lessonNumber<=73;lessonNumber+=1){
+  if(lessonNumber===20||lessonNumber===33||lessonNumber===53||lessonNumber===73)continue;
   test(`lesson ${lessonNumber} has exactly twenty mandatory-practice tasks`,()=>{
     const practice=extendedPracticeByLesson[lessonNumber];
     expect(practice,`Lesson ${lessonNumber} has no mandatory-practice data`).toBeTruthy();
