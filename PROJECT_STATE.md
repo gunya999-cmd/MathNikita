@@ -19,12 +19,24 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official plan: 175 Merzlyak grade-5 lessons.
-- Ready after this change: **lessons 1–73**.
-- Next locked lesson: **74 — § 21 `Площадь. Площадь прямоугольника`**.
+- Ready after this change: **lessons 1–74**.
+- Next locked lesson: **75 — § 21 `Площадь. Площадь прямоугольника` (закрепление)**.
 - Integrated control works: lessons **20, 33, 53, 73**.
-- Lessons 62–72 remain protected by the mature ordinary-lesson contract, including complete mandatory-practice solving.
-- The cumulative ordinary-practice lane remains **220 tasks / exactly 550 response slots for lessons 62–72**. Lesson 73 is a source-exact control work and deliberately does not receive artificial 20-task/50-response practice.
+- Lessons 62–72 and 74 remain protected by the mature ordinary-lesson contract, including complete mandatory-practice solving.
+- The cumulative ordinary-practice lane is now **240 tasks / exactly 600 response slots for lessons 62–72 and 74**. Lesson 73 is a source-exact control work and deliberately does not receive artificial 20-task/50-response practice.
 - Lesson-specific tests do not lock arbitrary future lessons; the current unlock boundary is checked centrally in `tests/course-plan.spec.ts`.
+
+## Lesson 74 — § 21 `Площадь. Площадь прямоугольника`
+
+- First §21 ordinary lesson; **36 meaningful stages / 21 checked main-lesson actions**.
+- Exact route from the technological map: oral №1 p.141; §21 theory; №564, 565, 566, 567, 569, 571, 572; repeat №595; questions 1–7; homework §21, №568, 570, 573 and №596(1).
+- Core concepts: properties of area, unit square, square units, equal vs equal-area figures, rectangle formula `S=ab`, square formula `S=a²`, and the requirement to express side lengths in the same units before multiplication.
+- Verified route examples include area-unit conversion, rectangle/square area, recovering a side from a relation or perimeter, and mixed-unit perimeter-to-area problems.
+- №595 and №596(1) remain explicit source checkpoints where exact wording was not recovered reliably; no fabricated replacement wording is introduced.
+- Mandatory practice: **20 tasks / exactly 50 response slots**, with homework transfer №568, 570 and 573 represented without breaking source fidelity.
+- Persistence, retry state, Pythagoras help, analytics and completion follow the mature ordinary-lesson contract.
+- Sulafat narration is covered for sequencing and immediate interruption when the learner advances.
+- Chromium and iPad/WebKit full-flow/practice coverage is included.
 
 ## Lesson 73 — Control work № 4
 
@@ -52,19 +64,21 @@ Use this file as the compact handoff context for continuing development without 
 - 70 — §19 synthesis: №531, 537, 538, 540, 543, 544 + repeat №547; no fabricated oral №6 wording.
 - 71 — first §20 lesson: degree `aⁿ`, base/exponent, square/cube, `a¹=a`, №548, 549, 550, 552 + №560(1–2); 36/21 and 20/50.
 - 72 — §20 reinforcement: oral №3–5; №554, 556, 558; repeat №560(3–4), 562; homework №555, 557, 559 and optional №563; 36/21 and 20/50. Optional №563 is not reconstructed where exact wording was unavailable.
+- 74 — first §21 lesson: area meaning/properties, square units, `S=ab`, `S=a²`, equal-area figures; route №564, 565, 566, 567, 569, 571, 572; 36/21 and 20/50.
 
-## Release protection after lesson 73
+## Release protection after lesson 74
 
 - Established full regression gate continues to protect lessons 1–61.
-- `Course 62-73 hard certification` protects the current block:
-  - build + course/source contract through 73;
+- `Course 62-74 hard certification` protects the current block:
+  - build + course/source contract through 74;
   - Chromium hard runtime;
   - iPad/WebKit hard runtime;
-  - complete 220-task/550-response ordinary practice for 62–72;
-  - Sulafat sequencing/interruption for ordinary lessons 62–72;
+  - complete **240-task/600-response** ordinary practice for 62–72 and 74;
+  - Sulafat sequencing/interruption for ordinary lessons 62–72 and 74;
   - D1/cloud/multi-student/dashboard regression;
   - exact lesson-73 control-work runtime/integrity.
-- `Course 1-73 certification` is the lesson-73 delta gate for source contract, Chromium and iPad/WebKit control runtime.
+- `Course 1-74 certification` is the lesson-74 delta gate for source fidelity, full flow, mandatory practice, Chromium, iPad/WebKit and Sulafat behavior.
+- Lesson 73 regression tests now correctly treat lesson 74 as unlocked; lesson 75 remains the centralized locked boundary.
 
 ## Ordinary interactive lesson quality contract
 
