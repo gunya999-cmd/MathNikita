@@ -9,12 +9,7 @@ function mustReplace(text,search,replacement,label){if(!text.includes(search))th
   if(!text.includes("import { AreaFoundationsPlayer } from './AreaFoundationsPlayer';"))text=mustReplace(text,"import { ControlWorkFourPlayer } from './ControlWorkFourPlayer';","import { ControlWorkFourPlayer } from './ControlWorkFourPlayer';\nimport { AreaFoundationsPlayer } from './AreaFoundationsPlayer';\nimport { lessonSeventyFourOpening } from './LessonSeventyFourOpening';",'shell imports');
   text=mustReplace(text,'Array.from({length:73},(_,i)=>i+1)','Array.from({length:74},(_,i)=>i+1)','ready lessons 73->74');
   if(!text.includes('selectedLesson===74?lessonSeventyFourOpening'))text=mustReplace(text,'const opening=openings[selectedLesson-1]??buildGenericOpening(lesson);','const opening=selectedLesson===74?lessonSeventyFourOpening:(openings[selectedLesson-1]??buildGenericOpening(lesson));','lesson74 opening');
-  if(!text.includes('selectedLesson===74?<AreaFoundationsPlayer/>')){
-    const runtimeRoot=text.indexOf('lesson-runtime');
-    const anchor=text.indexOf('selectedLesson===73',runtimeRoot);
-    if(runtimeRoot<0||anchor<0)throw new Error('Missing wiring anchor: lesson74 runtime after lesson-runtime');
-    text=text.slice(0,anchor)+'selectedLesson===74?<AreaFoundationsPlayer/>:'+text.slice(anchor);
-  }
+  if(!text.includes('selectedLesson===74?<AreaFoundationsPlayer key="lesson-74"/>'))text=mustReplace(text,'const runtime=selectedLesson===73?<ControlWorkFourPlayer key="lesson-73"/>:','const runtime=selectedLesson===74?<AreaFoundationsPlayer key="lesson-74"/>:selectedLesson===73?<ControlWorkFourPlayer key="lesson-73"/>:','lesson74 runtime');
   write(path,text);
 }
 
