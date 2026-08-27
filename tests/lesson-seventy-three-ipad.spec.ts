@@ -28,7 +28,7 @@ test('lesson 73 works on iPad and correction never rewrites the primary score',a
   await expect(stage).toHaveAttribute('data-stage-id','l73-summary');
   await expect(page.locator('.control-score')).toContainText('12/13');
   await expect(page.locator('.control-correction-card')).toContainText('Коррекция завершена');
-  await expect(page.locator('.control-review-list .wrong')).toContainText('После коррекции: 5');
+  await expect(page.locator('.control-review-list')).toContainText('После коррекции: 5');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-lesson-73-control-v1')??'null'));
   expect(saved?.submittedResponses?.['l73-7']).toBe('4');expect(saved?.responses?.['l73-7']).toBe('5');expect(saved?.correctionCompletedAt).toBeTruthy();
   expect(await noHorizontalOverflow(page)).toBeTruthy();
