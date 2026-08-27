@@ -9,7 +9,7 @@ test('lesson 78 follows the verified Merzlyak §22 first-lesson route and mature
   const activityIds=[...source.matchAll(/activity:\{id:'(l78-p\d+)'/g)].map(match=>match[1]);
   expect(stageIds).toHaveLength(36);expect(new Set(stageIds).size).toBe(36);
   expect(activityIds).toHaveLength(21);expect(new Set(activityIds).size).toBe(21);
-  for(const marker of ['Устно № 1','Устно № 2','§ 22','№ 598','№ 599','№ 602','№ 612','№ 600, 601, 603','6 граней','12 рёбер','8 вершин','длина, ширина и высота','2(ab+bc+ac)','Диктант 19'])expect(source).toContain(marker);
+  for(const marker of ['Устно № 1','Устно № 2','§ 22','№ 598','№ 599','№ 602','№ 612','№ 600, 601, 603','6 граней','12 рёбер','8 вершин','длиной, шириной и высотой','2(ab+bc+ac)','Диктант 19'])expect(source).toContain(marker);
   expect(source).toContain('№ 598 · работа с рисунком 169');
   expect(source).toContain('не перерисовывает его приблизительно');
   expect(source).toContain('№ 612 · source checkpoint');
