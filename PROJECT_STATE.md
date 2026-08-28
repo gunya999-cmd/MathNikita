@@ -18,13 +18,27 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official plan: **175 Merzlyak grade-5 lessons**.
-- Ready after this change: **lessons 1–82**.
-- Next locked lesson: **83 — § 23 `Объём прямоугольного параллелепипеда` (закрепление)**.
+- Ready after this change: **lessons 1–83**.
+- Next locked lesson: **84 — § 23 `Объём прямоугольного параллелепипеда`**.
 - Integrated control works: **20, 33, 53, 73**.
-- Lessons 62–72 and 74–82 use the mature ordinary-lesson contract.
-- Cumulative ordinary-practice lane: **400 tasks / exactly 1000 response slots for lessons 62–72 and 74–82**; control lesson 73 remains source-exact and does not receive artificial 20/50 practice.
+- Lessons 62–72 and 74–83 use the mature ordinary-lesson contract.
+- Cumulative ordinary-practice lane: **420 tasks / exactly 1050 response slots for lessons 62–72 and 74–83**; control lesson 73 remains source-exact and does not receive artificial 20/50 practice.
 - The unlock boundary is centralized in `tests/course-plan.spec.ts`; lesson-specific runtime tests must follow the current boundary instead of freezing an obsolete future lock.
-- Common mandatory-practice count and curated-majority tests cover ordinary lessons through **82**.
+- Common mandatory-practice count and curated-majority tests cover ordinary lessons through **83**.
+
+## Lesson 83 — § 23 volume reinforcement
+
+- Third §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
+- Verified technological route: oral **№4 p.156**; main work **№626, 630, 633, 634**; repeat **№644**; homework **№627, 631, 643 (3, 4)**.
+- The lesson consolidates direct and inverse volume relations, composite-volume reasoning, productivity/application problems and the connection between a cube's volume and surface area.
+- Exact source-aligned results used in the lesson:
+  - №626: unknown height **5 cm**;
+  - №633: room volume **72 m³**, productivity **9 m³/h**, equivalent workforce **300 workers**;
+  - №634: cube volume **216 cm³** and surface area **216 cm²**.
+- №630 and №631 depend on edition-specific figures that are not reliably present in the available extraction, so the app keeps explicit source checkpoints instead of inventing replacement drawings.
+- Repeat №644 and homework №643 (3, 4) remain explicit source checkpoints where the complete wording was not recovered reliably.
+- Mandatory practice: **20 tasks / exactly 50 response slots**.
+- Persistence, Pythagoras help, analytics, Sulafat sequencing/interruption, Chromium and iPad/WebKit coverage are included.
 
 ## Lesson 82 — § 23 volume formulas
 
@@ -37,19 +51,11 @@ Use this file as the compact handoff context for continuing development without 
   - with base area `S` and height `h`: **`V=Sh`**;
   - inverse relations include `h=V:S` and `S=V:h`;
   - all linear measurements must be expressed in the same unit before using `V=abc`.
-- Exact routed results:
-  - №619: `12·15·6 = 1080 m³`;
-  - №620: `6³ = 216 cm³`;
-  - textbook inverse example: `324:54 = 6 dm`;
-  - №624: width `15 dm`, length `18 dm`, height `6 dm`, volume **1620 dm³**;
-  - №628: room `144 m³`, height `4 m`, floor area **36 m²**;
-  - №632: zinc cube edge `4 cm`, volume `64 cm³`, mass **448 g**.
+- Exact routed results: №619 **1080 m³**; №620 **216 cm³**; inverse example `324:54=6 dm`; №624 **1620 dm³**; №628 **36 m²**; №632 **448 g**.
 - Confirmed homework transfer: №621 **320 dm³**; №625 **1920 cm³**; №629 height **5 m**.
-- The technological route names oral №1 and repeat №642, but their complete edition-specific presentation/wording is not reliable in the available extraction; both remain explicit source checkpoints rather than reconstructed exercises.
-- Mathematical dictation 20 supplies source-aligned reinforcement including **600 cm³** for dimensions `15 cm, 1 dm, 4 cm` and **189 cm³** for seven cubes of edge `3 cm`.
+- Oral №1 and repeat №642 remain explicit source checkpoints where complete edition-specific presentation/wording is not reliable in the available extraction.
 - Mandatory practice: **20 tasks / exactly 50 response slots**.
-- Runtime uses numeric-aware answer matching so decimal separators retain mathematical magnitude; editing a checked answer clears its stored correctness while preserving the mature two-wrong-attempt continuation contract.
-- Persistence, Pythagoras help, analytics, Sulafat sequencing/interruption, Chromium and iPad/WebKit coverage are included.
+- Runtime uses numeric-aware answer matching; editing a checked answer clears stored correctness while preserving the mature two-wrong-attempt continuation contract.
 
 ## Lesson 81 — § 23 volume figure
 
@@ -58,8 +64,7 @@ Use this file as the compact handoff context for continuing development without 
 - Core: meaning and properties of volume, unit cube, cubic units, `1 l = 1 dm³`, measuring volume by counting unit cubes.
 - Exact source values include oral №2 **8 cubes**, figure 176 volumes **5, 5, 18, 9**, `1 dm³=1000 cm³`, `1 m³=1,000,000 cm³`.
 - №618 / figure 179 and repeat №643 remain source checkpoints where the extraction is incomplete.
-- Lesson 81 intentionally stopped before `V=abc`; lesson 82 introduces that formula.
-- Answer checking was hardened before release: decimal separators keep numeric meaning and editing a checked answer clears stale correctness.
+- Lesson 81 intentionally stops before `V=abc`; lesson 82 introduces that formula.
 
 ## Lesson 80 — § 22 pyramid
 
@@ -79,21 +84,22 @@ Use this file as the compact handoff context for continuing development without 
 - 80 — §22 pyramid; §22 complete.
 - 81 — §23 meaning of volume, unit cube and cubic units.
 - 82 — §23 formulas `V=abc`, `V=a³`, `V=Sh` and direct/inverse applications.
-- 83 — locked; next step is formula consolidation.
+- 83 — §23 reinforcement: inverse, composite and applied volume problems.
+- 84 — locked; final §23 lesson remains to be implemented from the verified source route.
 
-## Release protection after lesson 82
+## Release protection after lesson 83
 
 - Earlier cumulative workflows continue to protect previous lessons.
-- `Course 1-82 certification` is the lesson-82 delta gate: source fidelity, full flow, 20/50 practice, Chromium, iPad/WebKit and Sulafat interruption.
-- `Course 62-82 hard certification` protects the mature block with:
-  - build + course/source contract through 82;
-  - Chromium hard runtime 62–82;
-  - iPad/WebKit hard runtime 62–82;
-  - complete **400-task/1000-response** ordinary practice for 62–72 and 74–82;
+- `Course 1-83 certification` is the lesson-83 delta gate: source fidelity, full flow, 20/50 practice, Chromium, iPad/WebKit and Sulafat interruption.
+- `Course 62-83 hard certification` protects the mature block with:
+  - build + course/source contract through 83;
+  - Chromium hard runtime 62–83;
+  - iPad/WebKit hard runtime 62–83;
+  - complete **420-task/1050-response** ordinary practice for 62–72 and 74–83;
   - Sulafat sequencing/interruption;
   - D1/cloud/multi-student/dashboard regression;
   - lesson-73 control-work integrity.
-- Lesson 83 is the centralized locked boundary.
+- Lesson 84 is the centralized locked boundary.
 
 ## Ordinary interactive lesson quality contract
 
