@@ -1,13 +1,13 @@
 import { expect,test } from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 79',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 80',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(75);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(79);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(76);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(80);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(4);
   await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(28)).toContainText('Вычитание натуральных чисел');
@@ -55,10 +55,13 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 79',a
   await expect(lessons.nth(78)).toContainText('Прямоугольный параллелепипед: развёртка и многогранник');
   await expect(lessons.nth(78)).toBeEnabled();
   await expect(lessons.nth(78)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(79)).toContainText('Прямоугольный параллелепипед. Пирамида');
-  await expect(lessons.nth(79)).toBeDisabled();
+  await expect(lessons.nth(79)).toContainText('Пирамида: основание, грани, рёбра и развёртка');
+  await expect(lessons.nth(79)).toBeEnabled();
+  await expect(lessons.nth(79)).toHaveClass(/is-interactive/);
+  await expect(lessons.nth(80)).toContainText('Объём прямоугольного параллелепипеда');
+  await expect(lessons.nth(80)).toBeDisabled();
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 79 уроков.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 80 уроков.')).toBeVisible();
 });
