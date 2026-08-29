@@ -12,7 +12,8 @@ test('lesson 81 follows the verified Merzlyak §23 volume route and mature contr
   for(const marker of ['Устно № 2','§ 23','№ 617','№ 618','№ 622','№ 643','единичный куб','1 л = 1 дм³','5','18','9'])expect(source.toLocaleLowerCase('ru-RU')).toContain(marker.toLocaleLowerCase('ru-RU'));
   expect(source).toContain('приложение не придумывает форму фигур');
   expect(source).toContain('Номер сохранён в маршруте без выдуманного текста');
-  expect(source).toContain('Формула V=abc не используется как новое правило урока 81.');
+  expect(source).toContain('Формула V=abc не используется как новое правило внутри урока 81');
+  expect(source).toContain('Урок 82 уже доступен');
   expect(extendedPracticeLesson81.tasks).toHaveLength(20);
   expect(extendedPracticeSetResponseCount(extendedPracticeLesson81)).toBe(50);
   expect(new Set(extendedPracticeLesson81.tasks.map(task=>task.id)).size).toBe(20);
