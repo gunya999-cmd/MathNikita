@@ -1,0 +1,11 @@
+.triangle-lesson-diagram{margin:18px 0;padding:14px;border:1px solid rgba(77,99,130,.18);border-radius:18px;background:rgba(255,255,255,.72)}
+.triangle-lesson-diagram svg{display:block;width:100%;max-width:620px;height:auto;margin:0 auto;overflow:visible}
+.triangle-shape{fill:rgba(89,154,255,.12);stroke:currentColor;stroke-width:5;stroke-linejoin:round}
+.triangle-label{font-size:18px;font-weight:800;fill:currentColor}
+.triangle-side-mark,.triangle-angle-mark{fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round}
+.right-angle-marker{fill:none;stroke:currentColor;stroke-width:4}
+.triangle-matrix{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.triangle-matrix span{padding:10px 8px;border-radius:12px;background:rgba(89,154,255,.09);font-size:.88rem;text-align:center}
+.triangle-passport{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.triangle-passport span{padding:7px 10px;border-radius:999px;background:rgba(36,184,121,.11);font-weight:700}
+@media(max-width:720px){.triangle-matrix{grid-template-columns:1fr}.triangle-lesson-diagram{padding:10px}.triangle-lesson-diagram svg{max-height:280px}}

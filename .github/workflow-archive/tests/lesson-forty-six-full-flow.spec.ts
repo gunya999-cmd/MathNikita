@@ -1,0 +1,13 @@
+import {expect,test,type Page} from '@playwright/test';
+
+const answers:Record<string,string>={
+  'l46-practice1':'Остроугольный','l46-practice2':'Прямоугольный','l46-practice3':'Тупоугольный','l46-boundaries':'Прямоугольный',
+  'l46-practice4':'Разносторонний','l46-practice5':'BC','l46-practice6':'Равносторонний','l46-practice7':'Да',
+  'l46-practice8':'Прямоугольный равнобедренный','l46-practice9':'Тупоугольный разносторонний','l46-practice10':'Остроугольный равнобедренный',
+  'l46-practice11':'Треугольник равнобедренный','l46-textbook339':'Все нужные углы и длины сторон','l46-practice12':'24','l46-practice13':'11',
+  'l46-mixed-gate':'34','l46-passport':'Тупоугольный разносторонний'
+};
+async function openLesson46(page:Page){await page.goto('/');const chapterTwo=page.locator('.course-chapter-group').nth(1);if(!(await chapterTwo.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterTwo.locator('summary').click();await page.getByRole('button',{name:/Открыть урок 46:/}).click();await expect(page.locator('.lesson-opening')).toContainText('Треугольник и его виды');await page.locator('.lesson-opening-start').click();}
+
+test('lesson 46 completes all 36 triangle-classification stages and reaches mandatory practice',async({page})=>{test.setTimeout(120_000);await page.addInitScript(()=>localStorage.setItem('mathnikita-mentor-auto-guide','false'));await openLesson46(page);const visited:string[]=[];for(let index=0;index<36;index+=1){const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');await expect(stage).toBeVisible();const id=await stage.getAttribute('data-stage-id');expect(id).toBeTruthy();visited.push(id!);await expect(stage.locator('.lesson-controls')).toContainText(`Этап ${index+1} из 36`);const answer=answers[id!];if(answer){if(await stage.locator('.choice-grid').count())await stage.getByRole('button',{name:answer,exact:true}).click();else await stage.locator('.inline-answer input').fill(answer);await stage.locator('.check-button').click();await expect(stage.locator('.instant-feedback.good')).toBeVisible();}if(index<35)await stage.locator('.lesson-controls .primary').click();}
+ expect(new Set(visited).size).toBe(36);expect(visited[0]).toBe('l46-mission');expect(visited[35]).toBe('l46-summary');await expect(page.locator('.lesson-reflection')).toBeVisible();await expect(page.locator('.extended-practice[data-practice-task="l46-extra-01"]')).toBeVisible();const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita-lesson-46-progress-v1')??'null'));expect(saved?.stageIndex).toBe(35);expect(saved?.results?.['l46-p15']).toBe(true);});

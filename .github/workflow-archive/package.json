@@ -1,0 +1,28 @@
+{
+  "name": "mathnikita",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "prebuild": "node scripts/clean-audio-manifest.mjs && node scripts/write-build-version.mjs",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test:ipad": "playwright test",
+    "cf:deploy": "npm run build && npx wrangler deploy",
+    "cf:deploy:api": "node scripts/write-build-version.mjs && npx wrangler deploy"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.8.3",
+    "vite": "^7.3.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0"
+  }
+}
