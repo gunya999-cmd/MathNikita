@@ -7,8 +7,10 @@ async function openLesson81(page:Page){
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons.nth(80)).toContainText('Объём фигуры: единичный куб и кубические единицы');
   await expect(lessons.nth(80)).toBeEnabled();
-  await expect(lessons.nth(81)).toContainText('Объём прямоугольного параллелепипеда');
-  await expect(lessons.nth(81)).toBeDisabled();
+  await expect(lessons.nth(81)).toContainText('Объём прямоугольного параллелепипеда: формулы и задачи');
+  await expect(lessons.nth(81)).toBeEnabled();
+  await expect(lessons.nth(82)).toContainText('Объём прямоугольного параллелепипеда');
+  await expect(lessons.nth(82)).toBeDisabled();
   await page.getByRole('button',{name:/Открыть урок 81:/}).click();
   await page.locator('.lesson-opening-start').click();
 }
@@ -21,7 +23,7 @@ async function noHorizontalOverflow(page:Page){
   return page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);
 }
 
-test('lesson 81 is usable on iPad, rejects decimal magnitude tricks, resets edited correctness and reaches 50-response practice',async({page})=>{
+test('lesson 81 remains usable after lesson 82 unlock and preserves corrected answer semantics',async({page})=>{
   test.setTimeout(110_000);
   await page.addInitScript(()=>localStorage.setItem('mathnikita-mentor-auto-guide','false'));
   await openLesson81(page);
