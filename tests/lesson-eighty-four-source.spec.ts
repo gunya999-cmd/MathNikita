@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {extendedPracticeLesson84} from '../src/data/extendedPracticeLesson84';
 import {extendedPracticeSetResponseCount} from '../src/data/extendedPracticeTypes';
 
+// Future unlock boundaries belong to course-plan.spec.ts, not this lesson-specific source contract.
 test('lesson 84 follows the verified Merzlyak §23 synthesis route and mature contract',()=>{
   const source=readFileSync(new URL('../src/VolumeSynthesisPlayer.tsx',import.meta.url),'utf8');
   const stageIds=[...source.matchAll(/^\{id:'(l84-[^']+)'/gm)].map(match=>match[1]);
