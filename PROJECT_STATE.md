@@ -18,79 +18,57 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official plan: **175 Merzlyak grade-5 lessons**.
-- Ready after this change: **lessons 1–84**.
-- Next locked lesson: **85 — § 24 `Комбинаторные задачи`**.
+- Ready after this change: **lessons 1–85**.
+- Next locked lesson: **86 — § 24 `Комбинаторные задачи`**.
 - Integrated control works: **20, 33, 53, 73**.
-- Lessons 62–72 and 74–84 use the mature ordinary-lesson contract.
-- Cumulative ordinary-practice lane: **440 tasks / exactly 1100 response slots for lessons 62–72 and 74–84**; control lesson 73 remains source-exact and does not receive artificial 20/50 practice.
+- Ordinary lessons 62–72 and 74–85 use the mature ordinary-lesson contract.
+- Cumulative ordinary-practice lane: **460 tasks / exactly 1150 response slots for lessons 62–72 and 74–85**; control lesson 73 remains source-exact and does not receive artificial 20/50 practice.
 - The unlock boundary is centralized in `tests/course-plan.spec.ts`; lesson-specific runtime tests must not freeze a future locked lesson.
-- Common mandatory-practice count and curated-majority tests cover ordinary lessons through **84**.
+- Common mandatory-practice count and curated-majority tests cover ordinary lessons through **85**.
 
-## Lesson 84 — § 23 volume synthesis
+## Lesson 85 — § 24 combinatorics introduction
 
-- Fourth and final §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
-- Type: **generalization and systematization of knowledge**.
-- Verified technological route: oral **№3 p.156**; control/correction **workbook №154, 157**; generalization **№635, 636, 638, 639, 640** plus workbook **№293–295**; repeat **№643(5,6)**; homework **§23, №637** plus didactic **№153, 155**.
-- Exact source-aligned results used in the lesson:
-  - oral №3: wire frame for 3×5×6 cm parallelepiped — **56 cm**;
-  - №635: surface-area scale **16×**, volume scale **64×** when the cube edge is 4×;
-  - №636: volume changes **40×** and **2×**;
-  - №638: 1,000,000 l over 1 ha gives depth **10 cm**, so a swimming competition cannot be held;
-  - №639: three intersecting 1×1 through-holes in a 3 cm cube remove **7 cm³**, leaving **20 cm³**;
-  - №640: initial volume **288 cm³**, remaining **36 cm³**, used **252 cm³**, daily use **18 cm³**, remainder lasts **2 days**;
-  - №637: volume changes **8×** in part 1 and **does not change** in part 2.
-- Workbook/didactic tasks and №643(5,6) remain explicit source checkpoints where full wording was not recovered reliably; the app does not invent substitute conditions.
+- First §24 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
+- Core: systematic enumeration, the **tree of possible variants**, digit constraints, leading zero, no-repeat constraints, and the product rule for sequential choices.
+- Verified route: theory **§24**; main **№645, 647, 649, 650**; repeat **№669(1,2)**; questions **1–2**; homework **№646, 648, 668**.
+- Exact recovered source-aligned results:
+  - №645: `11, 12, 13, 21, 22, 23, 31, 32, 33` — **9** numbers;
+  - №647: `15, 24, 33, 42, 51, 60` — **6** numbers;
+  - №649: **9** two-digit numbers;
+  - №650: `102, 120, 201, 210` — **4** three-digit numbers;
+  - №646: `40, 44, 47, 49, 70, 74, 77, 79, 90, 94, 97, 99` — **12** numbers;
+  - №648: `17, 26, 35, 44, 53, 62, 71, 80` — **8** numbers;
+  - №668: **20** envelope/stamp combinations;
+  - №669(1,2): **12** ways to choose one girl and **15** ways to choose one boy.
+- Exact wording of questions 1–2 was not recovered reliably, so they remain explicit **source checkpoints**; the app does not invent substitute wording.
 - Mandatory practice: **20 tasks / exactly 50 response slots**.
 - Persistence, Pythagoras help, analytics, Sulafat sequencing/interruption, Chromium and iPad/WebKit coverage are included.
-- **§23 is complete after lesson 84.**
-
-## Lesson 83 — § 23 volume reinforcement
-
-- Third §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
-- Route: oral **№4 p.156**; **№626, 630, 633, 634**; repeat **№644**; homework **№627, 631, 643(3,4)**.
-- Exact results include №626 height **5 cm**; №633 **72 m³**, **9 m³/h**, **300 workers**; №634 cube volume and surface area **216**.
-- Mandatory practice: **20 tasks / 50 response slots**.
-
-## Lesson 82 — § 23 volume formulas
-
-- Second §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
-- Route: oral №1 p.156; theory §23 pp.155–156; №619, 620, 624, 628, 632; repeat №642; homework questions 5–7, №621, 625, 629.
-- Core: `V=abc`, `V=a³`, `V=Sh`, inverse relations and unit alignment.
-- Mandatory practice: **20/50**.
-
-## Lesson 81 — § 23 volume figure
-
-- First §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**, mandatory practice **20/50**.
-- Route: oral №2 p.156; theory §23 pp.153–154; №617, 618, 622; repeat №643(1,2); homework questions 1–4, №623, 641.
-- Core: meaning/properties of volume, unit cube and cubic units.
-- Lesson 81 intentionally stops before `V=abc`; lesson 82 introduces that formula.
+- Lesson **86 remains locked** until its own source-verified release.
 
 ## Recent course sequence
 
 - 68–70 — §19 division with remainder.
 - 71–72 — §20 powers.
 - 73 — source-exact Control work №4.
-- 74–77 — complete §21 area sequence; every ordinary lesson 36/21 and 20/50.
+- 74–77 — complete §21 area sequence.
 - 78–80 — complete §22 rectangular parallelepiped / nets / pyramid.
-- 81 — §23 meaning of volume.
-- 82 — §23 volume formulas.
-- 83 — §23 inverse, composite and applied volume problems.
-- 84 — §23 final synthesis; §23 complete.
-- 85 — locked; starts §24 combinatorial problems.
+- 81–84 — complete §23 volume sequence.
+- 85 — §24 systematic combinatorial enumeration.
+- 86 — locked; next §24 lesson.
 
-## CI / release protection after lesson 84
+## CI / release protection after lesson 85
 
 The CI architecture is deliberately impact-based to avoid re-running stable lessons on every intermediate commit.
 
 - `Build` remains the always-on PR build/Worker dry-run.
-- `Course 1-84 certification` is the focused lesson-84 delta gate: course boundary, source fidelity, full flow, 20/50 practice, Chromium, iPad/WebKit and Sulafat interruption.
-- `Course 62-84 hard certification` is the cumulative release gate. On ordinary PR commits its expensive jobs are skipped; add `[hard-certify]` to the PR body only for the exact final release SHA. It also remains manually dispatchable and scheduled weekly.
+- `Course 1-85 certification` is the focused lesson-85 delta gate: course boundary, source fidelity, full flow, 20/50 practice, Chromium, iPad/WebKit and Sulafat interruption.
+- `Course 62-85 hard certification` is the cumulative release gate. On ordinary PR commits its expensive jobs are skipped; add `[hard-certify]` to the PR body only for the exact final release SHA. It also remains manually dispatchable and scheduled weekly.
 - Final cumulative certification must run only on the exact branch SHA that will be merged.
 - The cumulative hard gate covers:
-  - build + course/source contract through 84;
-  - Chromium hard runtime 62–84;
-  - iPad/WebKit hard runtime 62–84;
-  - complete **440-task/1100-response** practice for ordinary lessons 62–72 and 74–84;
+  - build + course/source contract through 85;
+  - Chromium hard runtime 62–85;
+  - iPad/WebKit hard runtime 62–85;
+  - complete **460-task/1150-response** practice for ordinary lessons 62–72 and 74–85;
   - Sulafat sequencing/interruption;
   - D1/cloud/multi-student/dashboard regression;
   - lesson-73 control-work integrity.
