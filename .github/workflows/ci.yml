@@ -1,12 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
   schedule:
     - cron: '23 2 * * 1'
@@ -46,7 +40,6 @@ jobs:
 
   cloud-student-sync:
     name: Cloudflare D1 · student auth and sync
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -77,7 +70,6 @@ jobs:
 
   desktop-chromium-lesson6-voice:
     name: Desktop Chromium · lesson 6, analytics and dashboards
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -108,7 +100,6 @@ jobs:
 
   desktop-chromium-student-profiles:
     name: Desktop Chromium · student profiles and isolation
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -135,7 +126,6 @@ jobs:
 
   ipad-webkit-lesson5-regression:
     name: iPad WebKit regression · lesson 5 Sulafat
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -166,7 +156,6 @@ jobs:
 
   ipad-webkit-lesson6-main:
     name: iPad WebKit · lesson 6 full main walkthrough
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
@@ -193,7 +182,6 @@ jobs:
 
   ipad-webkit-lesson6-readiness:
     name: iPad WebKit · lesson 6 mastery, state and Sulafat
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
