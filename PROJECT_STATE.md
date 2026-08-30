@@ -85,6 +85,7 @@ The CI architecture is deliberately impact-based to avoid re-running stable less
 - `Build` remains the always-on PR build/Worker dry-run.
 - `Course 1-84 certification` is the focused lesson-84 delta gate: course boundary, source fidelity, full flow, 20/50 practice, Chromium, iPad/WebKit and Sulafat interruption.
 - `Course 62-84 hard certification` is the cumulative release gate. On ordinary PR commits its expensive jobs are skipped; add `[hard-certify]` to the PR body only for the exact final release SHA. It also remains manually dispatchable and scheduled weekly.
+- Final cumulative certification must run only on the exact branch SHA that will be merged.
 - The cumulative hard gate covers:
   - build + course/source contract through 84;
   - Chromium hard runtime 62–84;
