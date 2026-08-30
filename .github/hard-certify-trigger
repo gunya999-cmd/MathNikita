@@ -1,4 +1,3 @@
-lesson=84
-release=lesson-84-volume-synthesis
+lesson=85
+release=lesson-85-combinatorics-intro
 mode=exact-head
-reason=stale-boundary-tests-fixed
