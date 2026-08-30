@@ -7,9 +7,18 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    name: TypeScript, Vite and Worker build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,5 +31,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build
+      - name: Build application
         run: npm run build
+
+      - name: Validate Cloudflare Worker and narration API
+        run: npx -y wrangler@4.114.0 deploy --dry-run --outdir .wrangler-dry-run
+
+      - name: Upload production bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: mathnikita-dist-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
