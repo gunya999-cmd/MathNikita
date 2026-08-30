@@ -1,0 +1,27 @@
+.comparison-practice-page{min-width:0;max-width:100%;box-sizing:border-box}
+.comparison-practice-page .interactive-stage,.comparison-practice-page .stage-copy,.comparison-practice-page .comparison-practice-mission,.comparison-practice-page .comparison-practice-digits,.comparison-practice-page .comparison-practice-double,.comparison-practice-page .comparison-practice-ray,.comparison-practice-page .comparison-practice-cases,.comparison-practice-page .comparison-practice-error{min-width:0;max-width:100%;box-sizing:border-box}
+.comparison-practice-page .stage-copy>*{max-width:100%}
+.comparison-practice-page .source-tag{max-width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere}
+.comparison-practice-page .comparison-practice-mission,.comparison-practice-page .comparison-practice-digits,.comparison-practice-page .comparison-practice-double{width:100%;margin-top:22px;padding:22px;border:1px solid rgba(37,99,235,.16);border-radius:22px;background:linear-gradient(180deg,#fff,#f7f9ff);display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+.comparison-practice-page .comparison-practice-mission>div{flex:0 1 150px;min-width:0;max-width:100%;box-sizing:border-box;display:grid;gap:5px;place-items:center;padding:16px 24px;border-radius:17px;background:#eef2ff;color:#1e3a8a}
+.comparison-practice-page .comparison-practice-mission b,.comparison-practice-page .comparison-practice-digits span,.comparison-practice-page .comparison-practice-double b,.comparison-practice-page .comparison-practice-double span{font-size:1.55rem;font-weight:850}
+.comparison-practice-page .comparison-practice-mission strong,.comparison-practice-page .comparison-practice-digits strong,.comparison-practice-page .comparison-practice-double strong{flex:0 0 auto;font-size:2.2rem;color:#2563eb}
+.comparison-practice-page .comparison-practice-digits mark{padding:3px 7px;border-radius:8px;background:#fee2e2;color:#991b1b}
+.comparison-practice-page .comparison-practice-double span{padding:12px 20px;border-radius:15px;background:#fff7ed;color:#9a3412}
+.comparison-practice-page .comparison-practice-ray{width:100%;margin-top:22px;padding:26px 18px 18px;border:1px solid rgba(37,99,235,.16);border-radius:22px;background:linear-gradient(180deg,#fff,#f7f9ff);overflow:hidden}
+.comparison-practice-page .comparison-practice-ray p{text-align:center;margin:18px 0 0;color:#475569;font-weight:800}
+.comparison-practice-page .ray-line{position:relative;width:100%;height:82px;max-width:680px;margin:0 auto}
+.comparison-practice-page .ray-line>i{position:absolute;left:4%;right:5%;top:34px;height:4px;border-radius:4px;background:#2563eb}
+.comparison-practice-page .ray-line>i:after{content:'';position:absolute;right:-10px;top:-7px;border-left:15px solid #2563eb;border-top:9px solid transparent;border-bottom:9px solid transparent}
+.comparison-practice-page .ray-line .tick{position:absolute;top:18px;display:grid;place-items:center;width:32px;padding-top:34px;color:#334155;font-weight:800}
+.comparison-practice-page .ray-line .tick:before{content:'';position:absolute;top:10px;width:3px;height:22px;background:#1d4ed8;border-radius:3px}
+.comparison-practice-page .ray-line .t1{left:8%}.comparison-practice-page .ray-line .t2{left:30%}.comparison-practice-page .ray-line .t3{left:56%}.comparison-practice-page .ray-line .t4{left:82%}
+.comparison-practice-page .ray-line .point{position:absolute;top:0;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#f97316;color:#fff;box-shadow:0 4px 10px rgba(249,115,22,.25)}
+.comparison-practice-page .ray-line .p1{left:31%}.comparison-practice-page .ray-line .p2{left:57%}
+.comparison-practice-page .comparison-practice-cases{width:100%;margin-top:22px;padding:22px;border:1px solid rgba(37,99,235,.16);border-radius:22px;background:#f8fafc;text-align:center}
+.comparison-practice-page .comparison-practice-cases>b{font-size:1.5rem;color:#172554}
+.comparison-practice-page .comparison-practice-cases>div{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:14px}
+.comparison-practice-page .comparison-practice-cases span{min-width:0;padding:10px 14px;border-radius:12px;background:#dbeafe;color:#1e3a8a;font-weight:850}
+.comparison-practice-page .comparison-practice-error{width:100%;margin-top:22px;display:grid;gap:10px;padding:22px;border-radius:22px;background:#fff7ed;text-align:center}
+.comparison-practice-page .comparison-practice-error s{font-size:1.35rem;color:#b91c1c}.comparison-practice-page .comparison-practice-error b{font-size:1.55rem;color:#166534}.comparison-practice-page .comparison-practice-error span{color:#475569}
+@media(max-width:700px){.comparison-practice-page .ray-line{min-width:460px}.comparison-practice-page .comparison-practice-ray{overflow-x:auto}.comparison-practice-page .comparison-practice-mission>div{padding:12px 18px}.comparison-practice-page .comparison-practice-digits span{font-size:1.15rem}}

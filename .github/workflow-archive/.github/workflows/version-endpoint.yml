@@ -1,0 +1,163 @@
+name: Worker version endpoint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'worker/entry.ts'
+      - 'worker/buildVersion.ts'
+      - 'scripts/write-build-version.mjs'
+      - 'scripts/version-api-smoke.mjs'
+      - 'package.json'
+      - 'wrangler.jsonc'
+      - '.github/workflows/version-endpoint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mathnikita-production-${{ github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  version-api:
+    name: Wrangler · git SHA + Cloudflare version metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run build
+      - run: npx -y wrangler@4.118.0 deploy --dry-run --outdir .wrangler-version-dry-run
+      - run: node scripts/version-api-smoke.mjs
+
+  deployment-credentials:
+    if: github.event_name == 'pull_request'
+    name: Production · Cloudflare credentials configured
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      HAS_API_TOKEN: ${{ (secrets.CLOUDFLARE_DEPLOY_API_TOKEN != '' || secrets.CLOUDFLARE_API_TOKEN != '' || secrets.CF_API_TOKEN != '') && 'yes' || 'no' }}
+      HAS_ACCOUNT_ID: ${{ (secrets.CLOUDFLARE_ACCOUNT_ID != '' || secrets.CF_ACCOUNT_ID != '') && 'yes' || 'no' }}
+    steps:
+      - name: Check secret presence only
+        run: |
+          echo "Cloudflare deploy token configured: $HAS_API_TOKEN"
+          echo "Cloudflare account ID configured: $HAS_ACCOUNT_ID"
+          test "$HAS_API_TOKEN" = "yes"
+          test "$HAS_ACCOUNT_ID" = "yes"
+
+  deploy-production:
+    if: github.event_name == 'push'
+    needs: version-api
+    name: Production · deploy main to Cloudflare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - name: Verify Cloudflare deployment credentials are configured
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing Cloudflare deploy token secret (CLOUDFLARE_DEPLOY_API_TOKEN, CLOUDFLARE_API_TOKEN or CF_API_TOKEN)"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing Cloudflare account ID secret (CLOUDFLARE_ACCOUNT_ID or CF_ACCOUNT_ID)"; exit 1; }
+      - name: Build exact main commit
+        env:
+          WORKERS_CI_COMMIT_SHA: ${{ github.sha }}
+          WORKERS_CI_BRANCH: main
+          WORKERS_CI_BUILD_UUID: ${{ github.run_id }}
+        run: npm run build
+      - name: Resolve existing production D1 binding
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -eu
+          npx -y wrangler@4.118.0 d1 list --json > .d1-list.json
+          node <<'NODE'
+          const fs=require('fs');
+          const list=JSON.parse(fs.readFileSync('.d1-list.json','utf8'));
+          const db=Array.isArray(list)?list.find(x=>x?.name==='mathnikita-db'):null;
+          if(!db) throw new Error('Production D1 database mathnikita-db was not found');
+          const id=db.uuid||db.id;
+          if(!id) throw new Error('mathnikita-db has no database id');
+          const config=JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));
+          config.d1_databases=[{binding:'DB',database_name:'mathnikita-db',database_id:id}];
+          fs.writeFileSync('.wrangler.production.json',JSON.stringify(config,null,2));
+          console.log('Resolved existing mathnikita-db and prepared DB binding.');
+          NODE
+      - name: Deploy Worker and assets with existing D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_DEPLOY_API_TOKEN || secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CF_ACCOUNT_ID }}
+        run: npx -y wrangler@4.118.0 deploy --config .wrangler.production.json --no-x-provision
+
+  production-version:
+    if: github.event_name == 'push'
+    needs: deploy-production
+    name: Production · deployed SHA matches main
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify exact deployed Git SHA and Cloudflare version metadata
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          VERSION_URL: https://mathnikita.gunya999.workers.dev/api/version
+        run: |
+          set -u
+          for attempt in $(seq 1 18); do
+            body="$(curl --silent --show-error --fail --max-time 15 "$VERSION_URL" 2>/dev/null || true)"
+            actual="$(BODY="$body" node -e 'try{const b=JSON.parse(process.env.BODY||"{}");if(!b.workerVersion?.id||!b.workerVersion?.timestamp)process.exit(2);process.stdout.write(String(b.gitSha||""))}catch{process.exit(3)}' 2>/dev/null || true)"
+            if [ "$actual" = "$EXPECTED_SHA" ]; then
+              echo "Production is serving expected Git SHA: $actual"
+              BODY="$body" node -e 'const b=JSON.parse(process.env.BODY);console.log(`Worker version: ${b.workerVersion.id}`);console.log(`Worker timestamp: ${b.workerVersion.timestamp}`);console.log(`Build UUID: ${b.buildUuid}`)'
+              exit 0
+            fi
+            if [ -n "$actual" ]; then
+              echo "Attempt $attempt: production SHA is $actual; expected $EXPECTED_SHA"
+            else
+              echo "Attempt $attempt: /api/version is not available with valid version metadata yet"
+            fi
+            sleep 10
+          done
+          echo "Production did not reach expected SHA $EXPECTED_SHA"
+          exit 1
+
+  production-main-visible:
+    if: github.event_name == 'pull_request'
+    needs: version-api
+    name: Production · current main is deployed
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Compare live Worker to PR base main SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.base.sha }}
+          VERSION_URL: https://mathnikita.gunya999.workers.dev/api/version
+        run: |
+          body="$(curl --silent --show-error --fail --max-time 15 "$VERSION_URL" 2>/dev/null || true)"
+          actual="$(BODY="$body" node -e 'try{const b=JSON.parse(process.env.BODY||"{}");if(!b.workerVersion?.id||!b.workerVersion?.timestamp)process.exit(2);process.stdout.write(String(b.gitSha||""))}catch{process.exit(3)}' 2>/dev/null || true)"
+          if [ "$actual" != "$EXPECTED_SHA" ]; then
+            echo "Production SHA: ${actual:-unavailable}"
+            echo "Expected main SHA: $EXPECTED_SHA"
+            exit 1
+          fi
+          echo "Production is serving current main SHA: $actual"
+          BODY="$body" node -e 'const b=JSON.parse(process.env.BODY);console.log(`Worker version: ${b.workerVersion.id}`);console.log(`Worker timestamp: ${b.workerVersion.timestamp}`);console.log(`Build UUID: ${b.buildUuid}`)'

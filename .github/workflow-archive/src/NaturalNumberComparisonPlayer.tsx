@@ -1,0 +1,106 @@
+import { useEffect,useMemo,useState } from 'react';
+import './lessonPlayer.css';
+import './theoryExperience.css';
+import './naturalComparison.css';
+
+type Activity={id:string;type:'choice'|'input'|'order';prompt:string;options?:string[];items?:string[];answer:string|string[];answers?:string[];explanation:string;placeholder?:string};
+type Visual='mission'|'digits'|'lexicographic'|'inequalities'|'writing'|'sorting'|'between'|'error'|'algorithm'|'challenge';
+type Stage={id:string;title:string;eyebrow:string;kind:'story'|'model'|'guided'|'practice'|'quiz'|'challenge'|'summary';body:string;note?:string;sourceTag?:string;visual?:Visual;activity?:Activity};
+type Saved={version:2;stageIndex:number;responses:Record<string,string>;orders:Record<string,string[]>;checked:Record<string,boolean>;results:Record<string,boolean>};
+
+const KEY='mathnikita-lesson-16-progress-v2';
+const LEGACY_KEY='mathnikita-lesson-16-progress-v1';
+
+export const lessonSixteenStages:Stage[]=[
+{id:'l16-mission',kind:'story',eyebrow:'Новая тема · § 6',title:'Сравнить — значит доказать, какое число больше',body:'На первом уроке § 6 систематизируем сравнение натуральных чисел: читаем и записываем неравенства, сравниваем многозначные числа, упорядочиваем наборы и находим числа между строгими границами.',note:'Урок 16 по методической карте идёт до сравнения на координатном луче. Координатный луч будет отдельным шагом на уроке 17.',sourceTag:'Мерзляк § 6 · технологическая карта урока 16',visual:'mission'},
+{id:'l16-diagnostic',kind:'guided',eyebrow:'Диагностика',title:'Сначала самый сильный признак',body:'Если количество цифр различается, поразрядно сравнивать уже не нужно.',activity:{id:'l16-a1',type:'choice',prompt:'Почему 10 032 больше 9 876?',options:['У числа 10 032 больше цифр','Первая цифра 1 больше нуля','В числе 10 032 есть два нуля','Нужно сравнить суммы цифр'],answer:'У числа 10 032 больше цифр',explanation:'10 032 — пятизначное натуральное число, а 9 876 — четырёхзначное. Пятизначное число больше любого четырёхзначного.'}},
+{id:'l16-digits-model',kind:'model',eyebrow:'Правило 1',title:'Разное количество цифр',body:'Из двух натуральных чисел с разным количеством цифр больше то, в записи которого цифр больше. В учебнике: 597 013 617 > 99 982 475.',note:'Количество цифр сравнивается до любых отдельных разрядов.',sourceTag:'Мерзляк § 6, с. 41',visual:'digits'},
+{id:'l16-practice1',kind:'practice',eyebrow:'Практика · 1/6',title:'№144 · граница между 1 999 и 2 002',body:'Здесь достаточно увидеть, что второе число уже четырёхзначное число следующей тысячи.',sourceTag:'Мерзляк § 6, №144(3)',activity:{id:'l16-p1',type:'input',prompt:'Поставь знак: 1 999 □ 2 002.',answer:'<',placeholder:'>, < или =',explanation:'1 999 < 2 002. У обоих чисел по четыре цифры, но первая различающаяся цифра слева: 1 < 2.'}},
+{id:'l16-same-length',kind:'model',eyebrow:'Правило 2',title:'Одинаковое количество цифр',body:'Если цифр поровну, сравниваем слева направо. Решение определяется первой неодинаковой парой цифр; последующие разряды уже не меняют знак.',note:'В 72 168 и 72 170 первые три цифры равны, затем в разряде десятков 6 < 7.',sourceTag:'Мерзляк § 6, правило сравнения и №144(6)',visual:'lexicographic'},
+{id:'l16-practice2',kind:'practice',eyebrow:'Практика · 2/6',title:'№144 · первая различающаяся цифра',body:'Не сравнивай последние цифры, если решение уже принято раньше.',sourceTag:'Мерзляк § 6, №144(6)',activity:{id:'l16-p2',type:'input',prompt:'Поставь знак: 72 168 □ 72 170.',answer:'<',placeholder:'Знак',explanation:'72 168 < 72 170: первые три цифры одинаковы, а первая разница слева — 6 < 7 в разряде десятков.'}},
+{id:'l16-inequalities',kind:'model',eyebrow:'Язык сравнения',title:'Неравенство нужно уметь читать точно',body:'Записи 4 < 9, 18 > 10 и 257 < 263 читаются слева направо. Запись 8 < 12 < 20 означает одновременно 8 < 12 и 12 < 20.',note:'Двойное неравенство — это два условия, которые выполняются одновременно.',sourceTag:'Мерзляк § 6, №142',visual:'inequalities'},
+{id:'l16-practice3',kind:'practice',eyebrow:'Практика · 3/6',title:'№142 · прочитай запись',body:'Выбери точное чтение математического знака.',sourceTag:'Мерзляк § 6, №142(3)',activity:{id:'l16-p3',type:'choice',prompt:'Как правильно прочитать 257 < 263?',options:['257 меньше 263','257 больше 263','257 равно 263','263 меньше 257'],answer:'257 меньше 263',explanation:'Знак < читается «меньше»: 257 меньше 263.'}},
+{id:'l16-writing',kind:'model',eyebrow:'Из слов в символы',title:'№143 · одно утверждение — одна точная запись',body:'«5 больше 4, но меньше 6» записывается как 4 < 5 < 6. Центральное число должно одновременно удовлетворять левой и правой части.',note:'Проверь обе половины двойного неравенства отдельно.',sourceTag:'Мерзляк § 6, №143',visual:'writing'},
+{id:'l16-practice4',kind:'practice',eyebrow:'Практика · 4/6',title:'№143 · запиши двойное неравенство',body:'Число 5 больше 4 и меньше 6.',sourceTag:'Мерзляк § 6, №143(5)',activity:{id:'l16-p4',type:'input',prompt:'Запиши утверждение математическими знаками.',answer:'4<5<6',answers:['4<5<6'],placeholder:'Например: 1<2<3',explanation:'Получаем 4 < 5 < 6: обе части, 4 < 5 и 5 < 6, верны одновременно.'}},
+{id:'l16-sorting',kind:'model',eyebrow:'Мерзляк · №146',title:'Упорядочивание — это серия сравнений',body:'Чтобы расположить числа по возрастанию, каждый следующий элемент должен быть больше предыдущего. Для набора №146 порядок: 479, 591, 701, 846, 894.',note:'Не сортируй по последней цифре или сумме цифр — используй обычное сравнение натуральных чисел.',sourceTag:'Мерзляк § 6, №146',visual:'sorting'},
+{id:'l16-practice5',kind:'practice',eyebrow:'Практика · 5/6',title:'№146 · собери порядок возрастания',body:'Нажимай числа от наименьшего к наибольшему.',sourceTag:'Мерзляк § 6, №146',activity:{id:'l16-p5',type:'order',prompt:'Расположи числа 894, 479, 846, 591, 701 по возрастанию.',items:['846','479','701','894','591'],answer:['479','591','701','846','894'],explanation:'Правильный порядок: 479 < 591 < 701 < 846 < 894.'}},
+{id:'l16-between',kind:'model',eyebrow:'Мерзляк · №148',title:'Строгие границы не входят в ответ',body:'Для 678 < x < 684 подходят 679, 680, 681, 682, 683. А между соседними натуральными числами 24 315 и 24 316 натуральных чисел нет.',note:'Слово «больше ..., но меньше ...» означает строгие знаки: левую и правую границу не включаем.',sourceTag:'Мерзляк § 6, №148',visual:'between'},
+{id:'l16-practice6',kind:'practice',eyebrow:'Практика · 6/6',title:'№148 · перечисли все решения',body:'Границы 678 и 684 не входят.',sourceTag:'Мерзляк § 6, №148(1)',activity:{id:'l16-p6',type:'input',prompt:'Запиши все натуральные x: 678 < x < 684.',answer:'679,680,681,682,683',answers:['679,680,681,682,683'],placeholder:'Через запятую',explanation:'После 678 и до 684 идут ровно 679, 680, 681, 682, 683.'}},
+{id:'l16-algorithm',kind:'model',eyebrow:'Алгоритм',title:'Сильный признак → первая разница → знак',body:'Сначала сравни количество цифр. Если цифр поровну — иди слева направо до первой различающейся цифры. После этого поставь знак и прочитай получившееся неравенство.',note:'Для сортировки повторяй тот же алгоритм столько раз, сколько нужно.',visual:'algorithm'},
+{id:'l16-error-check',kind:'guided',eyebrow:'Разбор ошибки',title:'Нельзя начинать с удобной цифры справа',body:'Ученик решил, что 326 > 362, потому что 6 > 2. Но сравнение уже решилось раньше.',activity:{id:'l16-a2',type:'choice',prompt:'Как исправить рассуждение?',options:['326 < 362: сотни равны, а в десятках 2 < 6','326 > 362: единицы 6 > 2','326 = 362 после перестановки цифр','Нужно сравнить суммы цифр'],answer:'326 < 362: сотни равны, а в десятках 2 < 6',explanation:'В №144(1) 326 < 362: сотни равны, а первая различающаяся цифра слева находится в десятках — 2 < 6.'},visual:'error'},
+{id:'l16-quiz1',kind:'quiz',eyebrow:'Контроль · 1/5',title:'№144 · сравнение',body:'Работай самостоятельно.',activity:{id:'l16-q1',type:'input',prompt:'Поставь знак: 483 □ 480.',answer:'>',placeholder:'Знак',explanation:'Сотни и десятки равны, затем 3 > 0, поэтому 483 > 480.'}},
+{id:'l16-quiz2',kind:'quiz',eyebrow:'Контроль · 2/5',title:'№144 · многозначные числа',body:'Ищи первую разницу слева.',activity:{id:'l16-q2',type:'input',prompt:'Поставь знак: 5 716 007 □ 5 715 465.',answer:'>',placeholder:'Знак',explanation:'Первые три цифры 5, 7, 1 равны; затем 6 > 5, значит 5 716 007 > 5 715 465.'}},
+{id:'l16-quiz3',kind:'quiz',eyebrow:'Контроль · 3/5',title:'№143 · запиши неравенство',body:'Переведи слова в математическую запись.',activity:{id:'l16-q3',type:'input',prompt:'Запиши: «2 516 меньше 3 939».',answer:'2516<3939',answers:['2516<3939'],placeholder:'Неравенство',explanation:'Получаем 2 516 < 3 939.'}},
+{id:'l16-quiz4',kind:'quiz',eyebrow:'Контроль · 4/5',title:'№147 · порядок убывания',body:'Каждое следующее число должно быть меньше предыдущего.',sourceTag:'Мерзляк § 6, №147',activity:{id:'l16-q4',type:'order',prompt:'Расположи 639, 724, 731, 658, 693 по убыванию.',items:['658','731','639','693','724'],answer:['731','724','693','658','639'],explanation:'731 > 724 > 693 > 658 > 639.'}},
+{id:'l16-quiz5',kind:'quiz',eyebrow:'Контроль · 5/5',title:'№148 · пустой промежуток',body:'Соседние натуральные числа не имеют натурального числа между собой.',activity:{id:'l16-q5',type:'input',prompt:'Сколько натуральных x удовлетворяют 24 315 < x < 24 316?',answer:'0',placeholder:'Количество',explanation:'Ни одного: 24 315 и 24 316 — соседние натуральные числа.'}},
+{id:'l16-challenge',kind:'challenge',eyebrow:'Повышенная сложность · №148',title:'Пять промежутков — один итог',body:'В №148 количества решений по пунктам равны 5, 4, 3, 1 и 0. Эти промежутки не пересекаются.',sourceTag:'Мерзляк § 6, №148',activity:{id:'l16-c1',type:'input',prompt:'Сколько всего натуральных чисел получится, если объединить решения всех пяти пунктов №148?',answer:'13',placeholder:'Количество',explanation:'5 + 4 + 3 + 1 + 0 = 13. Пятый пункт даёт ноль решений, потому что его границы — соседние натуральные числа.'},visual:'challenge'},
+{id:'l16-transfer',kind:'guided',eyebrow:'Перенос знания',title:'Сравнение реальных количеств',body:'В двух школьных библиотеках 98 750 и 101 200 книг.',activity:{id:'l16-a3',type:'choice',prompt:'Какая запись и причина верны?',options:['101 200 > 98 750: первое число шестизначное, второе пятизначное','98 750 > 101 200: первая цифра 9 больше 1','101 200 = 98 750 после округления','Сравнить без калькулятора нельзя'],answer:'101 200 > 98 750: первое число шестизначное, второе пятизначное',explanation:'101 200 — шестизначное число, а 98 750 — пятизначное, поэтому 101 200 > 98 750.'}},
+{id:'l16-reflection',kind:'model',eyebrow:'Рефлексия',title:'Теперь сравнение — это доказательство',body:'Ты умеешь читать и записывать неравенства, выбирать решающий признак, сортировать числа и аккуратно работать со строгими границами.',note:'На следующем уроке тот же смысл «меньше/больше» будет связан с расположением точек на координатном луче.',visual:'algorithm'},
+{id:'l16-summary',kind:'summary',eyebrow:'Итог урока 16',title:'Основная часть первого урока § 6 готова',body:'Мы закрыли содержание технологической карты урока 16: теория до координатного луча и упражнения №142, 143, 144, 146, 148. Полный урок завершится только после обязательной практики и финального объяснения своими словами.',sourceTag:'Мерзляк § 6 · урок 16',visual:'mission'},
+];
+
+const empty:Saved={version:2,stageIndex:0,responses:{},orders:{},checked:{},results:{}};
+function norm(value:string){return value.normalize('NFKC').trim().toLowerCase().replace(/ё/g,'е').replace(/[−–—]/g,'-').replace(/[;]+/g,',').replace(/[\s\u00a0]+/g,'')}
+function load():Saved{try{const parsed=JSON.parse(localStorage.getItem(KEY)??'null') as Partial<Saved>|null;return parsed?.version===2?{...empty,...parsed,stageIndex:Math.min(Math.max(Number(parsed.stageIndex)||0,0),lessonSixteenStages.length-1),responses:parsed.responses??{},orders:parsed.orders??{},checked:parsed.checked??{},results:parsed.results??{}}:empty}catch{return empty}}
+
+function ComparisonVisual({kind}:{kind:Visual}){
+  if(kind==='digits')return <div className="comparison-visual l16-digits-model"><div className="comparison-caption"><b>597 013 617</b><span>9 цифр</span><strong>&gt;</strong><b>99 982 475</b><span>8 цифр</span></div><p>Разное количество цифр решает сравнение сразу.</p></div>;
+  if(kind==='lexicographic')return <div className="comparison-visual l16-lexicographic-model"><div className="l16-number-pair"><b>72 168</b><b>72 170</b></div><div className="digit-rows"><div>{['7','2','1','6','8'].map((digit,index)=><span className={index===3?'focus':''} key={`${digit}-${index}`}>{digit}</span>)}</div><div>{['7','2','1','7','0'].map((digit,index)=><span className={index===3?'focus':''} key={`${digit}-${index}`}>{digit}</span>)}</div></div><p>Первая разница слева: 6 &lt; 7 · разряд десятков</p></div>;
+  if(kind==='inequalities')return <div className="comparison-visual l16-inequality-model"><div className="l16-inequality-grid"><b>4 &lt; 9</b><b>18 &gt; 10</b><b>257 &lt; 263</b><b>8 &lt; 12 &lt; 20</b></div><p>Читаем слева направо; двойная запись содержит два условия.</p></div>;
+  if(kind==='writing')return <div className="comparison-visual l16-writing-model"><span>5 больше 4 и меньше 6</span><strong>→</strong><b>4 &lt; 5 &lt; 6</b><p>Проверка: 4 &lt; 5 и 5 &lt; 6.</p></div>;
+  if(kind==='sorting')return <div className="comparison-visual l16-sorting-model"><div className="l16-unsorted">894 · 479 · 846 · 591 · 701</div><strong>↓ по возрастанию</strong><div className="l16-sorted">479 &lt; 591 &lt; 701 &lt; 846 &lt; 894</div></div>;
+  if(kind==='between')return <div className="comparison-visual l16-between-model"><div><b>678</b><span>679</span><span>680</span><span>681</span><span>682</span><span>683</span><b>684</b></div><p>678 &lt; x &lt; 684 · границы не входят</p><small>24 315 &lt; x &lt; 24 316 → 0 натуральных решений</small></div>;
+  if(kind==='error')return <div className="comparison-visual error-visual"><s>326 &gt; 362, потому что 6 &gt; 2</s><b>326 &lt; 362</b><span>сотни равны → в десятках 2 &lt; 6 → стоп</span></div>;
+  if(kind==='algorithm')return <div className="comparison-visual"><div className="comparison-steps"><div><b>1</b>Количество цифр</div><div><b>2</b>Разряды слева</div><div><b>3</b>Первая разница</div><div><b>4</b>Знак и чтение</div></div></div>;
+  if(kind==='challenge')return <div className="comparison-visual l16-challenge-model"><div className="l16-count-cards">{[5,4,3,1,0].map((value,index)=><span key={index}>№148.{index+1}<b>{value}</b></span>)}</div><p>5 + 4 + 3 + 1 + 0 = ?</p></div>;
+  return <div className="comparison-visual mission-visual"><div><b>&lt;</b><span>Какое число меньше?</span></div><div><b>&gt;</b><span>Как доказать, какое больше?</span></div></div>;
+}
+
+export function NaturalNumberComparisonPlayer(){
+  const saved=useMemo(load,[]);
+  const[stageIndex,setStageIndex]=useState(saved.stageIndex);
+  const[responses,setResponses]=useState(saved.responses);
+  const[orders,setOrders]=useState(saved.orders);
+  const[checked,setChecked]=useState(saved.checked);
+  const[results,setResults]=useState(saved.results);
+  const stage=lessonSixteenStages[stageIndex];
+  const activity=stage.activity;
+  const answer=activity?responses[activity.id]??'':'';
+  const ordered=activity?orders[activity.id]??[]:[];
+  const isChecked=activity?Boolean(checked[activity.id]):false;
+  const correct=activity?Boolean(results[activity.id]):false;
+  const quiz=['l16-q1','l16-q2','l16-q3','l16-q4','l16-q5'];
+  const practice=['l16-p1','l16-p2','l16-p3','l16-p4','l16-p5','l16-p6'];
+  const quizScore=quiz.filter(id=>results[id]).length;
+  const practiceScore=practice.filter(id=>results[id]).length;
+  const coreComplete=quizScore===5&&practiceScore===6;
+  const progress=Math.round(((stageIndex+1)/lessonSixteenStages.length)*100);
+
+  useEffect(()=>localStorage.setItem(KEY,JSON.stringify({version:2,stageIndex,responses,orders,checked,results})),[stageIndex,responses,orders,checked,results]);
+  useEffect(()=>{const handler=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.lessonNumber===16&&Number.isInteger(detail.stageIndex))goTo(detail.stageIndex)};window.addEventListener('mathnikita-go-to-stage',handler);return()=>window.removeEventListener('mathnikita-go-to-stage',handler)},[]);
+  function goTo(index:number){setStageIndex(Math.min(Math.max(index,0),lessonSixteenStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
+  function setAnswer(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}))}
+  function setOrder(value:string[]){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}))}
+  function submit(){
+    if(!activity)return;
+    const ok=activity.type==='order'
+      ?JSON.stringify(ordered)===JSON.stringify(activity.answer)
+      :(activity.answers??[String(activity.answer)]).some(candidate=>norm(answer)===norm(candidate));
+    setChecked(previous=>({...previous,[activity.id]:true}));
+    setResults(previous=>({...previous,[activity.id]:ok}));
+  }
+  function reset(){
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(LEGACY_KEY);
+    setStageIndex(0);setResponses({});setOrders({});setChecked({});setResults({});
+    window.dispatchEvent(new CustomEvent('mathnikita-lesson-reset',{detail:{lessonNumber:16}}));
+  }
+  function render(current:Activity){
+    if(current.type==='choice')return <div className="activity-area"><h3>{current.prompt}</h3><div className="choice-grid">{current.options!.map(option=><button key={option} className={answer===option?'selected':''} onClick={()=>setAnswer(option)}>{option}</button>)}</div><button className="check-button" disabled={!answer} onClick={submit}>Проверить</button></div>;
+    if(current.type==='input')return <div className="activity-area"><h3>{current.prompt}</h3><div className="inline-answer"><input value={answer} onChange={event=>setAnswer(event.target.value)} onKeyDown={event=>event.key==='Enter'&&submit()} placeholder={current.placeholder??'Ответ'}/><button className="check-button" disabled={!answer.trim()} onClick={submit}>Проверить</button></div></div>;
+    const items=current.items??[];
+    return <div className="activity-area"><h3>{current.prompt}</h3><div className="order-bank">{items.map(item=><button key={item} disabled={ordered.includes(item)} onClick={()=>setOrder([...ordered,item])}>{item}</button>)}</div><div className="order-result">{ordered.map((item,index)=><button key={`${item}-${index}`} onClick={()=>setOrder(ordered.filter((_,position)=>position!==index))}>{index+1}. {item}</button>)}</div><button className="check-button" disabled={ordered.length!==items.length} onClick={submit}>Проверить</button></div>;
+  }
+
+  return <main className="lesson-player-page natural-comparison-page"><section className="lesson-workspace interactive-workspace"><header className="lesson-header"><div><span>Урок 16 из 175 · § 6</span><h1>Сравнение натуральных чисел</h1><p>Мерзляк №142, 143, 144, 146, 148: неравенства, сравнение, порядок и строгие границы.</p></div><div className="lesson-duration">план · 43 мин</div></header><div className="lesson-progress"><i style={{width:`${progress}%`}}/></div><div className="stage-counter"><span>Этап {stageIndex+1} из {lessonSixteenStages.length}</span><button type="button" onClick={reset}>Начать заново</button></div><article className={`interactive-stage stage-${stage.kind}`} data-stage-id={stage.id}><div className="stage-copy"><span>{stage.eyebrow}</span><h2>{stage.title}</h2><p>{stage.body}</p>{stage.sourceTag?<small className="source-tag">Источник: {stage.sourceTag}</small>:null}{stage.note?<div className="theory-note"><b>Запомни</b><span>{stage.note}</span></div>:null}</div>{stage.visual?<ComparisonVisual kind={stage.visual}/>:null}{activity?render(activity):null}{isChecked&&activity?<div className={`instant-feedback ${correct?'good':'bad'}`} data-explanation={activity.explanation}><b>{correct?'Верно!':'Пока не получилось'}</b><span>{correct?activity.explanation:`Сначала сравни количество цифр; если оно одинаково — найди первую различающуюся цифру слева. Для строгих границ не включай сами границы. ${activity.explanation}`}</span></div>:null}{stage.kind==='quiz'&&isChecked?<div className="quiz-meter"><span>Текущий результат</span><b>{quizScore} из 5</b></div>:null}{stage.kind==='summary'?<div className="summary-card"><div><span>Контроль</span><b>{quizScore}/5</b><small>{quizScore===5?'всё верно':'нужно повторение'}</small></div><div><span>Практика</span><b>{practiceScore}/6</b><small>выполнено верно</small></div><div><span>Статус</span><b>{coreComplete?'Основная часть ✓':'Повторить'}</b><small>{coreComplete?'дальше — обязательная практика и финальное объяснение':'исправь ошибки основной части'}</small></div></div>:null}</article><footer className="lesson-controls"><button onClick={()=>goTo(stageIndex-1)} disabled={stageIndex===0}>← Назад</button><span>{progress}% урока</span><button className="primary" onClick={()=>goTo(stageIndex+1)} disabled={stageIndex===lessonSixteenStages.length-1||Boolean(activity&&!correct)}>Продолжить →</button></footer></section></main>;
+}
