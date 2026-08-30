@@ -2,11 +2,11 @@ name: Course 62-83 hard certification
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '11 4 * * 0'
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [edited]
 
 permissions:
   contents: read
