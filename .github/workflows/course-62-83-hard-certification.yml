@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '11 4 * * 0'
-  pull_request:
-    branches: [main]
-    types: [edited]
+  push:
+    paths:
+      - '.github/hard-certify-trigger'
 
 permissions:
   contents: read
