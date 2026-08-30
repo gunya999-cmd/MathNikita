@@ -18,60 +18,52 @@ Use this file as the compact handoff context for continuing development without 
 ## Current course checkpoint
 
 - Official plan: **175 Merzlyak grade-5 lessons**.
-- Ready after this change: **lessons 1–83**.
-- Next locked lesson: **84 — § 23 `Объём прямоугольного параллелепипеда`**.
+- Ready after this change: **lessons 1–84**.
+- Next locked lesson: **85 — § 24 `Комбинаторные задачи`**.
 - Integrated control works: **20, 33, 53, 73**.
-- Lessons 62–72 and 74–83 use the mature ordinary-lesson contract.
-- Cumulative ordinary-practice lane: **420 tasks / exactly 1050 response slots for lessons 62–72 and 74–83**; control lesson 73 remains source-exact and does not receive artificial 20/50 practice.
-- The unlock boundary is centralized in `tests/course-plan.spec.ts`; lesson-specific runtime tests must follow the current boundary instead of freezing an obsolete future lock.
-- Common mandatory-practice count and curated-majority tests cover ordinary lessons through **83**.
+- Lessons 62–72 and 74–84 use the mature ordinary-lesson contract.
+- Cumulative ordinary-practice lane: **440 tasks / exactly 1100 response slots for lessons 62–72 and 74–84**; control lesson 73 remains source-exact and does not receive artificial 20/50 practice.
+- The unlock boundary is centralized in `tests/course-plan.spec.ts`; lesson-specific runtime tests must not freeze a future locked lesson.
+- Common mandatory-practice count and curated-majority tests cover ordinary lessons through **84**.
+
+## Lesson 84 — § 23 volume synthesis
+
+- Fourth and final §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
+- Type: **generalization and systematization of knowledge**.
+- Verified technological route: oral **№3 p.156**; control/correction **workbook №154, 157**; generalization **№635, 636, 638, 639, 640** plus workbook **№293–295**; repeat **№643(5,6)**; homework **§23, №637** plus didactic **№153, 155**.
+- Exact source-aligned results used in the lesson:
+  - oral №3: wire frame for 3×5×6 cm parallelepiped — **56 cm**;
+  - №635: surface-area scale **16×**, volume scale **64×** when the cube edge is 4×;
+  - №636: volume changes **40×** and **2×**;
+  - №638: 1,000,000 l over 1 ha gives depth **10 cm**, so a swimming competition cannot be held;
+  - №639: three intersecting 1×1 through-holes in a 3 cm cube remove **7 cm³**, leaving **20 cm³**;
+  - №640: initial volume **288 cm³**, remaining **36 cm³**, used **252 cm³**, daily use **18 cm³**, remainder lasts **2 days**;
+  - №637: volume changes **8×** in part 1 and **does not change** in part 2.
+- Workbook/didactic tasks and №643(5,6) remain explicit source checkpoints where full wording was not recovered reliably; the app does not invent substitute conditions.
+- Mandatory practice: **20 tasks / exactly 50 response slots**.
+- Persistence, Pythagoras help, analytics, Sulafat sequencing/interruption, Chromium and iPad/WebKit coverage are included.
+- **§23 is complete after lesson 84.**
 
 ## Lesson 83 — § 23 volume reinforcement
 
 - Third §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
-- Verified technological route: oral **№4 p.156**; main work **№626, 630, 633, 634**; repeat **№644**; homework **№627, 631, 643 (3, 4)**.
-- The lesson consolidates direct and inverse volume relations, composite-volume reasoning, productivity/application problems and the connection between a cube's volume and surface area.
-- Exact source-aligned results used in the lesson:
-  - №626: unknown height **5 cm**;
-  - №633: room volume **72 m³**, productivity **9 m³/h**, equivalent workforce **300 workers**;
-  - №634: cube volume **216 cm³** and surface area **216 cm²**.
-- №630 and №631 depend on edition-specific figures that are not reliably present in the available extraction, so the app keeps explicit source checkpoints instead of inventing replacement drawings.
-- Repeat №644 and homework №643 (3, 4) remain explicit source checkpoints where the complete wording was not recovered reliably.
-- Mandatory practice: **20 tasks / exactly 50 response slots**.
-- Persistence, Pythagoras help, analytics, Sulafat sequencing/interruption, Chromium and iPad/WebKit coverage are included.
+- Route: oral **№4 p.156**; **№626, 630, 633, 634**; repeat **№644**; homework **№627, 631, 643(3,4)**.
+- Exact results include №626 height **5 cm**; №633 **72 m³**, **9 m³/h**, **300 workers**; №634 cube volume and surface area **216**.
+- Mandatory practice: **20 tasks / 50 response slots**.
 
 ## Lesson 82 — § 23 volume formulas
 
 - Second §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**.
-- Verified technological route: oral **№1 p.156** and questions **1–4** for activation; theory **§23 pp.155–156**; **№619, 620, 624, 628, 632**; repeat **№642**; homework **questions 5–7, №621, 625, 629**.
-- Core formulas and reasoning:
-  - textbook model `5 cm × 6 cm × 4 cm`: `5·6=30` unit cubes per layer, 4 layers, so **120 cm³**;
-  - rectangular parallelepiped: **`V=abc`**;
-  - cube: **`V=a³`**;
-  - with base area `S` and height `h`: **`V=Sh`**;
-  - inverse relations include `h=V:S` and `S=V:h`;
-  - all linear measurements must be expressed in the same unit before using `V=abc`.
-- Exact routed results: №619 **1080 m³**; №620 **216 cm³**; inverse example `324:54=6 dm`; №624 **1620 dm³**; №628 **36 m²**; №632 **448 g**.
-- Confirmed homework transfer: №621 **320 dm³**; №625 **1920 cm³**; №629 height **5 m**.
-- Oral №1 and repeat №642 remain explicit source checkpoints where complete edition-specific presentation/wording is not reliable in the available extraction.
-- Mandatory practice: **20 tasks / exactly 50 response slots**.
-- Runtime uses numeric-aware answer matching; editing a checked answer clears stored correctness while preserving the mature two-wrong-attempt continuation contract.
+- Route: oral №1 p.156; theory §23 pp.155–156; №619, 620, 624, 628, 632; repeat №642; homework questions 5–7, №621, 625, 629.
+- Core: `V=abc`, `V=a³`, `V=Sh`, inverse relations and unit alignment.
+- Mandatory practice: **20/50**.
 
 ## Lesson 81 — § 23 volume figure
 
 - First §23 lesson; **36 meaningful stages / 21 checked main-lesson actions**, mandatory practice **20/50**.
-- Route: oral **№2 p.156**; theory **§23 pp.153–154**; **№617, 618, 622**; repeat **№643 (1, 2)**; homework **questions 1–4, №623, 641**.
-- Core: meaning and properties of volume, unit cube, cubic units, `1 l = 1 dm³`, measuring volume by counting unit cubes.
-- Exact source values include oral №2 **8 cubes**, figure 176 volumes **5, 5, 18, 9**, `1 dm³=1000 cm³`, `1 m³=1,000,000 cm³`.
-- №618 / figure 179 and repeat №643 remain source checkpoints where the extraction is incomplete.
+- Route: oral №2 p.156; theory §23 pp.153–154; №617, 618, 622; repeat №643(1,2); homework questions 1–4, №623, 641.
+- Core: meaning/properties of volume, unit cube and cubic units.
 - Lesson 81 intentionally stops before `V=abc`; lesson 82 introduces that formula.
-
-## Lesson 80 — § 22 pyramid
-
-- Third and final §22 lesson; **36 meaningful stages / 21 checked main-lesson actions**, mandatory practice **20/50**.
-- Route: oral **№5–6 p.150**; theory **§22 pp.148–149**; **№604**; repeat **№614**; questions **14–18**; homework **§22, №605, 611, 615**.
-- Core: base/apex, lateral faces and edges, classification by base, nets, regular tetrahedron, pyramid as polyhedron.
-- **§22 is complete after lesson 80.**
 
 ## Recent course sequence
 
@@ -79,27 +71,30 @@ Use this file as the compact handoff context for continuing development without 
 - 71–72 — §20 powers.
 - 73 — source-exact Control work №4.
 - 74–77 — complete §21 area sequence; every ordinary lesson 36/21 and 20/50.
-- 78 — §22 rectangular-parallelepiped foundations.
-- 79 — §22 nets and polyhedra.
-- 80 — §22 pyramid; §22 complete.
-- 81 — §23 meaning of volume, unit cube and cubic units.
-- 82 — §23 formulas `V=abc`, `V=a³`, `V=Sh` and direct/inverse applications.
-- 83 — §23 reinforcement: inverse, composite and applied volume problems.
-- 84 — locked; final §23 lesson remains to be implemented from the verified source route.
+- 78–80 — complete §22 rectangular parallelepiped / nets / pyramid.
+- 81 — §23 meaning of volume.
+- 82 — §23 volume formulas.
+- 83 — §23 inverse, composite and applied volume problems.
+- 84 — §23 final synthesis; §23 complete.
+- 85 — locked; starts §24 combinatorial problems.
 
-## Release protection after lesson 83
+## CI / release protection after lesson 84
 
-- Earlier cumulative workflows continue to protect previous lessons.
-- `Course 1-83 certification` is the lesson-83 delta gate: source fidelity, full flow, 20/50 practice, Chromium, iPad/WebKit and Sulafat interruption.
-- `Course 62-83 hard certification` protects the mature block with:
-  - build + course/source contract through 83;
-  - Chromium hard runtime 62–83;
-  - iPad/WebKit hard runtime 62–83;
-  - complete **420-task/1050-response** ordinary practice for 62–72 and 74–83;
+The CI architecture is deliberately impact-based to avoid re-running stable lessons on every intermediate commit.
+
+- `Build` remains the always-on PR build/Worker dry-run.
+- `Course 1-84 certification` is the focused lesson-84 delta gate: course boundary, source fidelity, full flow, 20/50 practice, Chromium, iPad/WebKit and Sulafat interruption.
+- `Course 62-84 hard certification` is the cumulative release gate. On ordinary PR commits its expensive jobs are skipped; add `[hard-certify]` to the PR body only for the exact final release SHA. It also remains manually dispatchable and scheduled weekly.
+- Final cumulative certification must run only on the exact branch SHA that will be merged.
+- The cumulative hard gate covers:
+  - build + course/source contract through 84;
+  - Chromium hard runtime 62–84;
+  - iPad/WebKit hard runtime 62–84;
+  - complete **440-task/1100-response** practice for ordinary lessons 62–72 and 74–84;
   - Sulafat sequencing/interruption;
   - D1/cloud/multi-student/dashboard regression;
   - lesson-73 control-work integrity.
-- Lesson 84 is the centralized locked boundary.
+- Legacy focused checks for old lessons stay manual/weekly instead of consuming runner time on every new lesson.
 
 ## Ordinary interactive lesson quality contract
 

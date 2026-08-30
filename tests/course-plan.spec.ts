@@ -1,13 +1,13 @@
 import { expect,test } from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 83',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 84',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(79);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(83);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(80);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(84);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(4);
   await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(28)).toContainText('Вычитание натуральных чисел');
@@ -30,7 +30,8 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 83',a
   await expect(lessons.nth(80)).toContainText('Объём фигуры: единичный куб и кубические единицы');await expect(lessons.nth(80)).toBeEnabled();await expect(lessons.nth(80)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(81)).toContainText('Объём прямоугольного параллелепипеда: формулы и задачи');await expect(lessons.nth(81)).toBeEnabled();await expect(lessons.nth(81)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(82)).toContainText('Объём: обратные и составные задачи');await expect(lessons.nth(82)).toBeEnabled();await expect(lessons.nth(82)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(83)).toContainText('Объём прямоугольного параллелепипеда');await expect(lessons.nth(83)).toBeDisabled();
+  await expect(lessons.nth(83)).toContainText('Объём: итоговое обобщение');await expect(lessons.nth(83)).toBeEnabled();await expect(lessons.nth(83)).toHaveClass(/is-interactive/);
+  await expect(lessons.nth(84)).toContainText('Комбинаторные задачи');await expect(lessons.nth(84)).toBeDisabled();
   await expect(lessons.nth(90)).toContainText('Понятие обыкновенной дроби');await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 83 урока.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 84 урока.')).toBeVisible();
 });

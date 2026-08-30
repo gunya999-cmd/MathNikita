@@ -1,3 +1,4 @@
-lesson=83
-release=lesson-83-volume-reinforcement
+lesson=84
+release=lesson-84-volume-synthesis
 mode=exact-head
+reason=stale-boundary-tests-fixed
