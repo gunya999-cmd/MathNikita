@@ -20,3 +20,4 @@ jobs:
           git add -A
           git commit -m "Integrate lesson 87 into course shell"
           git push origin HEAD:agent/lesson-87-combinatorics-synthesis
+# retry: exact current catalog marker
