@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 
 test('lesson 90 keeps the exact Control work №5 variant 1 workload',()=>{
   const source=readFileSync(new URL('../src/ControlWorkFivePlayer.tsx',import.meta.url),'utf8');
-  const stageIds=[...source.matchAll(/^\s*\{id:'(l90-[^']+)'/gm)].map(match=>match[1]);
+  const stageIds=[...source.matchAll(/^\s*\{id:'(l90-[^']+)',kind:/gm)].map(match=>match[1]);
   const fieldIds=[...source.matchAll(/\{id:'(l90-(?:1q|1r|2|3v|3s|4|5|6|7|8))'/g)].map(match=>match[1]);
   expect(stageIds).toHaveLength(11);expect(new Set(stageIds).size).toBe(11);
   expect(fieldIds).toHaveLength(10);expect(new Set(fieldIds).size).toBe(10);
