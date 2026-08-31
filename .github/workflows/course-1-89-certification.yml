@@ -1,0 +1,71 @@
+# Delta release gate for lesson 89. Keep PR checks focused on the changed lesson;
+# cumulative course hard-certification is triggered once for the exact release SHA.
+name: Course 1-89 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-1-89-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-89:
+    name: Chromium · contract, practice, runtime and Sulafat 89
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Verify course boundary, pedagogy and lesson 89 source contract
+        run: >-
+          npx playwright test
+          tests/course-plan.spec.ts
+          tests/pedagogical-practice-quality.spec.ts
+          tests/extended-practice-count.spec.ts
+          tests/lesson-eighty-nine-source.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - name: Complete lesson 89 Chromium runtime
+        run: npx playwright test tests/lesson-eighty-nine-full-flow.spec.ts tests/lesson-eighty-nine-ipad.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Complete all 20 mandatory practice tasks / 50 responses
+        run: npx playwright test tests/lesson-eighty-nine-practice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Verify Sulafat sequencing and interruption
+        run: npx playwright test tests/lesson-eighty-nine-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-89:
+    name: iPad WebKit runtime 89
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lesson-eighty-nine-full-flow.spec.ts tests/lesson-eighty-nine-ipad.spec.ts --workers=1
+
+  certified:
+    name: COURSE 1-89 DELTA CERTIFIED
+    if: always()
+    needs: [chromium-89, webkit-89]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless both focused lesson 89 lanes passed
+        env:
+          CHROMIUM_89: ${{ needs.chromium-89.result }}
+          WEBKIT_89: ${{ needs.webkit-89.result }}
+        run: |
+          test "$CHROMIUM_89" = success
+          test "$WEBKIT_89" = success
+          echo "Lesson 89 delta is certified."
