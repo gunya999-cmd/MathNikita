@@ -1,0 +1,73 @@
+# Delta release gate for Control work №5. Cumulative 62-89 regression stays gated separately.
+name: Course 1-90 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-1-90-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-90:
+    name: Chromium · control contract, runtime and Sulafat 90
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Verify course boundary and source-exact control contract
+        run: >-
+          npx playwright test
+          tests/course-plan.spec.ts
+          tests/pedagogical-practice-quality.spec.ts
+          tests/extended-practice-count.spec.ts
+          tests/lesson-ninety-source.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - name: Complete Control work №5 and frozen-score correction contract
+        run: >-
+          npx playwright test
+          tests/lesson-ninety-full-flow.spec.ts
+          tests/lesson-ninety-control-integrity.spec.ts
+          tests/lesson-ninety-ipad.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+      - name: Verify Sulafat interruption without pre-submit solution leakage
+        run: npx playwright test tests/lesson-ninety-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-90:
+    name: iPad WebKit control runtime 90
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lesson-ninety-full-flow.spec.ts tests/lesson-ninety-control-integrity.spec.ts tests/lesson-ninety-ipad.spec.ts --workers=1
+
+  certified:
+    name: COURSE 1-90 DELTA CERTIFIED
+    if: always()
+    needs: [chromium-90, webkit-90]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless both focused Control work №5 lanes passed
+        env:
+          CHROMIUM_90: ${{ needs.chromium-90.result }}
+          WEBKIT_90: ${{ needs.webkit-90.result }}
+        run: |
+          test "$CHROMIUM_90" = success
+          test "$WEBKIT_90" = success
+          echo "Control work №5 delta is certified."
