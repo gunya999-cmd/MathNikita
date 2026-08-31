@@ -1,4 +1,4 @@
-name: Course 62-88 hard certification
+name: Course 62-89 hard certification
 
 on:
   workflow_dispatch:
@@ -12,13 +12,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: course-62-88-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: course-62-89-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   contract:
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]')
-    name: Build + course contract 1-88
+    name: Build + course contract 1-89
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -56,6 +56,7 @@ jobs:
           tests/lesson-eighty-six-source.spec.ts
           tests/lesson-eighty-seven-source.spec.ts
           tests/lesson-eighty-eight-source.spec.ts
+          tests/lesson-eighty-nine-source.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
   chromium-62-64:
@@ -76,11 +77,11 @@ jobs:
           tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
-  chromium-65-88:
+  chromium-65-89:
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]')
-    name: Chromium hard runtime 65-88
+    name: Chromium hard runtime 65-89
     runs-on: ubuntu-latest
-    timeout-minutes: 145
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -113,6 +114,7 @@ jobs:
           tests/lesson-eighty-six-full-flow.spec.ts tests/lesson-eighty-six-ipad.spec.ts
           tests/lesson-eighty-seven-full-flow.spec.ts tests/lesson-eighty-seven-ipad.spec.ts
           tests/lesson-eighty-eight-full-flow.spec.ts tests/lesson-eighty-eight-ipad.spec.ts
+          tests/lesson-eighty-nine-full-flow.spec.ts tests/lesson-eighty-nine-ipad.spec.ts
           --config=playwright.desktop.config.ts --workers=1
 
   webkit-62-64:
@@ -133,11 +135,11 @@ jobs:
           tests/lesson-sixty-four-full-flow.spec.ts tests/lesson-sixty-four-ipad.spec.ts
           --workers=1
 
-  webkit-65-88:
+  webkit-65-89:
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]')
-    name: iPad WebKit hard runtime 65-88
+    name: iPad WebKit hard runtime 65-89
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 155
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -170,11 +172,12 @@ jobs:
           tests/lesson-eighty-six-full-flow.spec.ts tests/lesson-eighty-six-ipad.spec.ts
           tests/lesson-eighty-seven-full-flow.spec.ts tests/lesson-eighty-seven-ipad.spec.ts
           tests/lesson-eighty-eight-full-flow.spec.ts tests/lesson-eighty-eight-ipad.spec.ts
+          tests/lesson-eighty-nine-full-flow.spec.ts tests/lesson-eighty-nine-ipad.spec.ts
           --workers=1
 
-  practice-62-88:
+  practice-62-89:
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]')
-    name: Complete 520 tasks / 1300 responses 62-88 excluding control 73
+    name: Complete 540 tasks / 1350 responses 62-89 excluding control 73
     runs-on: ubuntu-latest
     timeout-minutes: 225
     env:
@@ -226,12 +229,14 @@ jobs:
         run: npx playwright test tests/lesson-eighty-seven-practice.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Solve lesson 88 practice
         run: npx playwright test tests/lesson-eighty-eight-practice.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Solve lesson 89 practice
+        run: npx playwright test tests/lesson-eighty-nine-practice.spec.ts --config=playwright.desktop.config.ts --workers=1
 
-  voice-62-88:
+  voice-62-89:
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]')
-    name: Sulafat sequencing + interruption 62-88 Chromium and WebKit
+    name: Sulafat sequencing + interruption 62-89 Chromium and WebKit
     runs-on: ubuntu-latest
-    timeout-minutes: 140
+    timeout-minutes: 145
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -254,7 +259,7 @@ jobs:
           tests/lesson-eighty-one-voice.spec.ts tests/lesson-eighty-two-voice.spec.ts
           tests/lesson-eighty-three-voice.spec.ts tests/lesson-eighty-four-voice.spec.ts
           tests/lesson-eighty-five-voice.spec.ts tests/lesson-eighty-six-voice.spec.ts
-          tests/lesson-eighty-seven-voice.spec.ts tests/lesson-eighty-eight-voice.spec.ts
+          tests/lesson-eighty-seven-voice.spec.ts tests/lesson-eighty-eight-voice.spec.ts tests/lesson-eighty-nine-voice.spec.ts
           --config=playwright.desktop.config.ts --workers=1
       - name: iPad WebKit voice hard pass
         run: >-
@@ -272,7 +277,7 @@ jobs:
           tests/lesson-eighty-one-voice.spec.ts tests/lesson-eighty-two-voice.spec.ts
           tests/lesson-eighty-three-voice.spec.ts tests/lesson-eighty-four-voice.spec.ts
           tests/lesson-eighty-five-voice.spec.ts tests/lesson-eighty-six-voice.spec.ts
-          tests/lesson-eighty-seven-voice.spec.ts tests/lesson-eighty-eight-voice.spec.ts
+          tests/lesson-eighty-seven-voice.spec.ts tests/lesson-eighty-eight-voice.spec.ts tests/lesson-eighty-nine-voice.spec.ts
           --workers=1
 
   cloud-d1:
@@ -298,20 +303,20 @@ jobs:
         run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   hard-certified:
-    name: COURSE 1-88 HARD CERTIFIED
+    name: COURSE 1-89 HARD CERTIFIED
     if: always() && (github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]'))
-    needs: [contract, chromium-62-64, chromium-65-88, webkit-62-64, webkit-65-88, practice-62-88, voice-62-88, cloud-d1]
+    needs: [contract, chromium-62-64, chromium-65-89, webkit-62-64, webkit-65-89, practice-62-89, voice-62-89, cloud-d1]
     runs-on: ubuntu-latest
     steps:
       - name: Fail unless every hard-certification lane passed
         env:
           CONTRACT: ${{ needs.contract.result }}
           CHROMIUM_A: ${{ needs.chromium-62-64.result }}
-          CHROMIUM_B: ${{ needs.chromium-65-88.result }}
+          CHROMIUM_B: ${{ needs.chromium-65-89.result }}
           WEBKIT_A: ${{ needs.webkit-62-64.result }}
-          WEBKIT_B: ${{ needs.webkit-65-88.result }}
-          PRACTICE: ${{ needs.practice-62-88.result }}
-          VOICE: ${{ needs.voice-62-88.result }}
+          WEBKIT_B: ${{ needs.webkit-65-89.result }}
+          PRACTICE: ${{ needs.practice-62-89.result }}
+          VOICE: ${{ needs.voice-62-89.result }}
           CLOUD_D1: ${{ needs.cloud-d1.result }}
         run: |
           test "$CONTRACT" = success
@@ -322,4 +327,4 @@ jobs:
           test "$PRACTICE" = success
           test "$VOICE" = success
           test "$CLOUD_D1" = success
-          echo "Lessons 1-88 are cumulatively hard-certified; ordinary lessons 62-72 and 74-88 complete 520 tasks / 1300 responses."
+          echo "Lessons 1-89 are cumulatively hard-certified; ordinary lessons 62-72 and 74-89 complete 540 tasks / 1350 responses."
