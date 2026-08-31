@@ -1,0 +1,26 @@
+name: Lesson 89 one-shot integration
+
+on:
+  push:
+    branches: [agent/lesson-89-chapter-three-correction]
+    paths:
+      - '.github/workflows/lesson-89-integrate-once.yml'
+      - 'scripts/lesson-89-integrate-once.mjs'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/lesson-89-chapter-three-correction
+      - run: node scripts/lesson-89-integrate-once.mjs
+      - run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Integrate lesson 89 into course shell" || exit 0
+          git push origin HEAD:agent/lesson-89-chapter-three-correction
