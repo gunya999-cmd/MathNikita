@@ -12,9 +12,7 @@ async function prepare(page: Page) {
     const synth = window.speechSynthesis;
     if (synth) {
       synth.cancel = () => {};
-      synth.speak = (utterance: SpeechSynthesisUtterance) => {
-        queueMicrotask(() => utterance.onend?.(new SpeechSynthesisEvent('end', { utterance })));
-      };
+      synth.speak = () => {};
     }
   });
 }
@@ -56,11 +54,13 @@ for (let lessonNumber = 1; lessonNumber <= 90; lessonNumber += 1) {
     const firstStageId = await stage.getAttribute('data-stage-id');
     expect(firstStageId, `lesson ${lessonNumber} stage id must be non-empty`).toBeTruthy();
 
-    const nextButton = runtime.getByRole('button', { name: /^(Дальше|Далее)\s*→$/ }).filter({ visible: true }).first();
-    if (await nextButton.count()) {
-      if (await nextButton.isEnabled()) {
-        await nextButton.click();
+    const nextCandidates = runtime.getByRole('button', { name: /^(Дальше|Далее)\s*→$/ });
+    for (let index = 0; index < await nextCandidates.count(); index += 1) {
+      const candidate = nextCandidates.nth(index);
+      if (await candidate.isVisible() && await candidate.isEnabled()) {
+        await candidate.click();
         await expect.poll(async () => stage.getAttribute('data-stage-id'), { timeout: 4_000 }).not.toBe(firstStageId);
+        break;
       }
     }
 
