@@ -1,0 +1,71 @@
+import { expect, test, type Page } from '@playwright/test';
+
+const PROD = 'https://mathnikita.gunya999.workers.dev';
+
+const ignorableConsoleError = (text: string) =>
+  /Failed to load resource|favicon|net::ERR_ABORTED/i.test(text);
+
+async function prepare(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('mathnikita-mentor-auto-guide', 'false');
+    localStorage.setItem('mathnikita-voice-settings-v4', JSON.stringify({ engine: 'browser', rate: 1 }));
+    const synth = window.speechSynthesis;
+    if (synth) {
+      synth.cancel = () => {};
+      synth.speak = (utterance: SpeechSynthesisUtterance) => {
+        queueMicrotask(() => utterance.onend?.(new SpeechSynthesisEvent('end', { utterance })));
+      };
+    }
+  });
+}
+
+for (let lessonNumber = 1; lessonNumber <= 90; lessonNumber += 1) {
+  test(`lesson ${lessonNumber} opens and reaches a live runtime without client errors`, async ({ page }) => {
+    test.setTimeout(30_000);
+    await prepare(page);
+
+    const pageErrors: string[] = [];
+    const consoleErrors: string[] = [];
+    page.on('pageerror', error => pageErrors.push(error.message));
+    page.on('console', message => {
+      if (message.type() === 'error' && !ignorableConsoleError(message.text())) consoleErrors.push(message.text());
+    });
+
+    const response = await page.goto(`${PROD}/?smokeLesson=${lessonNumber}`, { waitUntil: 'domcontentloaded' });
+    expect(response?.ok(), `production HTML failed for lesson ${lessonNumber}`).toBeTruthy();
+
+    await page.locator('.course-chapter-group').evaluateAll(nodes => {
+      for (const node of nodes) (node as HTMLDetailsElement).open = true;
+    });
+
+    const openButton = page.getByRole('button', { name: new RegExp(`^Открыть урок ${lessonNumber}:`) });
+    await expect(openButton, `lesson ${lessonNumber} must be present in the catalog`).toBeVisible();
+    await expect(openButton, `lesson ${lessonNumber} must be enabled`).toBeEnabled();
+    await openButton.click();
+
+    const startButton = page.locator('.lesson-opening-start');
+    await expect(startButton, `lesson ${lessonNumber} opening must render`).toBeVisible();
+    await expect(startButton, `lesson ${lessonNumber} opening start must be enabled`).toBeEnabled();
+    await startButton.click();
+
+    const runtime = page.locator('.lesson-runtime:not([hidden])');
+    await expect(runtime, `lesson ${lessonNumber} runtime must become visible`).toBeVisible();
+
+    const stage = runtime.locator('[data-stage-id]').first();
+    await expect(stage, `lesson ${lessonNumber} must render a stage`).toBeVisible();
+    const firstStageId = await stage.getAttribute('data-stage-id');
+    expect(firstStageId, `lesson ${lessonNumber} stage id must be non-empty`).toBeTruthy();
+
+    const nextButton = runtime.getByRole('button', { name: /^(Дальше|Далее)\s*→$/ }).filter({ visible: true }).first();
+    if (await nextButton.count()) {
+      if (await nextButton.isEnabled()) {
+        await nextButton.click();
+        await expect.poll(async () => stage.getAttribute('data-stage-id'), { timeout: 4_000 }).not.toBe(firstStageId);
+      }
+    }
+
+    await page.waitForTimeout(120);
+    expect(pageErrors, `lesson ${lessonNumber} page errors: ${pageErrors.join(' | ')}`).toEqual([]);
+    expect(consoleErrors, `lesson ${lessonNumber} console errors: ${consoleErrors.join(' | ')}`).toEqual([]);
+  });
+}
