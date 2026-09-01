@@ -7,6 +7,22 @@ const ignorableConsoleError = (text: string) =>
 
 async function prepare(page: Page) {
   await page.addInitScript(() => {
+    const profileId = 'smoke-audit-user';
+    const now = new Date().toISOString();
+    localStorage.setItem('mathnikita:accounts:registry:v1', JSON.stringify({
+      version: 1,
+      profiles: [{
+        id: profileId,
+        name: 'Smoke Audit',
+        avatar: '🐱',
+        pinSalt: 'smoke-only',
+        pinHash: 'smoke-only',
+        createdAt: now,
+        lastUsedAt: now,
+      }],
+    }));
+    localStorage.setItem('mathnikita:accounts:workspace-owner:v1', profileId);
+    sessionStorage.setItem('mathnikita:accounts:session:v1', profileId);
     localStorage.setItem('mathnikita-mentor-auto-guide', 'false');
     localStorage.setItem('mathnikita-voice-settings-v4', JSON.stringify({ engine: 'browser', rate: 1 }));
     const synth = window.speechSynthesis;
@@ -31,10 +47,6 @@ for (let lessonNumber = 1; lessonNumber <= 90; lessonNumber += 1) {
 
     const response = await page.goto(`${PROD}/?smokeLesson=${lessonNumber}`, { waitUntil: 'domcontentloaded' });
     expect(response?.ok(), `production HTML failed for lesson ${lessonNumber}`).toBeTruthy();
-
-    await page.locator('.course-chapter-group').evaluateAll(nodes => {
-      for (const node of nodes) (node as HTMLDetailsElement).open = true;
-    });
 
     const lessons = page.locator('.course-lesson-grid > button');
     await expect(lessons, 'catalog must contain the official 175 lessons').toHaveCount(175);
