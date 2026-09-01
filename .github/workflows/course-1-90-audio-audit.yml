@@ -1,0 +1,39 @@
+name: Course 1-90 thorough audio audit
+
+on:
+  push:
+    branches:
+      - audit/course-1-90-audio-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-live-sulafat:
+    name: Chromium · real Sulafat audio · lessons 1-90
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Real production Sulafat · opening + two stages + interruption + replay + WAV health
+        run: npx playwright test tests/course-1-90-studio-live-audio.spec.ts --config=playwright.audio-live.config.ts
+
+  webkit-ipad-lifecycle:
+    name: WebKit iPad · narration lifecycle · lessons 1-90
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: iPad/WebKit · play + immediate stop + stage switch + replay
+        run: npx playwright test tests/course-1-90-webkit-audio-lifecycle.spec.ts --config=playwright.audio-webkit.config.ts
