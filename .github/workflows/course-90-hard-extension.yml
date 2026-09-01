@@ -1,0 +1,69 @@
+name: Course 90 hard extension
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '19 4 * * 0'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: course-90-hard-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  control-90:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]')
+    name: Control work №5 hard runtime Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: >-
+          npx playwright test
+          tests/course-plan.spec.ts
+          tests/pedagogical-practice-quality.spec.ts
+          tests/extended-practice-count.spec.ts
+          tests/lesson-ninety-source.spec.ts
+          tests/lesson-ninety-full-flow.spec.ts
+          tests/lesson-ninety-control-integrity.spec.ts
+          tests/lesson-ninety-ipad.spec.ts
+          tests/lesson-ninety-voice.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
+
+  webkit-90:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]')
+    name: Control work №5 hard runtime iPad WebKit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - run: npx playwright test tests/lesson-ninety-full-flow.spec.ts tests/lesson-ninety-control-integrity.spec.ts tests/lesson-ninety-ipad.spec.ts tests/lesson-ninety-voice.spec.ts --workers=1
+
+  certified:
+    name: COURSE 90 HARD EXTENSION CERTIFIED
+    if: always() && (github.event_name != 'pull_request' || contains(github.event.pull_request.body, '[hard-certify]'))
+    needs: [control-90, webkit-90]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless both control-work hard lanes passed
+        env:
+          CHROMIUM: ${{ needs.control-90.result }}
+          WEBKIT: ${{ needs.webkit-90.result }}
+        run: |
+          test "$CHROMIUM" = success
+          test "$WEBKIT" = success
+          echo "Control work №5 hard extension certified."
