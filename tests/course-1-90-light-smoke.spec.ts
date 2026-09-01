@@ -36,9 +36,12 @@ for (let lessonNumber = 1; lessonNumber <= 90; lessonNumber += 1) {
       for (const node of nodes) (node as HTMLDetailsElement).open = true;
     });
 
-    const openButton = page.getByRole('button', { name: new RegExp(`^Открыть урок ${lessonNumber}:`) });
-    await expect(openButton, `lesson ${lessonNumber} must be present in the catalog`).toBeVisible();
+    const lessons = page.locator('.course-lesson-grid > button');
+    await expect(lessons, 'catalog must contain the official 175 lessons').toHaveCount(175);
+    const openButton = lessons.nth(lessonNumber - 1);
+    await expect(openButton, `lesson ${lessonNumber} card must be visible`).toBeVisible();
     await expect(openButton, `lesson ${lessonNumber} must be enabled`).toBeEnabled();
+    await expect(openButton, `lesson ${lessonNumber} card must identify its lesson number`).toContainText(`Урок ${lessonNumber}`);
     await openButton.click();
 
     const startButton = page.locator('.lesson-opening-start');
