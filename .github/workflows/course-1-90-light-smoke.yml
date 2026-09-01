@@ -1,0 +1,22 @@
+name: Course 1-90 light smoke
+
+on:
+  push:
+    branches:
+      - audit/course-1-90-light-smoke
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Production smoke lessons 1-90
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Open every production lesson and catch client errors
+        run: npx playwright test tests/course-1-90-light-smoke.spec.ts --config=playwright.smoke.config.ts
