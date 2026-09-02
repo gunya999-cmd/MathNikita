@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test:ipad": "playwright test",
     "test:audio": "playwright test tests/audio-hard-test-1-90.spec.ts",
+    "test:audio:content": "playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts",
     "cf:deploy": "npm run build && npx wrangler deploy",
     "cf:deploy:api": "node scripts/write-build-version.mjs && npx wrangler deploy"
   },
