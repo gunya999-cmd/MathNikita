@@ -32,7 +32,7 @@ function speechViolations(text: string) {
   const violations: string[] = [];
   if (!text.trim()) violations.push('empty narration');
   if (text.length > 3500) violations.push(`too long: ${text.length} chars`);
-  if (/[§№=+×*·÷<>≤≥→↔²³^%°]/.test(text)) violations.push('raw mathematical notation remains');
+  if (/[§№=+×*·÷<>≤≥→↔²³^%°−]/.test(text)) violations.push('raw mathematical notation remains');
   if (/\b\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|м|л)\b/i.test(text)) violations.push('compact measurement unit remains');
   if (/\d+\s*\/\s*\d+/.test(text)) violations.push('raw numeric fraction remains');
   if (/[A-Za-z]/.test(text)) violations.push('raw Latin letters remain');
@@ -92,6 +92,7 @@ async function jumpToStage(page: Page, lessonNumber: number, stageIndex: number,
 test('Extended Practice Content/Pronunciation Audit 1-90: every voiceable task prepares clean Russian speech', () => {
   let auditedTasks = 0;
   const narrationIds = new Set<string>();
+  const problems: string[] = [];
 
   for (let lessonNumber = 1; lessonNumber <= READY_LESSONS; lessonNumber += 1) {
     const set = extendedPracticeByLesson[lessonNumber];
@@ -100,38 +101,44 @@ test('Extended Practice Content/Pronunciation Audit 1-90: every voiceable task p
     set.tasks.forEach((task, index) => {
       const narrationId = practiceNarrationId(lessonNumber, task);
       const prepared = prepareRussianSpeechText(practiceNarrationText(task, index, set.tasks.length));
-      expect(narrationIds.has(narrationId), `duplicate practice narration id: ${narrationId}`).toBeFalsy();
+      if (narrationIds.has(narrationId)) problems.push(`duplicate practice narration id: ${narrationId}`);
       narrationIds.add(narrationId);
-      expect(
-        speechViolations(prepared),
-        `lesson ${lessonNumber}, practice ${index + 1}/${set.tasks.length}, ${narrationId}: invalid prepared narration:\n${prepared}`,
-      ).toEqual([]);
+      const violations = speechViolations(prepared);
+      if (violations.length) {
+        problems.push(
+          `lesson ${lessonNumber}, practice ${index + 1}/${set.tasks.length}, ${narrationId}: ${violations.join('; ')}\n${prepared}`,
+        );
+      }
       auditedTasks += 1;
     });
   }
 
   expect(auditedTasks).toBeGreaterThan(1_000);
   expect(narrationIds.size).toBe(auditedTasks);
+  expect(problems, `${problems.length} practice narration problem(s):\n\n${problems.join('\n\n')}`).toEqual([]);
 });
 
 test('Mentor Content/Pronunciation Audit: every Pythagoras voice script prepares clean Russian speech', () => {
   let auditedMessages = 0;
+  const problems: string[] = [];
   for (const [scriptKey, script] of Object.entries(allMentorScripts())) {
     for (const [responseKey, rawText] of Object.entries(script)) {
       const prepared = prepareRussianSpeechText(rawText);
-      expect(
-        speechViolations(prepared),
-        `mentor ${scriptKey}/${responseKey}: invalid prepared narration:\n${prepared}`,
-      ).toEqual([]);
+      const violations = speechViolations(prepared);
+      if (violations.length) {
+        problems.push(`mentor ${scriptKey}/${responseKey}: ${violations.join('; ')}\n${prepared}`);
+      }
       auditedMessages += 1;
     }
   }
   expect(auditedMessages).toBeGreaterThan(50);
+  expect(problems, `${problems.length} mentor narration problem(s):\n\n${problems.join('\n\n')}`).toEqual([]);
 });
 
 test('In-lesson Stage Content/Pronunciation Audit 1-90: every interactive stage sends clean prepared Russian text to Sulafat', async ({ page }) => {
   test.setTimeout(420_000);
   const narrationById = new Map<string, string>();
+  const problems: string[] = [];
   let auditedStages = 0;
 
   await page.addInitScript(() => {
@@ -188,10 +195,12 @@ test('In-lesson Stage Content/Pronunciation Audit 1-90: every interactive stage 
       }).toBeTruthy();
 
       const prepared = narrationById.get(narrationId) ?? '';
-      expect(
-        speechViolations(prepared),
-        `lesson ${lessonNumber}, stage ${stageIndex + 1}/${initialProgress.total}, ${stageId}: invalid prepared narration:\n${prepared}`,
-      ).toEqual([]);
+      const violations = speechViolations(prepared);
+      if (violations.length) {
+        problems.push(
+          `lesson ${lessonNumber}, stage ${stageIndex + 1}/${initialProgress.total}, ${stageId}: ${violations.join('; ')}\n${prepared}`,
+        );
+      }
       auditedStages += 1;
     }
 
@@ -200,4 +209,5 @@ test('In-lesson Stage Content/Pronunciation Audit 1-90: every interactive stage 
   }
 
   expect(auditedStages).toBeGreaterThan(1_000);
+  expect(problems, `${problems.length} stage narration problem(s):\n\n${problems.join('\n\n')}`).toEqual([]);
 });
