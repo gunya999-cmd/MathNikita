@@ -64,10 +64,13 @@ async function openLessonFromCatalog(page: Page, lessonNumber: number) {
 
 async function stageProgress(page: Page) {
   const controlJumpCount = await page.locator('.lesson-runtime:not([hidden]) .control-page-jump button').count();
-  const labels = await page.locator('.lesson-runtime:not([hidden]) .lesson-controls span').allTextContents();
-  const label = labels.at(-1)?.trim() ?? '';
-  const match = label.match(/(\d+)\s*(?:из|\/)\s*(\d+)/i);
-  if (match) return { current: Number(match[1]), total: Number(match[2]) };
+  const labels = await page.locator(
+    '.lesson-runtime:not([hidden]) .stage-counter:not(.sr-only), .lesson-runtime:not([hidden]) .lesson-controls span',
+  ).allTextContents();
+  for (let index = labels.length - 1; index >= 0; index -= 1) {
+    const match = labels[index].trim().match(/(\d+)\s*(?:из|\/)\s*(\d+)/i);
+    if (match) return { current: Number(match[1]), total: Number(match[2]) };
+  }
   if (controlJumpCount > 0) {
     const activeIndex = await page.locator('.lesson-runtime:not([hidden]) .control-page-jump button').evaluateAll(nodes =>
       Math.max(0, nodes.findIndex(node => node.classList.contains('active'))),
