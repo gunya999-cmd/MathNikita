@@ -32,10 +32,11 @@ function speechViolations(text: string) {
   const violations: string[] = [];
   if (!text.trim()) violations.push('empty narration');
   if (text.length > 3500) violations.push(`too long: ${text.length} chars`);
-  if (/[§№=+×*·÷<>≤≥→↔²³^%°−]/.test(text)) violations.push('raw mathematical notation remains');
-  if (/\b\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|м|л)\b/i.test(text)) violations.push('compact measurement unit remains');
+  if (/[§№=+×*·÷<>≤≥→↔²³^%°−∠αβγδ]/i.test(text)) violations.push('raw mathematical notation remains');
+  if (/\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|мин|м|л|ч|с)(?=\s|[.,;:!?/)]|$)/i.test(text)) violations.push('compact measurement unit remains');
   if (/\d+\s*\/\s*\d+/.test(text)) violations.push('raw numeric fraction remains');
   if (/[A-Za-z]/.test(text)) violations.push('raw Latin letters remain');
+  if (/умножить на\s*[.;]/i.test(text)) violations.push('broken multiplication ellipsis remains');
   if (/\uFFFD/.test(text)) violations.push('replacement character remains');
   if (/\s{2,}/.test(text)) violations.push('repeated spaces remain');
   const longestSentence = Math.max(0, ...text.split(/[.!?]+/).map(sentence => sentence.trim().length));
