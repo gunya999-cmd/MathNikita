@@ -51,6 +51,9 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
     'А в первой степени равно А, А в степени Эн, 2 в степени 4, Икс в степени 5',
   );
   expect(prepareRussianSpeechText('1/2, −3')).toBe('1 разделить на 2, минус 3');
+  expect(prepareRussianSpeechText('4м80см, 2км350м')).toBe(
+    '4 метра 80 сантиметров, 2 километра 350 метров',
+  );
 });
 
 test('pronunciation dictionary pins risky course terms to normative stress', () => {
