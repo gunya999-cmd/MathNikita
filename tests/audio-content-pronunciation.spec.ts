@@ -14,7 +14,7 @@ function speechViolations(text: string) {
   if (/\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|мин|м|л|ч|с)(?=\s|[.,;:!?/)]|$)/i.test(text)) violations.push('compact measurement unit remains');
   if (/\d+\s*\/\s*\d+/.test(text)) violations.push('raw numeric fraction remains');
   if (/[A-Za-z]/.test(text)) violations.push('raw Latin letters remain');
-  if (/умножить на\s*[.;]/i.test(text)) violations.push('broken multiplication ellipsis remains');
+  if (/умножить на\s*[.;]\s*умножить на/i.test(text)) violations.push('broken multiplication ellipsis remains');
   if (/\uFFFD/.test(text)) violations.push('replacement character remains');
   if (/\s{2,}/.test(text)) violations.push('repeated spaces remain');
   const longestSentence = Math.max(0, ...text.split(/[.!?]+/).map(sentence => sentence.trim().length));
@@ -61,6 +61,9 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
   );
   expect(prepareRussianSpeechText('28 км/ч, 5 ч, 1·2·...·100')).toBe(
     '28 километров в час, 5 часов, 1 умножить на 2 умножить последовательно вплоть до 100',
+  );
+  expect(prepareRussianSpeechText('120 шаг/мин, 4800 см/мин, 480 м/мин')).toBe(
+    '120 шагов в минуту, 4800 сантиметров в минуту, 480 метров в минуту',
   );
   expect(prepareRussianSpeechText('challenge; source-checkpoint')).toBe(
     'задача повышенной сложности; контрольную точку источника',
