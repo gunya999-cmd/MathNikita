@@ -1,0 +1,100 @@
+name: Course Sulafat voice render
+
+on:
+  push:
+    branches:
+      - feature/course-sulafat-render
+    paths:
+      - course-voice/workflow-agent-manifest.json
+      - .github/workflows/course-sulafat-render.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/course-sulafat-render
+          fetch-depth: 0
+
+      - name: Generate exact Sulafat clips through production Gemini TTS
+        run: |
+          mkdir -p course-voice/generated
+          python <<'PY'
+          import json, pathlib, time, urllib.request, urllib.error, wave
+
+          manifest=json.loads(pathlib.Path('course-voice/workflow-agent-manifest.json').read_text(encoding='utf-8'))
+          endpoint='https://mathnikita.gunya999.workers.dev/api/narration'
+          version='ru-teacher-gemini-sulafat-v2'
+          out=pathlib.Path('course-voice/generated')
+          durations=[]
+
+          for i,item in enumerate(manifest,1):
+              payload=json.dumps({'id':item['id'],'text':item['text'],'version':version},ensure_ascii=False).encode('utf-8')
+              last=None
+              for attempt in range(1,7):
+                  req=urllib.request.Request(endpoint,data=payload,headers={'content-type':'application/json','user-agent':'course-sulafat-render/1.0'},method='POST')
+                  try:
+                      with urllib.request.urlopen(req,timeout=90) as r:
+                          data=r.read(); ctype=r.headers.get('content-type','')
+                          provider=r.headers.get('x-mathnikita-provider','')
+                          voice=r.headers.get('x-mathnikita-voice','')
+                      if not data.startswith(b'RIFF'):
+                          raise RuntimeError(f'Expected WAV, got {ctype}, {data[:120]!r}')
+                      if voice.lower()!='sulafat':
+                          raise RuntimeError(f'Unexpected voice header: {voice!r}')
+                      path=out/f'{i:02d}.wav'; path.write_bytes(data)
+                      with wave.open(str(path),'rb') as w:
+                          sec=w.getnframes()/w.getframerate()
+                          params=(w.getnchannels(),w.getsampwidth(),w.getframerate(),w.getcomptype())
+                      durations.append({'index':i,'id':item['id'],'section':item['section'],'duration_sec':round(sec,3),'provider':provider,'voice':voice,'params':params})
+                      print(f'{i:02d}: {sec:.2f}s · {provider} · {voice}')
+                      last=None
+                      break
+                  except Exception as e:
+                      last=e
+                      print(f'{i:02d} attempt {attempt}: {e}')
+                      time.sleep(min(20,2*attempt))
+              if last is not None:
+                  raise last
+              time.sleep(1.0)
+
+          # concatenate PCM WAV clips exactly, inserting a short natural gap
+          first=out/'01.wav'
+          with wave.open(str(first),'rb') as w:
+              nch,sw,rate,ctype,cname=w.getparams().nchannels,w.getsampwidth(),w.getframerate(),w.getcomptype(),w.getcompname()
+          silence_frames=int(rate*0.32)
+          silence=b'\x00'*(silence_frames*nch*sw)
+          full=out/'workflow-agent-sulafat.wav'
+          with wave.open(str(full),'wb') as dst:
+              dst.setnchannels(nch); dst.setsampwidth(sw); dst.setframerate(rate); dst.setcomptype(ctype,cname)
+              for i in range(1,len(manifest)+1):
+                  with wave.open(str(out/f'{i:02d}.wav'),'rb') as src:
+                      if (src.getnchannels(),src.getsampwidth(),src.getframerate(),src.getcomptype()) != (nch,sw,rate,ctype):
+                          raise RuntimeError('WAV parameter mismatch')
+                      dst.writeframes(src.readframes(src.getnframes()))
+                  if i<len(manifest): dst.writeframes(silence)
+          with wave.open(str(full),'rb') as w:
+              total=w.getnframes()/w.getframerate()
+          pathlib.Path('course-voice/generated/durations.json').write_text(json.dumps({'voice':'Sulafat','version':version,'gap_sec':0.32,'total_duration_sec':round(total,3),'segments':durations},ensure_ascii=False,indent=2),encoding='utf-8')
+          print('TOTAL',round(total,3))
+          PY
+
+      - name: Encode audio as text for retrieval
+        run: |
+          base64 -w0 course-voice/generated/workflow-agent-sulafat.wav > course-voice/generated/workflow-agent-sulafat.wav.b64
+          for f in course-voice/generated/[0-9][0-9].wav; do base64 -w0 "$f" > "$f.b64"; done
+          rm course-voice/generated/*.wav
+
+      - name: Commit generated Sulafat audio payload
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add course-voice/generated
+          git commit -m 'Generate course Sulafat voice [course-voice-generated]' || exit 0
+          git push origin HEAD:feature/course-sulafat-render
