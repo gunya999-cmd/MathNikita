@@ -10,7 +10,7 @@ function speechViolations(text: string) {
   const violations: string[] = [];
   if (!text.trim()) violations.push('empty narration');
   if (text.length > 3500) violations.push(`too long: ${text.length} chars`);
-  if (/[§№=+×*·÷<>≤≥→↔²³^%°]/.test(text)) violations.push('raw mathematical notation remains');
+  if (/[§№=+×*·÷<>≤≥→↔²³^%°−]/.test(text)) violations.push('raw mathematical notation remains');
   if (/\b\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|м|л)\b/i.test(text)) violations.push('compact measurement unit remains');
   if (/\d+\s*\/\s*\d+/.test(text)) violations.push('raw numeric fraction remains');
   if (/[A-Za-z]/.test(text)) violations.push('raw Latin letters remain');
@@ -50,6 +50,7 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
   expect(prepareRussianSpeechText('a¹ = a, aⁿ, 2⁴, x^5')).toBe(
     'А в первой степени равно А, А в степени Эн, 2 в степени 4, Икс в степени 5',
   );
+  expect(prepareRussianSpeechText('1/2, −3')).toBe('1 разделить на 2, минус 3');
 });
 
 test('pronunciation dictionary pins risky course terms to normative stress', () => {
