@@ -10,6 +10,7 @@ type MentorScript = Record<string, string>;
 
 const READY_LESSONS = 90;
 const TOTAL_LESSONS = 175;
+const MAX_DISCOVERED_STAGES = 80;
 const MENTOR_SCRIPT_FILES = [
   'src/data/mentorScripts.json',
   'src/data/lessonThreeMentorScripts.json',
@@ -80,17 +81,48 @@ async function stageProgress(page: Page) {
   return { current: 0, total: 0 };
 }
 
-async function jumpToStage(page: Page, lessonNumber: number, stageIndex: number, total: number) {
+async function dispatchStageJump(page: Page, lessonNumber: number, stageIndex: number) {
   await page.evaluate(({ targetLesson, targetIndex }) => {
     window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', {
       detail: { lessonNumber: targetLesson, stageIndex: targetIndex },
     }));
   }, { targetLesson: lessonNumber, targetIndex: stageIndex });
+}
 
+async function jumpToCountedStage(page: Page, lessonNumber: number, stageIndex: number, total: number) {
+  await dispatchStageJump(page, lessonNumber, stageIndex);
   await expect.poll(async () => (await stageProgress(page)).current, {
     timeout: 4_000,
     message: `lesson ${lessonNumber}: stage ${stageIndex + 1}/${total} did not become active`,
   }).toBe(stageIndex + 1);
+}
+
+async function auditStagePayload(
+  page: Page,
+  lessonNumber: number,
+  stageIndex: number,
+  stageLabel: string,
+  narrationById: Map<string, string>,
+  problems: string[],
+) {
+  const stage = page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]').first();
+  const stageId = (await stage.getAttribute('data-stage-id'))?.trim() ?? '';
+  expect(stageId, `lesson ${lessonNumber}, stage ${stageIndex + 1}: data-stage-id is empty`).not.toBe('');
+  const token = safeNarrationToken(stageId);
+  expect(token, `lesson ${lessonNumber}, stage ${stageIndex + 1}: narration token is empty for ${stageId}`).not.toBe('');
+  const narrationId = `lesson-${String(lessonNumber).padStart(2, '0')}-stage-${token}`;
+
+  await expect.poll(() => narrationById.has(narrationId), {
+    timeout: 4_000,
+    message: `lesson ${lessonNumber}, stage ${stageLabel}, ${stageId}: narration was not sent to Sulafat`,
+  }).toBeTruthy();
+
+  const prepared = narrationById.get(narrationId) ?? '';
+  const violations = speechViolations(prepared);
+  if (violations.length) {
+    problems.push(`lesson ${lessonNumber}, stage ${stageLabel}, ${stageId}: ${violations.join('; ')}\n${prepared}`);
+  }
+  return stageId;
 }
 
 test('Extended Practice Content/Pronunciation Audit 1-90: every voiceable task prepares clean Russian speech', () => {
@@ -109,9 +141,7 @@ test('Extended Practice Content/Pronunciation Audit 1-90: every voiceable task p
       narrationIds.add(narrationId);
       const violations = speechViolations(prepared);
       if (violations.length) {
-        problems.push(
-          `lesson ${lessonNumber}, practice ${index + 1}/${set.tasks.length}, ${narrationId}: ${violations.join('; ')}\n${prepared}`,
-        );
+        problems.push(`lesson ${lessonNumber}, practice ${index + 1}/${set.tasks.length}, ${narrationId}: ${violations.join('; ')}\n${prepared}`);
       }
       auditedTasks += 1;
     });
@@ -129,9 +159,7 @@ test('Mentor Content/Pronunciation Audit: every Pythagoras voice script prepares
     for (const [responseKey, rawText] of Object.entries(script)) {
       const prepared = prepareRussianSpeechText(rawText);
       const violations = speechViolations(prepared);
-      if (violations.length) {
-        problems.push(`mentor ${scriptKey}/${responseKey}: ${violations.join('; ')}\n${prepared}`);
-      }
+      if (violations.length) problems.push(`mentor ${scriptKey}/${responseKey}: ${violations.join('; ')}\n${prepared}`);
       auditedMessages += 1;
     }
   }
@@ -183,29 +211,30 @@ test('In-lesson Stage Content/Pronunciation Audit 1-90: every interactive stage 
     await expect(stage, `lesson ${lessonNumber}: interactive narration stage is missing`).toBeVisible();
 
     const initialProgress = await stageProgress(page);
-    expect(initialProgress.total, `lesson ${lessonNumber}: stage count is not exposed`).toBeGreaterThan(0);
-
-    for (let stageIndex = 0; stageIndex < initialProgress.total; stageIndex += 1) {
-      await jumpToStage(page, lessonNumber, stageIndex, initialProgress.total);
-      const stageId = (await stage.getAttribute('data-stage-id'))?.trim() ?? '';
-      expect(stageId, `lesson ${lessonNumber}, stage ${stageIndex + 1}: data-stage-id is empty`).not.toBe('');
-      const token = safeNarrationToken(stageId);
-      expect(token, `lesson ${lessonNumber}, stage ${stageIndex + 1}: narration token is empty for ${stageId}`).not.toBe('');
-      const narrationId = `lesson-${String(lessonNumber).padStart(2, '0')}-stage-${token}`;
-
-      await expect.poll(() => narrationById.has(narrationId), {
-        timeout: 4_000,
-        message: `lesson ${lessonNumber}, stage ${stageIndex + 1}/${initialProgress.total}, ${stageId}: narration was not sent to Sulafat`,
-      }).toBeTruthy();
-
-      const prepared = narrationById.get(narrationId) ?? '';
-      const violations = speechViolations(prepared);
-      if (violations.length) {
-        problems.push(
-          `lesson ${lessonNumber}, stage ${stageIndex + 1}/${initialProgress.total}, ${stageId}: ${violations.join('; ')}\n${prepared}`,
-        );
+    if (initialProgress.total > 0) {
+      for (let stageIndex = 0; stageIndex < initialProgress.total; stageIndex += 1) {
+        await jumpToCountedStage(page, lessonNumber, stageIndex, initialProgress.total);
+        await auditStagePayload(page, lessonNumber, stageIndex, `${stageIndex + 1}/${initialProgress.total}`, narrationById, problems);
+        auditedStages += 1;
       }
-      auditedStages += 1;
+    } else {
+      const seenStageIds = new Set<string>();
+      for (let stageIndex = 0; stageIndex < MAX_DISCOVERED_STAGES; stageIndex += 1) {
+        const beforeId = (await stage.getAttribute('data-stage-id'))?.trim() ?? '';
+        await dispatchStageJump(page, lessonNumber, stageIndex);
+        if (stageIndex > 0) {
+          await page.waitForTimeout(25);
+          const afterId = (await stage.getAttribute('data-stage-id'))?.trim() ?? '';
+          if (afterId === beforeId && seenStageIds.has(afterId)) break;
+        }
+
+        const stageId = await auditStagePayload(page, lessonNumber, stageIndex, `${stageIndex + 1}/discovered`, narrationById, problems);
+        expect(seenStageIds.has(stageId), `lesson ${lessonNumber}: duplicate stage id before end: ${stageId}`).toBeFalsy();
+        seenStageIds.add(stageId);
+        auditedStages += 1;
+      }
+      expect(seenStageIds.size, `lesson ${lessonNumber}: dynamic stage discovery found too few stages`).toBeGreaterThan(1);
+      expect(seenStageIds.size, `lesson ${lessonNumber}: stage discovery hit safety limit ${MAX_DISCOVERED_STAGES}`).toBeLessThan(MAX_DISCOVERED_STAGES);
     }
 
     await page.locator('.lesson-mode-toolbar > button').first().click();
