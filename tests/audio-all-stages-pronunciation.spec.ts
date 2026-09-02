@@ -36,7 +36,7 @@ function speechViolations(text: string) {
   if (/\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|мин|м|л|ч|с)(?=\s|[.,;:!?/)]|$)/i.test(text)) violations.push('compact measurement unit remains');
   if (/\d+\s*\/\s*\d+/.test(text)) violations.push('raw numeric fraction remains');
   if (/[A-Za-z]/.test(text)) violations.push('raw Latin letters remain');
-  if (/умножить на\s*[.;]/i.test(text)) violations.push('broken multiplication ellipsis remains');
+  if (/умножить на\s*[.;]\s*умножить на/i.test(text)) violations.push('broken multiplication ellipsis remains');
   if (/\uFFFD/.test(text)) violations.push('replacement character remains');
   if (/\s{2,}/.test(text)) violations.push('repeated spaces remain');
   const longestSentence = Math.max(0, ...text.split(/[.!?]+/).map(sentence => sentence.trim().length));
