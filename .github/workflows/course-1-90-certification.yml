@@ -49,13 +49,13 @@ jobs:
       - name: Pronunciation stress dictionary contract
         run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation dictionary"
       - name: Extended Practice Content Pronunciation Audit lessons 1-90
-        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Extended Practice Content/Pronunciation Audit 1-90"
+        run: npx playwright test tests/audio-all-stages-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Extended Practice Content/Pronunciation Audit 1-90"
       - name: Mentor Content Pronunciation Audit
-        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Mentor Content/Pronunciation Audit"
+        run: npx playwright test tests/audio-all-stages-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Mentor Content/Pronunciation Audit"
       - name: Audio Content Audit opening TTS payloads lessons 1-90
         run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Audio Content Audit 1-90"
       - name: In-lesson Stage Content Pronunciation Audit lessons 1-90
-        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "In-lesson Stage Content/Pronunciation Audit 1-90"
+        run: npx playwright test tests/audio-all-stages-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "In-lesson Stage Content/Pronunciation Audit 1-90"
       - name: Upload Audio Content Audit diagnostics
         if: always()
         uses: actions/upload-artifact@v4
