@@ -72,6 +72,8 @@ const UNIT_FORMS: Record<string, UnitForms> = {
   с: ['секунда', 'секунды', 'секунд'],
 };
 
+const STEP_FORMS: UnitForms = ['шаг', 'шага', 'шагов'];
+
 const SQUARE_UNIT_FORMS: Record<string, UnitForms> = {
   мм: ['квадратный миллиметр', 'квадратных миллиметра', 'квадратных миллиметров'],
   см: ['квадратный сантиметр', 'квадратных сантиметра', 'квадратных сантиметров'],
@@ -153,7 +155,7 @@ function replaceDimensionUnits(value: string) {
 
 export function prepareRussianSpeechText(value: string) {
   let text = replaceDimensionUnits(value);
-  text = text.replace(/\bфинальный\s+challenge\b/gi, 'финальная задача повышенной сложности');
+  text = text.replace(/финальный\s+challenge\b/gi, 'финальная задача повышенной сложности');
   text = text.replace(/\bchallenge\b/gi, 'задача повышенной сложности');
   text = text.replace(/\bsource-checkpoint\b/gi, 'контрольную точку источника');
   text = text.replace(/\bsource\s+checkpoint\b/gi, 'контрольную точку источника');
@@ -162,6 +164,12 @@ export function prepareRussianSpeechText(value: string) {
   text = text.replace(/§{2,}\s*/g, 'параграфы ');
   text = text.replace(/§\s*(\d+)/g, 'параграф $1');
   text = text.replace(/с\.\s*(\d+)/gi, 'страница $1');
+  text = text.replace(/(\d+(?:[.,]\d+)?)\s*шаг(?:ов|а|и)?\s*\/\s*мин/gi, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, STEP_FORMS)} в минуту`);
+  text = text.replace(/(\d+(?:[.,]\d+)?)\s*(км|дм|см|мм|м)\s*\/\s*мин/gi, (_, numberText: string, unit: string) => {
+    const forms = UNIT_FORMS[unit.toLowerCase()];
+    return `${numberText} ${inflectedUnit(numberText, forms)} в минуту`;
+  });
+  text = text.replace(/(км|дм|см|мм|м)\s*\/\s*мин/gi, (_, unit: string) => `${UNIT_FORMS[unit.toLowerCase()][2]} в минуту`);
   text = text.replace(/(\d+(?:[.,]\d+)?)\s*км\s*\/\s*ч/gi, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, UNIT_FORMS.км)} в час`);
   text = text.replace(/(\d+(?:[.,]\d+)?)\s*м\s*\/\s*с/gi, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, UNIT_FORMS.м)} в секунду`);
   text = text.replace(/км\s*\/\s*ч/gi, 'километров в час');
