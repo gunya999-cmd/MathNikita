@@ -26,6 +26,14 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 24}
       - run: npm install
+      - name: Pronunciation normalization contract
+        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation normalization"
+      - name: Pronunciation stress dictionary contract
+        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation dictionary"
+      - name: Extended Practice Content Pronunciation Audit lessons 1-90
+        run: npx playwright test tests/audio-all-stages-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Extended Practice Content/Pronunciation Audit 1-90"
+      - name: Mentor Content Pronunciation Audit
+        run: npx playwright test tests/audio-all-stages-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Mentor Content/Pronunciation Audit"
       - run: npx playwright install --with-deps chromium
       - name: Verify course boundary and source-exact control contract
         run: >-
@@ -44,14 +52,6 @@ jobs:
           --config=playwright.desktop.config.ts --workers=1
       - name: Verify Sulafat interruption without pre-submit solution leakage
         run: npx playwright test tests/lesson-ninety-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
-      - name: Pronunciation normalization contract
-        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation normalization"
-      - name: Pronunciation stress dictionary contract
-        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation dictionary"
-      - name: Extended Practice Content Pronunciation Audit lessons 1-90
-        run: npx playwright test tests/audio-all-stages-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Extended Practice Content/Pronunciation Audit 1-90"
-      - name: Mentor Content Pronunciation Audit
-        run: npx playwright test tests/audio-all-stages-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Mentor Content/Pronunciation Audit"
       - name: Audio Content Audit opening TTS payloads lessons 1-90
         run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Audio Content Audit 1-90"
       - name: In-lesson Stage Content Pronunciation Audit lessons 1-90
