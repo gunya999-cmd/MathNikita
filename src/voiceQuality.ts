@@ -52,6 +52,11 @@ const LATIN_LETTER_NAMES: Record<string, string> = {
   S: 'Эс', T: 'Тэ', U: 'У', V: 'Вэ', W: 'Дабл-ю', X: 'Икс', Y: 'Игрек', Z: 'Зет',
 };
 
+const SUPERSCRIPT_DIGITS: Record<string, string> = {
+  '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4',
+  '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9',
+};
+
 type UnitForms = readonly [string, string, string];
 const UNIT_FORMS: Record<string, UnitForms> = {
   мм: ['миллиметр', 'миллиметра', 'миллиметров'],
@@ -133,6 +138,13 @@ function replaceDimensionUnits(value: string) {
   });
   text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*(?:²|\^\s*2\b)/g, '$1 в квадрате');
   text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*(?:³|\^\s*3\b)/g, '$1 в кубе');
+  text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*(?:¹|\^\s*1\b)/g, '$1 в первой степени');
+  text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*ⁿ/g, '$1 в степени n');
+  text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*([⁰⁴⁵⁶⁷⁸⁹]+)/g, (_, base: string, exponent: string) => {
+    const spokenExponent = exponent.split('').map(symbol => SUPERSCRIPT_DIGITS[symbol] ?? symbol).join('');
+    return `${base} в степени ${spokenExponent}`;
+  });
+  text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*\^\s*(\d+|[A-Za-z])\b/g, '$1 в степени $2');
   return text;
 }
 
