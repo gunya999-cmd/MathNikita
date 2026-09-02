@@ -67,6 +67,9 @@ const UNIT_FORMS: Record<string, UnitForms> = {
   мл: ['миллилитр', 'миллилитра', 'миллилитров'],
   л: ['литр', 'литра', 'литров'],
   га: ['гектар', 'гектара', 'гектаров'],
+  ч: ['час', 'часа', 'часов'],
+  мин: ['минута', 'минуты', 'минут'],
+  с: ['секунда', 'секунды', 'секунд'],
 };
 
 const SQUARE_UNIT_FORMS: Record<string, UnitForms> = {
@@ -87,7 +90,7 @@ const CUBIC_UNIT_FORMS: Record<string, UnitForms> = {
 
 const PERCENT_FORMS: UnitForms = ['процент', 'процента', 'процентов'];
 const DEGREE_FORMS: UnitForms = ['градус', 'градуса', 'градусов'];
-const UNIT_TOKEN = 'км|дм|см|мм|мл|га|м|л';
+const UNIT_TOKEN = 'км|дм|см|мм|мл|га|мин|м|л|ч|с';
 const DIMENSION_UNIT_TOKEN = 'км|дм|см|мм|м';
 
 const PRONUNCIATION_STRESS: Array<{ pattern: RegExp; stressed: string }> = [
@@ -150,9 +153,19 @@ function replaceDimensionUnits(value: string) {
 
 export function prepareRussianSpeechText(value: string) {
   let text = replaceDimensionUnits(value);
+  text = text.replace(/\bфинальный\s+challenge\b/gi, 'финальная задача повышенной сложности');
+  text = text.replace(/\bchallenge\b/gi, 'задача повышенной сложности');
+  text = text.replace(/\bsource-checkpoint\b/gi, 'контрольную точку источника');
+  text = text.replace(/\bsource\s+checkpoint\b/gi, 'контрольную точку источника');
+  text = text.replace(/\s*[×*·]\s*(?:\.{3}|…)\s*[×*·]\s*/g, ' умножить последовательно вплоть до ');
   text = text.replace(/№\s*(\d+)/g, 'номер $1').normalize('NFKC').replace(/\u00a0/g, ' ');
   text = text.replace(/§{2,}\s*/g, 'параграфы ');
   text = text.replace(/§\s*(\d+)/g, 'параграф $1');
+  text = text.replace(/с\.\s*(\d+)/gi, 'страница $1');
+  text = text.replace(/(\d+(?:[.,]\d+)?)\s*км\s*\/\s*ч/gi, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, UNIT_FORMS.км)} в час`);
+  text = text.replace(/(\d+(?:[.,]\d+)?)\s*м\s*\/\s*с/gi, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, UNIT_FORMS.м)} в секунду`);
+  text = text.replace(/км\s*\/\s*ч/gi, 'километров в час');
+  text = text.replace(/м\s*\/\s*с/gi, 'метров в секунду');
   text = text.replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_TOKEN})(?=\\d)`, 'gi'), (_, numberText: string, unit: string) => {
     const forms = UNIT_FORMS[unit.toLowerCase()];
     return forms ? `${numberText} ${inflectedUnit(numberText, forms)} ` : `${numberText} ${unit} `;
@@ -163,11 +176,17 @@ export function prepareRussianSpeechText(value: string) {
   });
   text = text.replace(/(\d+(?:[.,]\d+)?)\s*%/g, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, PERCENT_FORMS)}`);
   text = text.replace(/(\d+(?:[.,]\d+)?)\s*°/g, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, DEGREE_FORMS)}`);
+  text = text.replace(/([A-Za-zА-Яа-яЁёα-ωΑ-Ω]+)\s*°/g, '$1 градусов');
+  text = text.replace(/°/g, 'градусы');
+  text = text.replace(/∠\s*/g, 'угол ');
+  text = text.replace(/α/g, 'альфа').replace(/β/g, 'бета').replace(/γ/g, 'гамма').replace(/δ/g, 'дельта');
+  text = text.replace(/Α/g, 'Альфа').replace(/Β/g, 'Бета').replace(/Γ/g, 'Гамма').replace(/Δ/g, 'Дельта');
   text = text.replace(/(\d+)\s*\/\s*(\d+)/g, '$1 разделить на $2');
   text = text.replace(/(\d)\s+[–—]\s+(\d)/g, '$1 минус $2');
   text = text.replace(/(\d)[–—](\d)/g, '$1 до $2');
   text = text.replace(/(\d)\s*−\s*(\d)/g, '$1 минус $2');
   text = text.replace(/(^|[\s(,;:])−\s*(\d)/g, '$1минус $2');
+  text = text.replace(/\s*−\s*/g, ' минус ');
   text = text.replace(/(\d)\s+-\s+(\d)/g, '$1 минус $2');
   text = text.replace(/\s*≥\s*/g, ' больше или равно ');
   text = text.replace(/\s*≤\s*/g, ' меньше или равно ');
@@ -179,6 +198,7 @@ export function prepareRussianSpeechText(value: string) {
   });
   text = text.replace(/([\d)])\s*[×*·]\s*(?=[\d(])/g, '$1 умножить на ');
   text = text.replace(/([\d)])\s*[÷:]\s*(?=[\d(])/g, '$1 разделить на ');
+  text = text.replace(/\s*÷\s*/g, ' разделить на ');
   text = text.replace(/(\d)([A-Za-z]{1,4})\b/g, (_, number: string, token: string) => `${number} умножить на ${speakLatinToken(token)}`);
   text = text.replace(/\b([A-Z]{2,})\b/g, token => speakLatinToken(token));
   text = text.replace(/\b([A-Za-z]{1,4})\b/g, token => speakLatinToken(token));
