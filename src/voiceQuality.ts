@@ -180,6 +180,7 @@ export function prepareRussianSpeechText(value: string) {
   text = text.replace(/([\d)])\s*[×*·]\s*(?=[\d(])/g, '$1 умножить на ');
   text = text.replace(/([\d)])\s*[÷:]\s*(?=[\d(])/g, '$1 разделить на ');
   text = text.replace(/(\d)([A-Za-z]{1,4})\b/g, (_, number: string, token: string) => `${number} умножить на ${speakLatinToken(token)}`);
+  text = text.replace(/\b([A-Z]{2,})\b/g, token => speakLatinToken(token));
   text = text.replace(/\b([A-Za-z]{1,4})\b/g, token => speakLatinToken(token));
   text = text.replace(/\s*[×*·]\s*/g, ' умножить на ');
   text = text.replace(/\s*=\s*/g, ' равно ');
