@@ -84,9 +84,15 @@ test('Audio Content Audit 1-90: every opening sends clean prepared Russian text 
     await openLessonFromCatalog(page, lessonNumber);
     const narrationId = `lesson-${String(lessonNumber).padStart(2, '0')}-opening`;
 
+    if (!narrationById.has(narrationId)) {
+      const voiceButton = page.locator('.voice-narrator > button').first();
+      await expect(voiceButton).toBeEnabled();
+      await voiceButton.click();
+    }
+
     await expect.poll(() => narrationById.has(narrationId), {
       timeout: 12_000,
-      message: `lesson ${lessonNumber}: opening narration was not prepared for Sulafat`,
+      message: `lesson ${lessonNumber}: opening narration was not sent to Sulafat`,
     }).toBeTruthy();
 
     const prepared = narrationById.get(narrationId) ?? '';
