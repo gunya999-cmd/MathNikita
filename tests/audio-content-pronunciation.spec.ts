@@ -10,10 +10,11 @@ function speechViolations(text: string) {
   const violations: string[] = [];
   if (!text.trim()) violations.push('empty narration');
   if (text.length > 3500) violations.push(`too long: ${text.length} chars`);
-  if (/[§№=+×*·÷<>≤≥→↔²³^%°−]/.test(text)) violations.push('raw mathematical notation remains');
-  if (/\b\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|м|л)\b/i.test(text)) violations.push('compact measurement unit remains');
+  if (/[§№=+×*·÷<>≤≥→↔²³^%°−∠αβγδ]/i.test(text)) violations.push('raw mathematical notation remains');
+  if (/\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|мин|м|л|ч|с)(?=\s|[.,;:!?/)]|$)/i.test(text)) violations.push('compact measurement unit remains');
   if (/\d+\s*\/\s*\d+/.test(text)) violations.push('raw numeric fraction remains');
   if (/[A-Za-z]/.test(text)) violations.push('raw Latin letters remain');
+  if (/умножить на\s*[.;]/i.test(text)) violations.push('broken multiplication ellipsis remains');
   if (/\uFFFD/.test(text)) violations.push('replacement character remains');
   if (/\s{2,}/.test(text)) violations.push('repeated spaces remain');
   const longestSentence = Math.max(0, ...text.split(/[.!?]+/).map(sentence => sentence.trim().length));
@@ -55,6 +56,15 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
     '4 метра 80 сантиметров, 2 километра 350 метров',
   );
   expect(prepareRussianSpeechText('ABCDE, DE')).toBe('А Бэ Цэ Дэ Е, Дэ Е');
+  expect(prepareRussianSpeechText('A − B, x°, ∠ABC, α + β, ÷3')).toBe(
+    'А минус Бэ, Икс градусов, угол А Бэ Цэ, альфа плюс бета, разделить на 3',
+  );
+  expect(prepareRussianSpeechText('28 км/ч, 5 ч, 1·2·...·100')).toBe(
+    '28 километров в час, 5 часов, 1 умножить на 2 умножить последовательно вплоть до 100',
+  );
+  expect(prepareRussianSpeechText('challenge; source-checkpoint')).toBe(
+    'задача повышенной сложности; контрольную точку источника',
+  );
 });
 
 test('pronunciation dictionary pins risky course terms to normative stress', () => {
