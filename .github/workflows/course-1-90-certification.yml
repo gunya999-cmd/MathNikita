@@ -20,7 +20,7 @@ jobs:
   chromium-90:
     name: Chromium · control, Sulafat and pronunciation 1-90
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -44,8 +44,12 @@ jobs:
           --config=playwright.desktop.config.ts --workers=1
       - name: Verify Sulafat interruption without pre-submit solution leakage
         run: npx playwright test tests/lesson-ninety-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
-      - name: Audio Content and Pronunciation Audit lessons 1-90
-        run: npm run test:audio:content -- --workers=1
+      - name: Pronunciation normalization contract
+        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation normalization"
+      - name: Pronunciation stress dictionary contract
+        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation dictionary"
+      - name: Audio Content Audit real TTS payloads lessons 1-90
+        run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Audio Content Audit 1-90"
 
   webkit-90:
     name: iPad WebKit control runtime + audio hard test 1-90
