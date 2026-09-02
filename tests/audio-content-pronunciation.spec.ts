@@ -41,6 +41,9 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
   expect(prepareRussianSpeechText('§ 24, № 651, 25%, 90°')).toBe(
     'параграф 24, номер 651, 25 процентов, 90 градусов',
   );
+  expect(prepareRussianSpeechText('§§ 16–24 уже пройдены')).toBe(
+    'параграфы 16 до 24 уже пройдены',
+  );
   expect(prepareRussianSpeechText('a·b = b·a, a·1 = a, a·0 = 0')).toBe(
     'А умножить на Бэ равно Бэ умножить на А, А умножить на 1 равно А, А умножить на 0 равно 0',
   );
