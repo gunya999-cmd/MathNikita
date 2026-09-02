@@ -54,6 +54,7 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
   expect(prepareRussianSpeechText('4м80см, 2км350м')).toBe(
     '4 метра 80 сантиметров, 2 километра 350 метров',
   );
+  expect(prepareRussianSpeechText('ABCDE, DE')).toBe('А Бэ Цэ Дэ Е, Дэ Е');
 });
 
 test('pronunciation dictionary pins risky course terms to normative stress', () => {
