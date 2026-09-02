@@ -50,6 +50,14 @@ jobs:
         run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation dictionary"
       - name: Audio Content Audit real TTS payloads lessons 1-90
         run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "Audio Content Audit 1-90"
+      - name: Upload Audio Content Audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audio-content-pronunciation-report
+          path: test-results/desktop-results.json
+          if-no-files-found: error
+          retention-days: 3
 
   webkit-90:
     name: iPad WebKit control runtime + audio hard test 1-90
