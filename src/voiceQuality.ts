@@ -153,6 +153,10 @@ export function prepareRussianSpeechText(value: string) {
   text = text.replace(/№\s*(\d+)/g, 'номер $1').normalize('NFKC').replace(/\u00a0/g, ' ');
   text = text.replace(/§{2,}\s*/g, 'параграфы ');
   text = text.replace(/§\s*(\d+)/g, 'параграф $1');
+  text = text.replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_TOKEN})(?=\\d)`, 'gi'), (_, numberText: string, unit: string) => {
+    const forms = UNIT_FORMS[unit.toLowerCase()];
+    return forms ? `${numberText} ${inflectedUnit(numberText, forms)} ` : `${numberText} ${unit} `;
+  });
   text = text.replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_TOKEN})(?=\\s|[.,;:!?)]|$)`, 'gi'), (_, numberText: string, unit: string) => {
     const forms = UNIT_FORMS[unit.toLowerCase()];
     return forms ? `${numberText} ${inflectedUnit(numberText, forms)}` : `${numberText} ${unit}`;
