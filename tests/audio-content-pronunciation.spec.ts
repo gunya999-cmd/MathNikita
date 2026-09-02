@@ -44,6 +44,9 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
   expect(prepareRussianSpeechText('a·b = b·a, a·1 = a, a·0 = 0')).toBe(
     'А умножить на Бэ равно Бэ умножить на А, А умножить на 1 равно А, А умножить на 0 равно 0',
   );
+  expect(prepareRussianSpeechText('a¹ = a, aⁿ, 2⁴, x^5')).toBe(
+    'А в первой степени равно А, А в степени Эн, 2 в степени 4, Икс в степени 5',
+  );
 });
 
 test('pronunciation dictionary pins risky course terms to normative stress', () => {
