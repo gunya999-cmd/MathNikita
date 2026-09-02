@@ -46,16 +46,19 @@ jobs:
         run: npx playwright test tests/lesson-ninety-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
 
   webkit-90:
-    name: iPad WebKit control runtime 90
+    name: iPad WebKit control runtime + audio hard test 1-90
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: 24}
       - run: npm install
       - run: npx playwright install --with-deps webkit
-      - run: npx playwright test tests/lesson-ninety-full-flow.spec.ts tests/lesson-ninety-control-integrity.spec.ts tests/lesson-ninety-ipad.spec.ts --workers=1
+      - name: Verify Control work №5 on iPad WebKit
+        run: npx playwright test tests/lesson-ninety-full-flow.spec.ts tests/lesson-ninety-control-integrity.spec.ts tests/lesson-ninety-ipad.spec.ts --workers=1
+      - name: Audio Hard-Test lessons 1-90
+        run: npm run test:audio -- --workers=1
 
   certified:
     name: COURSE 1-90 DELTA CERTIFIED
@@ -70,4 +73,4 @@ jobs:
         run: |
           test "$CHROMIUM_90" = success
           test "$WEBKIT_90" = success
-          echo "Control work №5 delta is certified."
+          echo "Control work №5 delta and Audio Hard-Test 1-90 are certified."
