@@ -159,9 +159,11 @@ export function prepareRussianSpeechText(value: string) {
   });
   text = text.replace(/(\d+(?:[.,]\d+)?)\s*%/g, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, PERCENT_FORMS)}`);
   text = text.replace(/(\d+(?:[.,]\d+)?)\s*°/g, (_, numberText: string) => `${numberText} ${inflectedUnit(numberText, DEGREE_FORMS)}`);
+  text = text.replace(/(\d+)\s*\/\s*(\d+)/g, '$1 разделить на $2');
   text = text.replace(/(\d)\s+[–—]\s+(\d)/g, '$1 минус $2');
   text = text.replace(/(\d)[–—](\d)/g, '$1 до $2');
   text = text.replace(/(\d)\s*−\s*(\d)/g, '$1 минус $2');
+  text = text.replace(/(^|[\s(,;:])−\s*(\d)/g, '$1минус $2');
   text = text.replace(/(\d)\s+-\s+(\d)/g, '$1 минус $2');
   text = text.replace(/\s*≥\s*/g, ' больше или равно ');
   text = text.replace(/\s*≤\s*/g, ' меньше или равно ');
