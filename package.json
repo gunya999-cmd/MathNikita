@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test:ipad": "playwright test",
+    "test:audio": "playwright test tests/audio-hard-test-1-90.spec.ts --project=ipad-ultra-strict",
     "cf:deploy": "npm run build && npx wrangler deploy",
     "cf:deploy:api": "node scripts/write-build-version.mjs && npx wrangler deploy"
   },
