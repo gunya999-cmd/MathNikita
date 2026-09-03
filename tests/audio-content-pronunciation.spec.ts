@@ -11,7 +11,7 @@ function speechViolations(text: string) {
   if (!text.trim()) violations.push('empty narration');
   if (text.length > 3500) violations.push(`too long: ${text.length} chars`);
   if (/[§№=+×*·÷<>≤≥→↔²³^%°−∠αβγδ]/i.test(text)) violations.push('raw mathematical notation remains');
-  if (/\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|мин|м|л|ч|с)(?=\s|[.,;:!?/)]|$)/i.test(text)) violations.push('compact measurement unit remains');
+  if (/\d+(?:[.,]\d+)?\s*(?:км|дм|см|мм|мл|га|мин|м|л|ч|с|а)(?=\s|[.,;:!?/)]|$)/i.test(text)) violations.push('compact measurement unit remains');
   if (/\d+\s*\/\s*\d+/.test(text)) violations.push('raw numeric fraction remains');
   if (/[A-Za-z]/.test(text)) violations.push('raw Latin letters remain');
   if (/умножить на\s*[.;]\s*умножить на/i.test(text)) violations.push('broken multiplication ellipsis remains');
@@ -67,6 +67,19 @@ test('pronunciation normalization reads Russian math notation naturally', () => 
   );
   expect(prepareRussianSpeechText('challenge; source-checkpoint')).toBe(
     'задача повышенной сложности; контрольную точку источника',
+  );
+  expect(prepareRussianSpeechText('2 часа 36 мин + 6 часов 48 мин')).toBe(
+    '2 часа 36 минут плюс 6 часов 48 минут',
+  );
+  expect(prepareRussianSpeechText('100 см = 1 м, 60 с = 1 мин, 1 га = 100 а, 1 л = 1 дм')).toBe(
+    '100 сантиметров равно 1 метр, 60 секунд равно 1 минута, 1 гектар равно 100 аров, 1 литр равно 1 дециметр',
+  );
+  expect(prepareRussianSpeechText('S1:t1 = v2·t2, k1·k2·k3')).toBe(
+    'Эс 1 разделить на Тэ 1 равно Вэ 2 умножить на Тэ 2, Ка 1 умножить на Ка 2 умножить на Ка 3',
+  );
+  expect(prepareRussianSpeechText('6/12/8')).toBe('6 разделить на 12 разделить на 8');
+  expect(prepareRussianSpeechText('Sulafat; checkpoint; checkpoints; source-checkpoints')).toBe(
+    'Сулафат; контрольная точка; контрольные точки; контрольные точки источника',
   );
 });
 
