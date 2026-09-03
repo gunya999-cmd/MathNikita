@@ -3,7 +3,7 @@ import { prepareRussianSpeechText } from '../src/voiceQuality';
 
 type NarrationPayload = { id?: string; text?: string; version?: string };
 
-const READY_LESSONS = 90;
+const AUDITED_LESSONS = 90;
 const TOTAL_LESSONS = 175;
 
 function speechViolations(text: string) {
@@ -96,7 +96,7 @@ test('pronunciation dictionary pins risky course terms to normative stress', () 
   expect(prepared).toContain('пирами́да');
 });
 
-test('Audio Content Audit 1-90: every opening sends clean prepared Russian text to Sulafat', async ({ page }) => {
+test('Audio Content Audit 1-90: every audited opening sends clean prepared Russian text to Sulafat', async ({ page }) => {
   test.setTimeout(180_000);
   const narrationById = new Map<string, string>();
 
@@ -118,9 +118,10 @@ test('Audio Content Audit 1-90: every opening sends clean prepared Russian text 
   });
 
   await page.goto('/');
-  await expect(page.locator('button[aria-label^="Открыть урок "]')).toHaveCount(READY_LESSONS);
+  const availableLessons = page.locator('button[aria-label^="Открыть урок "]');
+  expect(await availableLessons.count(), 'the frozen 1-90 opening audit scope must remain published').toBeGreaterThanOrEqual(AUDITED_LESSONS);
 
-  for (let lessonNumber = 1; lessonNumber <= READY_LESSONS; lessonNumber += 1) {
+  for (let lessonNumber = 1; lessonNumber <= AUDITED_LESSONS; lessonNumber += 1) {
     await openLessonFromCatalog(page, lessonNumber);
     const narrationId = `lesson-${String(lessonNumber).padStart(2, '0')}-opening`;
 
@@ -145,5 +146,5 @@ test('Audio Content Audit 1-90: every opening sends clean prepared Russian text 
     await expect(page.locator('.course-catalog-page')).toBeVisible();
   }
 
-  expect(narrationById.size).toBeGreaterThanOrEqual(READY_LESSONS);
+  expect(narrationById.size).toBeGreaterThanOrEqual(AUDITED_LESSONS);
 });
