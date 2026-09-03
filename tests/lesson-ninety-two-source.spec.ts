@@ -17,7 +17,7 @@ test('lesson 92 publishes exact §25 source and practice contract',()=>{
   expect(playerSource).toContain("source:'№ 686'");
   expect(playerSource).toContain("source:'№ 687'");
   expect(playerSource).toContain("numeric('a','Одна треть от 36',12)");
-  expect(playerSource).toContain("numeric('f','Одиннадцать восемнадцатых',22)");
+  expect(playerSource).toContain("numeric('f','Одиннадцать восемнадцатых от 36',22)");
   expect(playerSource).toContain("numeric('r','Прочитано страниц',80)");
   expect(playerSource).toContain("numeric('r','Пять восьмых',45)");
   expect(playerSource).toContain('practice.length!==20||responseCount!==50');
