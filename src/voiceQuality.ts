@@ -67,6 +67,7 @@ const UNIT_FORMS: Record<string, UnitForms> = {
   мл: ['миллилитр', 'миллилитра', 'миллилитров'],
   л: ['литр', 'литра', 'литров'],
   га: ['гектар', 'гектара', 'гектаров'],
+  а: ['ар', 'ара', 'аров'],
   ч: ['час', 'часа', 'часов'],
   мин: ['минута', 'минуты', 'минут'],
   с: ['секунда', 'секунды', 'секунд'],
@@ -90,10 +91,27 @@ const CUBIC_UNIT_FORMS: Record<string, UnitForms> = {
   км: ['кубический километр', 'кубических километра', 'кубических километров'],
 };
 
+const BARE_SQUARE_UNIT_NAMES: Record<string, string> = {
+  мм: 'квадратные миллиметры',
+  см: 'квадратные сантиметры',
+  дм: 'квадратные дециметры',
+  м: 'квадратные метры',
+  км: 'квадратные километры',
+};
+
+const BARE_CUBIC_UNIT_NAMES: Record<string, string> = {
+  мм: 'кубические миллиметры',
+  см: 'кубические сантиметры',
+  дм: 'кубические дециметры',
+  м: 'кубические метры',
+  км: 'кубические километры',
+};
+
 const PERCENT_FORMS: UnitForms = ['процент', 'процента', 'процентов'];
 const DEGREE_FORMS: UnitForms = ['градус', 'градуса', 'градусов'];
-const UNIT_TOKEN = 'км|дм|см|мм|мл|га|мин|м|л|ч|с';
+const UNIT_TOKEN = 'км|дм|см|мм|мл|га|мин|м|л|ч|с|а';
 const DIMENSION_UNIT_TOKEN = 'км|дм|см|мм|м';
+const UNIT_BOUNDARY = '\\s|[.,;:!?/=+×*·÷<>≤≥→↔−)]|$';
 
 const PRONUNCIATION_STRESS: Array<{ pattern: RegExp; stressed: string }> = [
   { pattern: /параллелепипед/gi, stressed: 'параллелепи́пед' },
@@ -120,6 +138,18 @@ function speakLatinToken(token: string) {
   return token.toUpperCase().split('').map(letter => LATIN_LETTER_NAMES[letter] ?? letter).join(' ');
 }
 
+function speakIndexedLatinToken(letter: string, index: string) {
+  return `${speakLatinToken(letter)} ${index}`;
+}
+
+function replaceNumericFractions(value: string) {
+  let text = value;
+  while (/\d+\s*\/\s*\d+/.test(text)) {
+    text = text.replace(/(\d+)\s*\/\s*(\d+)/g, '$1 разделить на $2');
+  }
+  return text;
+}
+
 function preserveInitialCase(source: string, replacement: string) {
   return /^[А-ЯЁ]/.test(source) ? replacement[0].toUpperCase() + replacement.slice(1) : replacement;
 }
@@ -141,6 +171,8 @@ function replaceDimensionUnits(value: string) {
     const forms = CUBIC_UNIT_FORMS[unit.toLowerCase()];
     return forms ? `${numberText} ${inflectedUnit(numberText, forms)}` : `${numberText} ${unit} в кубе`;
   });
+  text = text.replace(new RegExp(`\\b(${DIMENSION_UNIT_TOKEN})\\s+в\\s+квадрате\\b`, 'gi'), (_, unit: string) => BARE_SQUARE_UNIT_NAMES[unit.toLowerCase()] ?? `${unit} в квадрате`);
+  text = text.replace(new RegExp(`\\b(${DIMENSION_UNIT_TOKEN})\\s+в\\s+кубе\\b`, 'gi'), (_, unit: string) => BARE_CUBIC_UNIT_NAMES[unit.toLowerCase()] ?? `${unit} в кубе`);
   text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*(?:²|\^\s*2\b)/g, '$1 в квадрате');
   text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*(?:³|\^\s*3\b)/g, '$1 в кубе');
   text = text.replace(/([A-Za-zА-Яа-яЁё0-9)])\s*(?:¹|\^\s*1\b)/g, '$1 в первой степени');
@@ -155,10 +187,15 @@ function replaceDimensionUnits(value: string) {
 
 export function prepareRussianSpeechText(value: string) {
   let text = replaceDimensionUnits(value);
+  text = text.replace(/\bSulafat\b/gi, 'Сулафат');
   text = text.replace(/финальный\s+challenge\b/gi, 'финальная задача повышенной сложности');
   text = text.replace(/\bchallenge\b/gi, 'задача повышенной сложности');
+  text = text.replace(/\bsource-checkpoints\b/gi, 'контрольные точки источника');
   text = text.replace(/\bsource-checkpoint\b/gi, 'контрольную точку источника');
+  text = text.replace(/\bsource\s+checkpoints\b/gi, 'контрольные точки источника');
   text = text.replace(/\bsource\s+checkpoint\b/gi, 'контрольную точку источника');
+  text = text.replace(/\bcheckpoints\b/gi, 'контрольные точки');
+  text = text.replace(/\bcheckpoint\b/gi, 'контрольная точка');
   text = text.replace(/\s*[×*·]\s*(?:\.{3}|…)\s*[×*·]\s*/g, ' умножить последовательно вплоть до ');
   text = text.replace(/№\s*(\d+)/g, 'номер $1').normalize('NFKC').replace(/\u00a0/g, ' ');
   text = text.replace(/§{2,}\s*/g, 'параграфы ');
@@ -178,7 +215,7 @@ export function prepareRussianSpeechText(value: string) {
     const forms = UNIT_FORMS[unit.toLowerCase()];
     return forms ? `${numberText} ${inflectedUnit(numberText, forms)} ` : `${numberText} ${unit} `;
   });
-  text = text.replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_TOKEN})(?=\\s|[.,;:!?)]|$)`, 'gi'), (_, numberText: string, unit: string) => {
+  text = text.replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_TOKEN})(?=${UNIT_BOUNDARY})`, 'gi'), (_, numberText: string, unit: string) => {
     const forms = UNIT_FORMS[unit.toLowerCase()];
     return forms ? `${numberText} ${inflectedUnit(numberText, forms)}` : `${numberText} ${unit}`;
   });
@@ -189,7 +226,11 @@ export function prepareRussianSpeechText(value: string) {
   text = text.replace(/∠\s*/g, 'угол ');
   text = text.replace(/α/g, 'альфа').replace(/β/g, 'бета').replace(/γ/g, 'гамма').replace(/δ/g, 'дельта');
   text = text.replace(/Α/g, 'Альфа').replace(/Β/g, 'Бета').replace(/Γ/g, 'Гамма').replace(/Δ/g, 'Дельта');
-  text = text.replace(/(\d+)\s*\/\s*(\d+)/g, '$1 разделить на $2');
+  text = replaceNumericFractions(text);
+  text = text.replace(/\b([A-Za-z])(\d+)\s*:\s*([A-Za-z])(\d+)\b/g, (_, leftLetter: string, leftIndex: string, rightLetter: string, rightIndex: string) => (
+    `${speakIndexedLatinToken(leftLetter, leftIndex)} разделить на ${speakIndexedLatinToken(rightLetter, rightIndex)}`
+  ));
+  text = text.replace(/\b([A-Za-z])(\d+)\b/g, (_, letter: string, index: string) => speakIndexedLatinToken(letter, index));
   text = text.replace(/(\d)\s+[–—]\s+(\d)/g, '$1 минус $2');
   text = text.replace(/(\d)[–—](\d)/g, '$1 до $2');
   text = text.replace(/(\d)\s*−\s*(\d)/g, '$1 минус $2');
