@@ -230,7 +230,7 @@ export function prepareRussianSpeechText(value: string) {
   text = text.replace(/\b([A-Za-z])(\d+)\s*:\s*([A-Za-z])(\d+)\b/g, (_, leftLetter: string, leftIndex: string, rightLetter: string, rightIndex: string) => (
     `${speakIndexedLatinToken(leftLetter, leftIndex)} разделить на ${speakIndexedLatinToken(rightLetter, rightIndex)}`
   ));
-  text = text.replace(/\b([A-Za-z])(\d+)\b/g, (_, letter: string, index: string) => speakIndexedLatinToken(letter, index));
+  text = text.replace(/\b([A-Za-z])(\d+)(?=\b|[A-Za-z])/g, (_, letter: string, index: string) => speakIndexedLatinToken(letter, index));
   text = text.replace(/(\d)\s+[–—]\s+(\d)/g, '$1 минус $2');
   text = text.replace(/(\d)[–—](\d)/g, '$1 до $2');
   text = text.replace(/(\d)\s*−\s*(\d)/g, '$1 минус $2');
