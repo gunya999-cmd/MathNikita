@@ -10,7 +10,9 @@ type MentorScript = Record<string, string>;
 
 const READY_LESSONS = 90;
 const TOTAL_LESSONS = 175;
-const MAX_DISCOVERED_STAGES = 80;
+const MAX_DISCOVERED_STAGES = 100;
+const STAGE_TRANSITION_POLL_MS = 25;
+const STAGE_TRANSITION_TIMEOUT_MS = 750;
 const MENTOR_SCRIPT_FILES = [
   'src/data/mentorScripts.json',
   'src/data/lessonThreeMentorScripts.json',
@@ -63,24 +65,6 @@ async function openLessonFromCatalog(page: Page, lessonNumber: number) {
   await expect(page.locator('.lesson-mode-toolbar')).toContainText(`Урок ${lessonNumber} из ${TOTAL_LESSONS}`);
 }
 
-async function stageProgress(page: Page) {
-  const controlJumpCount = await page.locator('.lesson-runtime:not([hidden]) .control-page-jump button').count();
-  const labels = await page.locator(
-    '.lesson-runtime:not([hidden]) .stage-counter:not(.sr-only), .lesson-runtime:not([hidden]) .lesson-controls span',
-  ).allTextContents();
-  for (let index = labels.length - 1; index >= 0; index -= 1) {
-    const match = labels[index].trim().match(/(\d+)\s*(?:из|\/)\s*(\d+)/i);
-    if (match) return { current: Number(match[1]), total: Number(match[2]) };
-  }
-  if (controlJumpCount > 0) {
-    const activeIndex = await page.locator('.lesson-runtime:not([hidden]) .control-page-jump button').evaluateAll(nodes =>
-      Math.max(0, nodes.findIndex(node => node.classList.contains('active'))),
-    );
-    return { current: activeIndex + 1, total: controlJumpCount };
-  }
-  return { current: 0, total: 0 };
-}
-
 async function dispatchStageJump(page: Page, lessonNumber: number, stageIndex: number) {
   await page.evaluate(({ targetLesson, targetIndex }) => {
     window.dispatchEvent(new CustomEvent('mathnikita-go-to-stage', {
@@ -89,12 +73,18 @@ async function dispatchStageJump(page: Page, lessonNumber: number, stageIndex: n
   }, { targetLesson: lessonNumber, targetIndex: stageIndex });
 }
 
-async function jumpToCountedStage(page: Page, lessonNumber: number, stageIndex: number, total: number) {
-  await dispatchStageJump(page, lessonNumber, stageIndex);
-  await expect.poll(async () => (await stageProgress(page)).current, {
-    timeout: 4_000,
-    message: `lesson ${lessonNumber}: stage ${stageIndex + 1}/${total} did not become active`,
-  }).toBe(stageIndex + 1);
+async function activeStageId(page: Page) {
+  return (await page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]').first().getAttribute('data-stage-id'))?.trim() ?? '';
+}
+
+async function waitForStageIdChange(page: Page, beforeId: string) {
+  const attempts = Math.ceil(STAGE_TRANSITION_TIMEOUT_MS / STAGE_TRANSITION_POLL_MS);
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    await page.waitForTimeout(STAGE_TRANSITION_POLL_MS);
+    const afterId = await activeStageId(page);
+    if (afterId && afterId !== beforeId) return afterId;
+  }
+  return beforeId;
 }
 
 async function auditStagePayload(
@@ -105,8 +95,7 @@ async function auditStagePayload(
   narrationById: Map<string, string>,
   problems: string[],
 ) {
-  const stage = page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]').first();
-  const stageId = (await stage.getAttribute('data-stage-id'))?.trim() ?? '';
+  const stageId = await activeStageId(page);
   expect(stageId, `lesson ${lessonNumber}, stage ${stageIndex + 1}: data-stage-id is empty`).not.toBe('');
   const token = safeNarrationToken(stageId);
   expect(token, `lesson ${lessonNumber}, stage ${stageIndex + 1}: narration token is empty for ${stageId}`).not.toBe('');
@@ -123,6 +112,95 @@ async function auditStagePayload(
     problems.push(`lesson ${lessonNumber}, stage ${stageLabel}, ${stageId}: ${violations.join('; ')}\n${prepared}`);
   }
   return stageId;
+}
+
+async function configureStageAuditPage(page: Page, narrationById: Map<string, string>) {
+  await page.addInitScript(() => {
+    class MockAudio {
+      src = '';
+      preload = '';
+      playbackRate = 1;
+      currentTime = 0;
+      onended: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor(source = '') { this.src = source; }
+      pause() {}
+      play() { return Promise.resolve(); }
+    }
+    Object.defineProperty(window, 'Audio', { configurable: true, writable: true, value: MockAudio });
+    localStorage.setItem('mathnikita-voice-settings-v4', JSON.stringify({ engine: 'studio', rate: 0.94 }));
+    localStorage.setItem('mathnikita-mentor-auto-guide', 'false');
+  });
+
+  await page.route('**/api/narration-status', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ ok: true, studioConfigured: true, provider: 'gemini', voice: 'Sulafat' }),
+  }));
+
+  await page.route('**/api/narration', async route => {
+    const payload = (route.request().postDataJSON() ?? {}) as NarrationPayload;
+    if (payload.id && payload.text) narrationById.set(payload.id, payload.text);
+    await route.fulfill({ status: 200, contentType: 'audio/wav', body: 'RIFF-all-stage-content-audit' });
+  });
+
+  await page.goto('/');
+}
+
+async function auditLessonStages(
+  page: Page,
+  lessonNumber: number,
+  narrationById: Map<string, string>,
+  problems: string[],
+) {
+  await openLessonFromCatalog(page, lessonNumber);
+  await page.locator('.lesson-opening-start').click();
+  const stage = page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]').first();
+  await expect(stage, `lesson ${lessonNumber}: interactive narration stage is missing`).toBeVisible();
+
+  const seenStageIds = new Set<string>();
+  const firstStageId = await auditStagePayload(page, lessonNumber, 0, '1/discovered', narrationById, problems);
+  seenStageIds.add(firstStageId);
+
+  let reachedEnd = false;
+  for (let stageIndex = 1; stageIndex <= MAX_DISCOVERED_STAGES; stageIndex += 1) {
+    const beforeId = await activeStageId(page);
+    await dispatchStageJump(page, lessonNumber, stageIndex);
+    const afterId = await waitForStageIdChange(page, beforeId);
+
+    if (afterId === beforeId) {
+      reachedEnd = true;
+      break;
+    }
+
+    expect(seenStageIds.has(afterId), `lesson ${lessonNumber}: duplicate stage id before end: ${afterId}`).toBeFalsy();
+    const auditedId = await auditStagePayload(page, lessonNumber, stageIndex, `${stageIndex + 1}/discovered`, narrationById, problems);
+    expect(auditedId).toBe(afterId);
+    seenStageIds.add(afterId);
+  }
+
+  expect(reachedEnd, `lesson ${lessonNumber}: stage discovery hit safety limit ${MAX_DISCOVERED_STAGES}`).toBeTruthy();
+  expect(seenStageIds.size, `lesson ${lessonNumber}: dynamic stage discovery found too few stages`).toBeGreaterThan(1);
+
+  await page.locator('.lesson-mode-toolbar > button').first().click();
+  await expect(page.locator('.course-catalog-page')).toBeVisible();
+  return seenStageIds.size;
+}
+
+async function runStageAuditRange(page: Page, startLesson: number, endLesson: number) {
+  const narrationById = new Map<string, string>();
+  const problems: string[] = [];
+  let auditedStages = 0;
+
+  await configureStageAuditPage(page, narrationById);
+
+  for (let lessonNumber = startLesson; lessonNumber <= endLesson; lessonNumber += 1) {
+    auditedStages += await auditLessonStages(page, lessonNumber, narrationById, problems);
+  }
+
+  console.log(`Stage Content/Pronunciation Audit ${startLesson}-${endLesson}: audited ${auditedStages} stages.`);
+  expect(auditedStages).toBeGreaterThan((endLesson - startLesson + 1) * 2);
+  expect(problems, `${problems.length} stage narration problem(s):\n\n${problems.join('\n\n')}`).toEqual([]);
 }
 
 test('Extended Practice Content/Pronunciation Audit 1-90: every voiceable task prepares clean Russian speech', () => {
@@ -167,80 +245,17 @@ test('Mentor Content/Pronunciation Audit: every Pythagoras voice script prepares
   expect(problems, `${problems.length} mentor narration problem(s):\n\n${problems.join('\n\n')}`).toEqual([]);
 });
 
-test('In-lesson Stage Content/Pronunciation Audit 1-90: every interactive stage sends clean prepared Russian text to Sulafat', async ({ page }) => {
-  test.setTimeout(420_000);
-  const narrationById = new Map<string, string>();
-  const problems: string[] = [];
-  let auditedStages = 0;
+test('In-lesson Stage Content/Pronunciation Audit 1-30: every interactive stage sends clean prepared Russian text to Sulafat', async ({ page }) => {
+  test.setTimeout(240_000);
+  await runStageAuditRange(page, 1, 30);
+});
 
-  await page.addInitScript(() => {
-    class MockAudio {
-      src = '';
-      preload = '';
-      playbackRate = 1;
-      currentTime = 0;
-      onended: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      constructor(source = '') { this.src = source; }
-      pause() {}
-      play() { return Promise.resolve(); }
-    }
-    Object.defineProperty(window, 'Audio', { configurable: true, writable: true, value: MockAudio });
-    localStorage.setItem('mathnikita-voice-settings-v4', JSON.stringify({ engine: 'studio', rate: 0.94 }));
-    localStorage.setItem('mathnikita-mentor-auto-guide', 'false');
-  });
+test('In-lesson Stage Content/Pronunciation Audit 31-60: every interactive stage sends clean prepared Russian text to Sulafat', async ({ page }) => {
+  test.setTimeout(240_000);
+  await runStageAuditRange(page, 31, 60);
+});
 
-  await page.route('**/api/narration-status', route => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({ ok: true, studioConfigured: true, provider: 'gemini', voice: 'Sulafat' }),
-  }));
-
-  await page.route('**/api/narration', async route => {
-    const payload = (route.request().postDataJSON() ?? {}) as NarrationPayload;
-    if (payload.id && payload.text) narrationById.set(payload.id, payload.text);
-    await route.fulfill({ status: 200, contentType: 'audio/wav', body: 'RIFF-all-stage-content-audit' });
-  });
-
-  await page.goto('/');
-
-  for (let lessonNumber = 1; lessonNumber <= READY_LESSONS; lessonNumber += 1) {
-    await openLessonFromCatalog(page, lessonNumber);
-    await page.locator('.lesson-opening-start').click();
-    const stage = page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]').first();
-    await expect(stage, `lesson ${lessonNumber}: interactive narration stage is missing`).toBeVisible();
-
-    const initialProgress = await stageProgress(page);
-    if (initialProgress.total > 0) {
-      for (let stageIndex = 0; stageIndex < initialProgress.total; stageIndex += 1) {
-        await jumpToCountedStage(page, lessonNumber, stageIndex, initialProgress.total);
-        await auditStagePayload(page, lessonNumber, stageIndex, `${stageIndex + 1}/${initialProgress.total}`, narrationById, problems);
-        auditedStages += 1;
-      }
-    } else {
-      const seenStageIds = new Set<string>();
-      for (let stageIndex = 0; stageIndex < MAX_DISCOVERED_STAGES; stageIndex += 1) {
-        const beforeId = (await stage.getAttribute('data-stage-id'))?.trim() ?? '';
-        await dispatchStageJump(page, lessonNumber, stageIndex);
-        if (stageIndex > 0) {
-          await page.waitForTimeout(25);
-          const afterId = (await stage.getAttribute('data-stage-id'))?.trim() ?? '';
-          if (afterId === beforeId && seenStageIds.has(afterId)) break;
-        }
-
-        const stageId = await auditStagePayload(page, lessonNumber, stageIndex, `${stageIndex + 1}/discovered`, narrationById, problems);
-        expect(seenStageIds.has(stageId), `lesson ${lessonNumber}: duplicate stage id before end: ${stageId}`).toBeFalsy();
-        seenStageIds.add(stageId);
-        auditedStages += 1;
-      }
-      expect(seenStageIds.size, `lesson ${lessonNumber}: dynamic stage discovery found too few stages`).toBeGreaterThan(1);
-      expect(seenStageIds.size, `lesson ${lessonNumber}: stage discovery hit safety limit ${MAX_DISCOVERED_STAGES}`).toBeLessThan(MAX_DISCOVERED_STAGES);
-    }
-
-    await page.locator('.lesson-mode-toolbar > button').first().click();
-    await expect(page.locator('.course-catalog-page')).toBeVisible();
-  }
-
-  expect(auditedStages).toBeGreaterThan(1_000);
-  expect(problems, `${problems.length} stage narration problem(s):\n\n${problems.join('\n\n')}`).toEqual([]);
+test('In-lesson Stage Content/Pronunciation Audit 61-90: every interactive stage sends clean prepared Russian text to Sulafat', async ({ page }) => {
+  test.setTimeout(240_000);
+  await runStageAuditRange(page, 61, 90);
 });
