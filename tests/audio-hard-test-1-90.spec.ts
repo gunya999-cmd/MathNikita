@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 type AuditEvent = { kind: 'request' | 'play' | 'pause' | 'ended'; id: string };
 type AuditState = { events: AuditEvent[]; active: number; maxActive: number };
 
-const READY_LESSONS = 90;
+const AUDITED_LESSONS = 90;
 const TOTAL_LESSONS = 175;
 
 async function installAudioAudit(page: Page) {
@@ -145,7 +145,7 @@ async function expectPaused(page: Page, narrationId: string) {
   }, { timeout: 5_000 }).toBeTruthy();
 }
 
-test('Audio Hard-Test 1-90: every ready lesson can play Sulafat opening and stops it on exit', async ({ page }) => {
+test('Audio Hard-Test 1-90: every audited lesson can play Sulafat opening and stops it on exit', async ({ page }) => {
   test.setTimeout(180_000);
   await installAudioAudit(page);
 
@@ -161,10 +161,10 @@ test('Audio Hard-Test 1-90: every ready lesson can play Sulafat opening and stop
   }));
 
   await page.goto('/');
-  await expect(page.locator('button[aria-label^="Открыть урок "]')).toHaveCount(READY_LESSONS);
-  await expect(page.locator('button[aria-label^="Урок "][aria-label$="в разработке"]')).toHaveCount(TOTAL_LESSONS - READY_LESSONS);
+  const availableLessons = page.locator('button[aria-label^="Открыть урок "]');
+  expect(await availableLessons.count(), 'the frozen 1-90 audit scope must remain published').toBeGreaterThanOrEqual(AUDITED_LESSONS);
 
-  for (let lessonNumber = 1; lessonNumber <= READY_LESSONS; lessonNumber += 1) {
+  for (let lessonNumber = 1; lessonNumber <= AUDITED_LESSONS; lessonNumber += 1) {
     await openLessonFromCatalog(page, lessonNumber);
 
     const narrationId = `lesson-${String(lessonNumber).padStart(2, '0')}-opening`;
@@ -188,8 +188,8 @@ test('Audio Hard-Test 1-90: every ready lesson can play Sulafat opening and stop
   const playedOpeningIds = new Set(finalAudit.events.filter(event => event.kind === 'play' && /lesson-\d{2}-opening/.test(event.id)).map(event => event.id));
   const pausedOpeningIds = new Set(finalAudit.events.filter(event => event.kind === 'pause' && /lesson-\d{2}-opening/.test(event.id)).map(event => event.id));
 
-  expect(playedOpeningIds.size).toBe(READY_LESSONS);
-  expect(pausedOpeningIds.size).toBe(READY_LESSONS);
+  expect(playedOpeningIds.size).toBe(AUDITED_LESSONS);
+  expect(pausedOpeningIds.size).toBe(AUDITED_LESSONS);
   expect(finalAudit.active).toBe(0);
   expect(finalAudit.maxActive).toBe(1);
 });
