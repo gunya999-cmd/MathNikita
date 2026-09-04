@@ -1,0 +1,62 @@
+name: Lesson 93 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-93-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-93:
+    name: Chromium · source, flow and Sulafat lesson 93
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Source and practice contract
+        run: npx playwright test tests/lesson-ninety-three-source.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Opening, navigation and mandatory practice flow
+        run: npx playwright test tests/lesson-ninety-three-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Sulafat narration payload audit
+        run: npx playwright test tests/lesson-ninety-three-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-93:
+    name: iPad WebKit · lesson 93
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: iPad layout and source task
+        run: npx playwright test tests/lesson-ninety-three-ipad.spec.ts --workers=1
+
+  certified:
+    name: LESSON 93 CERTIFIED
+    if: always()
+    needs: [chromium-93, webkit-93]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Chromium and iPad lanes
+        env:
+          CHROMIUM_93: ${{ needs.chromium-93.result }}
+          WEBKIT_93: ${{ needs.webkit-93.result }}
+        run: |
+          test "$CHROMIUM_93" = success
+          test "$WEBKIT_93" = success
+          echo "Lesson 93 source, flow, mandatory practice, Sulafat and iPad checks are certified."
