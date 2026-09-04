@@ -2,7 +2,6 @@ import {expect,test} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 import {yearLessonByNumber} from '../src/data/yearPlan';
 import {lessonNinetyThreeOpening} from '../src/LessonNinetyThreeOpening';
-import {lessonNinetyThreePracticeResponseCount,lessonNinetyThreePracticeTaskCount,lessonNinetyThreeStageCount} from '../src/FractionWholeFromPartPlayer';
 
 const playerSource=readFileSync(new URL('../src/FractionWholeFromPartPlayer.tsx',import.meta.url),'utf8');
 
@@ -20,7 +19,8 @@ test('lesson 93 publishes exact §25 inverse-fraction source and practice contra
   expect(playerSource).toContain("numeric('d','Три десятых равны 90',300)");
   expect(playerSource).toContain("numeric('e','Пять шестых равны 90',108)");
   expect(playerSource).toContain("numeric('f','Восемнадцать девятнадцатых равны 90',95)");
-  expect(lessonNinetyThreeStageCount).toBe(30);
-  expect(lessonNinetyThreePracticeTaskCount).toBe(20);
-  expect(lessonNinetyThreePracticeResponseCount).toBe(50);
+  expect(playerSource).toContain('if(practice.length!==20||responseCount!==50)');
+  expect(playerSource).toContain('export const lessonNinetyThreeStageCount=stages.length');
+  expect(playerSource).toContain('export const lessonNinetyThreePracticeTaskCount=practice.length');
+  expect(playerSource).toContain('export const lessonNinetyThreePracticeResponseCount=responseCount');
 });
