@@ -1,13 +1,13 @@
 import { expect,test } from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 93',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 94',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(88);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(93);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(89);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(94);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(5);
   await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
   await expect(lessons.nth(28)).toContainText('Вычитание натуральных чисел');
@@ -40,7 +40,8 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 93',a
   await expect(lessons.nth(90)).toContainText('Обыкновенная дробь');await expect(lessons.nth(90)).toBeEnabled();await expect(lessons.nth(90)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(91)).toContainText('Нахождение дроби от числа');await expect(lessons.nth(91)).toBeEnabled();await expect(lessons.nth(91)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(92)).toContainText('Нахождение целого по известной дроби');await expect(lessons.nth(92)).toBeEnabled();await expect(lessons.nth(92)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(93)).toContainText('Понятие обыкновенной дроби');await expect(lessons.nth(93)).toBeDisabled();
+  await expect(lessons.nth(93)).toContainText('Составные задачи на дроби и остаток');await expect(lessons.nth(93)).toBeEnabled();await expect(lessons.nth(93)).toHaveClass(/is-interactive/);
+  await expect(lessons.nth(94)).toContainText('Понятие обыкновенной дроби');await expect(lessons.nth(94)).toBeDisabled();
   await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 93 урока.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 94 урока.')).toBeVisible();
 });
