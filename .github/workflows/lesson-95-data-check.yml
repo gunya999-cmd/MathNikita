@@ -1,0 +1,22 @@
+name: Lesson 95 data check
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  data-95:
+    name: Lesson 95 · source data, player and 20/50 contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright test tests/lesson-ninety-five-data.spec.ts tests/lesson-ninety-five-player.spec.ts --config=playwright.desktop.config.ts --workers=1
