@@ -10,9 +10,10 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-94-progress-v1';
-const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/ё/g,'е').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
-const numeric=(id:string,label:string,answer:number):Field=>({id,label,answers:[String(answer)],placeholder:String(answer)});
+const normalizeText=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/ё/g,'е').replace(/[\s;:!?()[\]{}'"«»]/g,'');
+const parseNumericAnswer=(value:string)=>{const normalized=value.normalize('NFKC').trim().replace(',', '.');if(!/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalized))return null;const parsed=Number(normalized);return Number.isFinite(parsed)?parsed:null};
+const answerMatches=(value:string,answers:string[])=>{const numericValue=parseNumericAnswer(value);return answers.some(answer=>{const numericAnswer=parseNumericAnswer(answer);if(numericValue!==null&&numericAnswer!==null)return numericValue===numericAnswer;return normalizeText(value)===normalizeText(answer)})};
+const numeric=(id:string,label:string,answer:number):Field=>({id,label,answers:[String(answer)],placeholder:'Введите ответ'});
 
 const practice:Practice[]=[
   {source:'№ 701',prompt:'Сколько градусов составляют семь восемнадцатых величины прямого угла и пять двенадцатых величины развёрнутого угла?',instruction:'Введи два ответа по порядку.',fields:[numeric('a','Семь восемнадцатых прямого угла',35),numeric('b','Пять двенадцатых развёрнутого угла',75)],hint:'Прямой угол — 90 градусов, развёрнутый — 180. Сначала дели величину угла на знаменатель.',explanation:'Семь восемнадцатых от 90 градусов — 35 градусов, пять двенадцатых от 180 градусов — 75 градусов.'},
