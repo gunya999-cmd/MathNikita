@@ -22,8 +22,16 @@ test('lesson 94 opens and completes exact source tasks without leaking answers',
   await expect(task701.locator('.instant-feedback')).toHaveCount(0);
   const angleInputs=task701.locator('input');
   await expect(angleInputs).toHaveCount(2);
-  await angleInputs.nth(0).fill('35');
+  await expect(angleInputs.nth(0)).toHaveAttribute('placeholder','Введите ответ');
+  await expect(angleInputs.nth(1)).toHaveAttribute('placeholder','Введите ответ');
+
+  await angleInputs.nth(0).fill('3.5');
   await angleInputs.nth(1).fill('75');
+  await task701.locator('.check-button').click();
+  await expect(task701.locator('.instant-feedback.bad')).toBeVisible();
+  await expect(task701.locator('.instant-feedback.good')).toHaveCount(0);
+
+  await angleInputs.nth(0).fill('35');
   await task701.locator('.check-button').click();
   await expect(task701.locator('.instant-feedback.good')).toBeVisible();
 
