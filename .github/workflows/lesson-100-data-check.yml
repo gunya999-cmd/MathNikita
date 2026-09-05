@@ -1,0 +1,23 @@
+name: Lesson 100 data check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [lesson-100-build]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lesson-100-data:
+    name: Lesson 100 · source data, player and 20/50 contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright test tests/lesson-one-hundred-data.spec.ts tests/lesson-one-hundred-player.spec.ts --config=playwright.desktop.config.ts --workers=1
