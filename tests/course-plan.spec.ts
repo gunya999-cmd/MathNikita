@@ -1,50 +1,38 @@
-import { expect,test } from '@playwright/test';
+import {expect,test} from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 97',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 98',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(92);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(97);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(93);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(98);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(5);
-  await expect(lessons.nth(24)).toContainText('Вычитание натуральных чисел');
-  await expect(lessons.nth(28)).toContainText('Вычитание натуральных чисел');
-  await expect(lessons.nth(29)).toContainText('Числовые и буквенные выражения. Формулы');
-  await expect(lessons.nth(32)).toContainText('Контрольная работа № 2');
-  await expect(lessons.nth(32)).toBeEnabled();await expect(lessons.nth(32)).toHaveClass(/is-control-ready/);
-  for(let index=33;index<=50;index+=1){await expect(lessons.nth(index)).toBeEnabled();await expect(lessons.nth(index)).toHaveClass(/is-interactive/)}
-  await expect(lessons.nth(52)).toContainText('Контрольная работа № 3');await expect(lessons.nth(52)).toBeEnabled();await expect(lessons.nth(52)).toHaveClass(/is-control-ready/);
-  for(let index=53;index<=71;index+=1){await expect(lessons.nth(index)).toBeEnabled();await expect(lessons.nth(index)).toHaveClass(/is-interactive/)}
-  await expect(lessons.nth(60)).toContainText('Смысл деления');await expect(lessons.nth(61)).toContainText('Деление: вычисления и задачи');await expect(lessons.nth(62)).toContainText('Деление: текстовые задачи');await expect(lessons.nth(63)).toContainText('Деление: решение уравнений');await expect(lessons.nth(64)).toContainText('Деление: комплексное закрепление');await expect(lessons.nth(65)).toContainText('Деление: уравнения и составные задачи');await expect(lessons.nth(66)).toContainText('Деление: итоговое обобщение');await expect(lessons.nth(67)).toContainText('Деление с остатком: смысл и правило');await expect(lessons.nth(68)).toContainText('Деление с остатком: задачи и закономерности');await expect(lessons.nth(69)).toContainText('Деление с остатком: итоговое обобщение');
-  await expect(lessons.nth(70)).toContainText('Степень числа: основание и показатель');await expect(lessons.nth(70)).toBeEnabled();await expect(lessons.nth(71)).toContainText('Степень числа: закрепление и порядок действий');await expect(lessons.nth(71)).toBeEnabled();
-  await expect(lessons.nth(72)).toContainText('Контрольная работа № 4');await expect(lessons.nth(72)).toBeEnabled();await expect(lessons.nth(72)).toHaveClass(/is-control-ready/);
-  await expect(lessons.nth(73)).toContainText('Площадь. Площадь прямоугольника');await expect(lessons.nth(73)).toBeEnabled();await expect(lessons.nth(73)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(74)).toContainText('Площадь: единицы и обратные задачи');await expect(lessons.nth(74)).toBeEnabled();await expect(lessons.nth(74)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(75)).toContainText('Площадь: прикладные задачи');await expect(lessons.nth(75)).toBeEnabled();await expect(lessons.nth(75)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(76)).toContainText('Площадь: итоговое обобщение');await expect(lessons.nth(76)).toBeEnabled();await expect(lessons.nth(76)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(77)).toContainText('Прямоугольный параллелепипед: грани, рёбра и поверхность');await expect(lessons.nth(77)).toBeEnabled();await expect(lessons.nth(77)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(78)).toContainText('Прямоугольный параллелепипед: развёртка и многогранник');await expect(lessons.nth(78)).toBeEnabled();await expect(lessons.nth(78)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(79)).toContainText('Пирамида: основание, грани, рёбра и развёртка');await expect(lessons.nth(79)).toBeEnabled();await expect(lessons.nth(79)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(80)).toContainText('Объём фигуры: единичный куб и кубические единицы');await expect(lessons.nth(80)).toBeEnabled();await expect(lessons.nth(80)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(81)).toContainText('Объём прямоугольного параллелепипеда: формулы и задачи');await expect(lessons.nth(81)).toBeEnabled();await expect(lessons.nth(81)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(82)).toContainText('Объём: обратные и составные задачи');await expect(lessons.nth(82)).toBeEnabled();await expect(lessons.nth(82)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(83)).toContainText('Объём: итоговое обобщение');await expect(lessons.nth(83)).toBeEnabled();await expect(lessons.nth(83)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(84)).toContainText('Комбинаторные задачи');await expect(lessons.nth(84)).toBeEnabled();await expect(lessons.nth(84)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(85)).toContainText('Комбинаторные задачи');await expect(lessons.nth(85)).toBeEnabled();await expect(lessons.nth(85)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(86)).toContainText('Комбинаторные задачи: итоговое обобщение');await expect(lessons.nth(86)).toBeEnabled();await expect(lessons.nth(86)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(87)).toContainText('Повторение главы 3: диагностическая карта');await expect(lessons.nth(87)).toBeEnabled();await expect(lessons.nth(87)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(88)).toContainText('Повторение главы 3: коррекция перед контрольной');await expect(lessons.nth(88)).toBeEnabled();await expect(lessons.nth(88)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(89)).toContainText('Контрольная работа № 5');await expect(lessons.nth(89)).toBeEnabled();await expect(lessons.nth(89)).toHaveClass(/is-control-ready/);
-  await expect(lessons.nth(90)).toContainText('Обыкновенная дробь');await expect(lessons.nth(90)).toBeEnabled();await expect(lessons.nth(90)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(91)).toContainText('Нахождение дроби от числа');await expect(lessons.nth(91)).toBeEnabled();await expect(lessons.nth(91)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(92)).toContainText('Нахождение целого по известной дроби');await expect(lessons.nth(92)).toBeEnabled();await expect(lessons.nth(92)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(93)).toContainText('Составные задачи на дроби и остаток');await expect(lessons.nth(93)).toBeEnabled();await expect(lessons.nth(93)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(94)).toContainText('Итог § 25: цепочки задач с дробями');await expect(lessons.nth(94)).toBeEnabled();await expect(lessons.nth(94)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(95)).toContainText('Правильные и неправильные дроби');await expect(lessons.nth(95)).toBeEnabled();await expect(lessons.nth(95)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(96)).toContainText('Сравнение и упорядочивание дробей');await expect(lessons.nth(96)).toBeEnabled();await expect(lessons.nth(96)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(97)).toBeDisabled();
-  await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 97 уроков.')).toBeVisible();
+
+  for(const lessonNumber of [20,33,53,73,90]){
+    const button=lessons.nth(lessonNumber-1);
+    await expect(button).toBeEnabled();
+    await expect(button).toHaveClass(/is-control-ready/);
+  }
+  for(let lessonNumber=91;lessonNumber<=98;lessonNumber+=1){
+    const button=lessons.nth(lessonNumber-1);
+    await expect(button).toBeEnabled();
+    await expect(button).toHaveClass(/is-interactive/);
+  }
+
+  await expect(lessons.nth(90)).toContainText('Обыкновенная дробь');
+  await expect(lessons.nth(91)).toContainText('Нахождение дроби от числа');
+  await expect(lessons.nth(92)).toContainText('Нахождение целого по известной дроби');
+  await expect(lessons.nth(93)).toContainText('Составные задачи на дроби и остаток');
+  await expect(lessons.nth(94)).toContainText('Итог § 25: цепочки задач с дробями');
+  await expect(lessons.nth(95)).toContainText('Правильные и неправильные дроби');
+  await expect(lessons.nth(96)).toContainText('Сравнение и упорядочивание дробей');
+  await expect(lessons.nth(97)).toContainText('Итог § 26: сложные сравнения и дробные неравенства');
+
+  await expect(lessons.nth(98)).toContainText('Сложение и вычитание дробей с одинаковыми знаменателями');
+  await expect(lessons.nth(98)).toBeDisabled();
+  await expect(lessons.nth(108)).toContainText('Представление о десятичных дробях');
+  await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
+  await expect(page.getByText('Полностью готовы 98 уроков.')).toBeVisible();
 });

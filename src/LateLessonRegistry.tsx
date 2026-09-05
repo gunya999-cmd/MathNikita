@@ -1,0 +1,47 @@
+import type { ReactNode } from 'react';
+import type { LessonOpeningData } from './LessonOpening';
+import { lessonNinetyOneOpening } from './LessonNinetyOneOpening';
+import { FractionConceptPlayer } from './FractionConceptPlayer';
+import { lessonNinetyTwoOpening } from './LessonNinetyTwoOpening';
+import { FractionOfNumberPlayer } from './FractionOfNumberPlayer';
+import { lessonNinetyThreeOpening } from './LessonNinetyThreeOpening';
+import { FractionWholeFromPartPlayer } from './FractionWholeFromPartPlayer';
+import { lessonNinetyFourOpening } from './LessonNinetyFourOpening';
+import { FractionCompositeProblemsPlayer } from './FractionCompositeProblemsPlayer';
+import { lessonNinetyFiveOpening } from './LessonNinetyFiveOpening';
+import { FractionSynthesisPlayer } from './FractionSynthesisPlayer';
+import { lessonNinetySixOpening } from './LessonNinetySixOpening';
+import { FractionComparisonFoundationsPlayer } from './FractionComparisonFoundationsPlayer';
+import { lessonNinetySevenOpening } from './LessonNinetySevenOpening';
+import { FractionComparisonOrderingPlayer } from './FractionComparisonOrderingPlayer';
+import { lessonNinetyEightOpening } from './LessonNinetyEightOpening';
+import { FractionComparisonSynthesisPlayer } from './FractionComparisonSynthesisPlayer';
+
+export const LATEST_READY_LESSON=98;
+
+const lateOpenings:Record<number,LessonOpeningData>={
+  91:lessonNinetyOneOpening,
+  92:lessonNinetyTwoOpening,
+  93:lessonNinetyThreeOpening,
+  94:lessonNinetyFourOpening,
+  95:lessonNinetyFiveOpening,
+  96:lessonNinetySixOpening,
+  97:lessonNinetySevenOpening,
+  98:lessonNinetyEightOpening,
+};
+
+export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{return lateOpenings[lessonNumber]??null}
+
+export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
+  switch(lessonNumber){
+    case 98:return <FractionComparisonSynthesisPlayer key="lesson-98"/>;
+    case 97:return <FractionComparisonOrderingPlayer key="lesson-97"/>;
+    case 96:return <FractionComparisonFoundationsPlayer key="lesson-96"/>;
+    case 95:return <FractionSynthesisPlayer key="lesson-95"/>;
+    case 94:return <FractionCompositeProblemsPlayer key="lesson-94"/>;
+    case 93:return <FractionWholeFromPartPlayer key="lesson-93"/>;
+    case 92:return <FractionOfNumberPlayer key="lesson-92"/>;
+    case 91:return <FractionConceptPlayer key="lesson-91"/>;
+    default:return null;
+  }
+}
