@@ -10,9 +10,10 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-93-progress-v1';
-const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/ё/g,'е').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
-const numeric=(id:string,label:string,answer:number):Field=>({id,label,answers:[String(answer)],placeholder:String(answer)});
+const normalizeText=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/ё/g,'е').replace(/[\s;:!?()[\]{}'"«»]/g,'');
+const parseNumericAnswer=(value:string)=>{const normalized=value.normalize('NFKC').trim().replace(',', '.');if(!/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(normalized))return null;const parsed=Number(normalized);return Number.isFinite(parsed)?parsed:null};
+const answerMatches=(value:string,answers:string[])=>{const numericValue=parseNumericAnswer(value);return answers.some(answer=>{const numericAnswer=parseNumericAnswer(answer);if(numericValue!==null&&numericAnswer!==null)return numericValue===numericAnswer;return normalizeText(value)===normalizeText(answer)})};
+const numeric=(id:string,label:string,answer:number):Field=>({id,label,answers:[String(answer)],placeholder:'Введите ответ'});
 const kindField=(answer:'прямая'|'обратная'):Field=>({id:'kind',label:'Тип задачи',answers:[answer,`${answer} задача`],placeholder:'прямая или обратная'});
 
 const practice:Practice[]=[
@@ -32,7 +33,7 @@ const practice:Practice[]=[
   {prompt:'Семь двенадцатых числа равны 42. Определи тип задачи и найди число.',instruction:'Назови модель и ответ.',fields:[kindField('обратная'),numeric('r','Число',72)],hint:'Нужно восстановить двенадцать одинаковых долей.',explanation:'42 разделить на 7 и умножить на 12 — получаем 72.'},
   {prompt:'Найди девять десятых от 90. Определи тип задачи и результат.',instruction:'Назови модель и ответ.',fields:[kindField('прямая'),numeric('r','Результат',81)],hint:'90 — уже известное целое.',explanation:'90 разделить на 10 и умножить на 9 — получаем 81.'},
   {prompt:'Четыре пятнадцатых числа равны 24. Определи тип задачи и найди число.',instruction:'Назови модель и ответ.',fields:[kindField('обратная'),numeric('r','Число',90)],hint:'24 — это четыре одинаковые доли.',explanation:'24 разделить на 4 и умножить на 15 — получаем 90.'},
-  {prompt:'Найди тринадцать двадцатых от 100. Определи тип задачи и результат.',instruction:'Назови модель и ответ.',fields:[kindField('прямая'),numeric('r','Результат',65)],hint:'Целое 100 известно.',explanation:'100 разделить на 20 и умножить на 13 — получаем 65.'},
+  {prompt:'Найди тринадцать двадцатых от 100. Определи тип задачи и результат.',instruction:'Назови модель и ответ.',fields:[kindField('прямая'),numeric('r','Результат',65)],hint:'100 — известное целое.',explanation:'100 разделить на 20 и умножить на 13 — получаем 65.'},
   {prompt:'Пять шестнадцатых числа равны 40. Определи тип задачи и найди число.',instruction:'Назови модель и ответ.',fields:[kindField('обратная'),numeric('r','Число',128)],hint:'40 раздели на число известных долей.',explanation:'40 разделить на 5 и умножить на 16 — получаем 128.'},
   {prompt:'Найди шесть одиннадцатых от 88. Определи тип задачи и результат.',instruction:'Назови модель и ответ.',fields:[kindField('прямая'),numeric('r','Результат',48)],hint:'88 — известное целое.',explanation:'88 разделить на 11 и умножить на 6 — получаем 48.'},
   {prompt:'Три четырнадцатых числа равны 18. Определи тип задачи и найди число.',instruction:'Назови модель и ответ.',fields:[kindField('обратная'),numeric('r','Число',84)],hint:'18 — это три одинаковые доли.',explanation:'18 разделить на 3 и умножить на 14 — получаем 84.'}

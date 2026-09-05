@@ -18,7 +18,14 @@ test('lesson 93 opens and completes exact source task №692 without leaking ans
   await expect(sourceStage.locator('.instant-feedback')).toHaveCount(0);
   const inputs=sourceStage.locator('input');
   await expect(inputs).toHaveCount(6);
-  for(const [index,value] of ['810','225','405','300','108','95'].entries())await inputs.nth(index).fill(value);
+  for(let index=0;index<6;index+=1)await expect(inputs.nth(index)).toHaveAttribute('placeholder','Введите ответ');
+
+  for(const [index,value] of ['8.10','225','405','300','108','95'].entries())await inputs.nth(index).fill(value);
+  await sourceStage.locator('.check-button').click();
+  await expect(sourceStage.locator('.instant-feedback.bad')).toBeVisible();
+  await expect(sourceStage.locator('.instant-feedback.good')).toHaveCount(0);
+
+  await inputs.nth(0).fill('810');
   await sourceStage.locator('.check-button').click();
   await expect(sourceStage.locator('.instant-feedback.good')).toBeVisible();
   await expect(sourceStage.locator('.instant-feedback.good')).toContainText('810, 225, 405, 300, 108 и 95');
