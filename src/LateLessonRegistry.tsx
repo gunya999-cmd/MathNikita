@@ -28,8 +28,10 @@ import { lessonOneHundredThreeOpening } from './LessonOneHundredThreeOpening';
 import { MixedNumberOperationsPlayer } from './MixedNumberOperationsPlayer';
 import { lessonOneHundredFourOpening } from './LessonOneHundredFourOpening';
 import { MixedNumberPracticePlayer } from './MixedNumberPracticePlayer';
+import { lessonOneHundredFiveOpening } from './LessonOneHundredFiveOpening';
+import { MixedNumberAdvancedPlayer } from './MixedNumberAdvancedPlayer';
 
-export const LATEST_READY_LESSON=104;
+export const LATEST_READY_LESSON=105;
 
 const lateOpenings:Record<number,LessonOpeningData>={
   91:lessonNinetyOneOpening,
@@ -46,12 +48,14 @@ const lateOpenings:Record<number,LessonOpeningData>={
   102:lessonOneHundredTwoOpening,
   103:lessonOneHundredThreeOpening,
   104:lessonOneHundredFourOpening,
+  105:lessonOneHundredFiveOpening,
 };
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{return lateOpenings[lessonNumber]??null}
 
 export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   switch(lessonNumber){
+    case 105:return <MixedNumberAdvancedPlayer key="lesson-105"/>;
     case 104:return <MixedNumberPracticePlayer key="lesson-104"/>;
     case 103:return <MixedNumberOperationsPlayer key="lesson-103"/>;
     case 102:return <MixedNumberFoundationsPlayer key="lesson-102"/>;
