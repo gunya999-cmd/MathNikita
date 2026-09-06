@@ -24,8 +24,10 @@ import { lessonOneHundredOneOpening } from './LessonOneHundredOneOpening';
 import { FractionDivisionConnectionPlayer } from './FractionDivisionConnectionPlayer';
 import { lessonOneHundredTwoOpening } from './LessonOneHundredTwoOpening';
 import { MixedNumberFoundationsPlayer } from './MixedNumberFoundationsPlayer';
+import { lessonOneHundredThreeOpening } from './LessonOneHundredThreeOpening';
+import { MixedNumberOperationsPlayer } from './MixedNumberOperationsPlayer';
 
-export const LATEST_READY_LESSON=102;
+export const LATEST_READY_LESSON=103;
 
 const lateOpenings:Record<number,LessonOpeningData>={
   91:lessonNinetyOneOpening,
@@ -40,12 +42,14 @@ const lateOpenings:Record<number,LessonOpeningData>={
   100:lessonOneHundredOpening,
   101:lessonOneHundredOneOpening,
   102:lessonOneHundredTwoOpening,
+  103:lessonOneHundredThreeOpening,
 };
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{return lateOpenings[lessonNumber]??null}
 
 export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   switch(lessonNumber){
+    case 103:return <MixedNumberOperationsPlayer key="lesson-103"/>;
     case 102:return <MixedNumberFoundationsPlayer key="lesson-102"/>;
     case 101:return <FractionDivisionConnectionPlayer key="lesson-101"/>;
     case 100:return <SameDenominatorFractionSynthesisPlayer key="lesson-100"/>;
