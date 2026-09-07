@@ -1,0 +1,62 @@
+name: Lesson 111 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [lesson-111-build]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-111-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-111:
+    name: Chromium · source, flow and Sulafat lesson 111
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Source, player and course-boundary contract
+        run: npx playwright test tests/lesson-one-hundred-eleven-data.spec.ts tests/lesson-one-hundred-eleven-player.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Opening, navigation and exact §30 practice flow
+        run: npx playwright test tests/lesson-one-hundred-eleven-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Sulafat narration payload audit
+        run: npx playwright test tests/lesson-one-hundred-eleven-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-111:
+    name: iPad WebKit · lesson 111
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: iPad layout and exact source task
+        run: npx playwright test tests/lesson-one-hundred-eleven-ipad.spec.ts --workers=1
+
+  certified:
+    name: LESSON 111 CERTIFIED
+    if: always()
+    needs: [chromium-111, webkit-111]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Chromium and iPad lanes
+        env:
+          CHROMIUM_111: ${{ needs.chromium-111.result }}
+          WEBKIT_111: ${{ needs.webkit-111.result }}
+        run: |
+          test "$CHROMIUM_111" = success
+          test "$WEBKIT_111" = success
+          echo "Lesson 111 §30 source, flow, boundary, 20/50 practice, Sulafat and iPad checks are certified."
