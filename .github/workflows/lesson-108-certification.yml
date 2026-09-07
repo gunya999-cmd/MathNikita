@@ -1,0 +1,62 @@
+name: Lesson 108 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-108-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-108:
+    name: Chromium · exact control work 6, flow and Sulafat lesson 108
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Source, player and course-boundary contract
+        run: npx playwright test tests/lesson-one-hundred-eight-data.spec.ts tests/lesson-one-hundred-eight-player.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Exact control work 6 primary submission flow
+        run: npx playwright test tests/lesson-one-hundred-eight-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Sulafat narration payload audit
+        run: npx playwright test tests/lesson-one-hundred-eight-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-108:
+    name: iPad WebKit · lesson 108
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: iPad control-work layout and assistance isolation
+        run: npx playwright test tests/lesson-one-hundred-eight-ipad.spec.ts --workers=1
+
+  certified:
+    name: LESSON 108 CERTIFIED
+    if: always()
+    needs: [chromium-108, webkit-108]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Chromium and iPad lanes
+        env:
+          CHROMIUM_108: ${{ needs.chromium-108.result }}
+          WEBKIT_108: ${{ needs.webkit-108.result }}
+        run: |
+          test "$CHROMIUM_108" = success
+          test "$WEBKIT_108" = success
+          echo "Lesson 108 control work 6 exact source, primary submission, boundary, Sulafat and iPad checks are certified."
