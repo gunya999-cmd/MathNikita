@@ -42,8 +42,10 @@ import { lessonOneHundredTenOpening } from './LessonOneHundredTenOpening';
 import { DecimalRepresentationPracticePlayer } from './DecimalRepresentationPracticePlayer';
 import { lessonOneHundredElevenOpening } from './LessonOneHundredElevenOpening';
 import { DecimalMeasurementPlayer } from './DecimalMeasurementPlayer';
+import { lessonOneHundredTwelveOpening } from './LessonOneHundredTwelveOpening';
+import { DecimalRaySynthesisPlayer } from './DecimalRaySynthesisPlayer';
 
-export const LATEST_READY_LESSON=111;
+export const LATEST_READY_LESSON=112;
 
 const lateOpenings:Record<number,LessonOpeningData>={
   91:lessonNinetyOneOpening,
@@ -67,12 +69,14 @@ const lateOpenings:Record<number,LessonOpeningData>={
   109:lessonOneHundredNineOpening,
   110:lessonOneHundredTenOpening,
   111:lessonOneHundredElevenOpening,
+  112:lessonOneHundredTwelveOpening,
 };
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{return lateOpenings[lessonNumber]??null}
 
 export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   switch(lessonNumber){
+    case 112:return <DecimalRaySynthesisPlayer key="lesson-112"/>;
     case 111:return <DecimalMeasurementPlayer key="lesson-111"/>;
     case 110:return <DecimalRepresentationPracticePlayer key="lesson-110"/>;
     case 109:return <DecimalRepresentationPlayer key="lesson-109"/>;
