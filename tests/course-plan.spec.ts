@@ -1,13 +1,13 @@
 import {expect,test} from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 117',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 118',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(111);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(117);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(112);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(118);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(6);
   for(const lessonNumber of [20,33,53,73,90,108]){const button=lessons.nth(lessonNumber-1);await expect(button).toBeEnabled();await expect(button).toHaveClass(/is-control-ready/)}
   for(let lessonNumber=91;lessonNumber<=107;lessonNumber+=1){const button=lessons.nth(lessonNumber-1);await expect(button).toBeEnabled();await expect(button).toHaveClass(/is-interactive/)}
@@ -21,7 +21,8 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 117',
   await expect(lessons.nth(114)).toContainText('Сравнение десятичных дробей: числа между границами и итог § 31');await expect(lessons.nth(114)).toBeEnabled();await expect(lessons.nth(114)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(115)).toContainText('Округление чисел: правило для десятичных и натуральных');await expect(lessons.nth(115)).toBeEnabled();await expect(lessons.nth(115)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(116)).toContainText('Округление чисел: крупные разряды и наивысший разряд');await expect(lessons.nth(116)).toBeEnabled();await expect(lessons.nth(116)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(117)).toBeDisabled();
+  await expect(lessons.nth(117)).toContainText('Округление чисел: обратные задачи, прикидки и итог § 32');await expect(lessons.nth(117)).toBeEnabled();await expect(lessons.nth(117)).toHaveClass(/is-interactive/);
+  await expect(lessons.nth(118)).toBeDisabled();
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 117 уроков.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 118 уроков.')).toBeVisible();
 });
