@@ -1,0 +1,62 @@
+name: Lesson 117 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [lesson-117-build]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-117-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-117:
+    name: Chromium · source, flow and Sulafat lesson 117
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Source, player and course-boundary contract
+        run: npx playwright test tests/lesson-one-hundred-seventeen-data.spec.ts tests/lesson-one-hundred-seventeen-player.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Opening, navigation and exact §32 practice flow
+        run: npx playwright test tests/lesson-one-hundred-seventeen-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Sulafat narration payload audit
+        run: npx playwright test tests/lesson-one-hundred-seventeen-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-117:
+    name: iPad WebKit · lesson 117
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: iPad layout and source rounding task
+        run: npx playwright test tests/lesson-one-hundred-seventeen-ipad.spec.ts --workers=1
+
+  certified:
+    name: LESSON 117 CERTIFIED
+    if: always()
+    needs: [chromium-117, webkit-117]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Chromium and iPad lanes
+        env:
+          CHROMIUM_117: ${{ needs.chromium-117.result }}
+          WEBKIT_117: ${{ needs.webkit-117.result }}
+        run: |
+          test "$CHROMIUM_117" = success
+          test "$WEBKIT_117" = success
+          echo "Lesson 117 §32 source, flow, large-place rounding, 20/50 practice, Sulafat and iPad checks are certified."
