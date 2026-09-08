@@ -1,0 +1,62 @@
+name: Lesson 115 certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [lesson-115-build]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lesson-115-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-115:
+    name: Chromium · source, flow and Sulafat lesson 115
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Source, player and course-boundary contract
+        run: npx playwright test tests/lesson-one-hundred-fifteen-data.spec.ts tests/lesson-one-hundred-fifteen-player.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Opening, navigation and exact §31 practice flow
+        run: npx playwright test tests/lesson-one-hundred-fifteen-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Sulafat narration payload audit
+        run: npx playwright test tests/lesson-one-hundred-fifteen-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+
+  webkit-115:
+    name: iPad WebKit · lesson 115
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps webkit
+      - name: iPad layout and minimum-decimal source task
+        run: npx playwright test tests/lesson-one-hundred-fifteen-ipad.spec.ts --workers=1
+
+  certified:
+    name: LESSON 115 CERTIFIED
+    if: always()
+    needs: [chromium-115, webkit-115]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Chromium and iPad lanes
+        env:
+          CHROMIUM_115: ${{ needs.chromium-115.result }}
+          WEBKIT_115: ${{ needs.webkit-115.result }}
+        run: |
+          test "$CHROMIUM_115" = success
+          test "$WEBKIT_115" = success
+          echo "Lesson 115 final §31 source, flow, density, 20/50 practice, Sulafat and iPad checks are certified."
