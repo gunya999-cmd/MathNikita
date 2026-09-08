@@ -1,13 +1,13 @@
 import {expect,test} from '@playwright/test';
 
-test('catalog follows the official 175-lesson Merzlyak plan through lesson 113',async({page})=>{
+test('catalog follows the official 175-lesson Merzlyak plan through lesson 114',async({page})=>{
   await page.goto('/');
   await expect(page.getByText('175 уроков в официальном плане')).toBeVisible();
   await expect(page.locator('.course-chapter-group')).toHaveCount(7);
   const lessons=page.locator('.course-lesson-grid > button');
   await expect(lessons).toHaveCount(175);
-  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(107);
-  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(113);
+  await expect(page.locator('.course-lesson-grid > button.is-interactive')).toHaveCount(108);
+  await expect(page.locator('.course-lesson-grid > button:not([disabled])')).toHaveCount(114);
   await expect(page.locator('.course-lesson-grid > button.is-control-ready')).toHaveCount(6);
   for(const lessonNumber of [20,33,53,73,90,108]){const button=lessons.nth(lessonNumber-1);await expect(button).toBeEnabled();await expect(button).toHaveClass(/is-control-ready/)}
   for(let lessonNumber=91;lessonNumber<=107;lessonNumber+=1){const button=lessons.nth(lessonNumber-1);await expect(button).toBeEnabled();await expect(button).toHaveClass(/is-interactive/)}
@@ -17,7 +17,8 @@ test('catalog follows the official 175-lesson Merzlyak plan through lesson 113',
   await expect(lessons.nth(110)).toContainText('Десятичные дроби: единицы измерения и деление на 10/100');await expect(lessons.nth(110)).toBeEnabled();await expect(lessons.nth(110)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(111)).toContainText('Десятичные дроби: координатный луч и итог § 30');await expect(lessons.nth(111)).toBeEnabled();await expect(lessons.nth(111)).toHaveClass(/is-interactive/);
   await expect(lessons.nth(112)).toContainText('Сравнение десятичных дробей: нули справа и разряды');await expect(lessons.nth(112)).toBeEnabled();await expect(lessons.nth(112)).toHaveClass(/is-interactive/);
-  await expect(lessons.nth(113)).toBeDisabled();
+  await expect(lessons.nth(113)).toContainText('Сравнение десятичных дробей: интервалы и неизвестная цифра');await expect(lessons.nth(113)).toBeEnabled();await expect(lessons.nth(113)).toHaveClass(/is-interactive/);
+  await expect(lessons.nth(114)).toBeDisabled();
   await expect(lessons.nth(174)).toContainText('Итоговая контрольная работа');
-  await expect(page.getByText('Полностью готовы 113 уроков.')).toBeVisible();
+  await expect(page.getByText('Полностью готовы 114 уроков.')).toBeVisible();
 });
