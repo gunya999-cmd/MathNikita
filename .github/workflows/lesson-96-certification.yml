@@ -3,10 +3,7 @@ name: Lesson 96 certification
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [lesson-96-build]
 
 permissions:
   contents: read
