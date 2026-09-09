@@ -3,7 +3,7 @@ name: Lesson 122 certification
 on:
   workflow_dispatch:
   push:
-    branches: [lesson-122-build]
+    branches: [lesson-122-build, main]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
