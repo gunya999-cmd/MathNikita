@@ -3,10 +3,7 @@ name: Lesson 99 certification
 on:
   workflow_dispatch:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [lesson-99-build]
 
 permissions:
   contents: read
