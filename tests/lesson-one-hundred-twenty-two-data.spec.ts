@@ -1,0 +1,4 @@
+import {expect,test} from '@playwright/test';
+import {lessonOneHundredTwentyTwoPractice,lessonOneHundredTwentyTwoResponseCount} from '../src/data/lessonOneHundredTwentyTwoPractice';
+import {lessonOneHundredTwentyTwoOpening} from '../src/LessonOneHundredTwentyTwoOpening';
+test('lesson 122 exact §33 source data and 20/50 contract are intact',()=>{expect(lessonOneHundredTwentyTwoOpening.kicker).toContain('§ 33 · 4 из 6');expect(lessonOneHundredTwentyTwoPractice).toHaveLength(20);expect(lessonOneHundredTwentyTwoResponseCount).toBe(50);expect(lessonOneHundredTwentyTwoPractice.slice(0,3).map(x=>x.source)).toEqual(['№ 884','№ 886','№ 894']);expect(lessonOneHundredTwentyTwoPractice[0].fields.map(f=>f.answers[0])).toEqual(['9,6','16,4','38,4']);expect(lessonOneHundredTwentyTwoPractice[1].fields.map(f=>f.answers[0])).toEqual(['1744,10','177,76']);expect(lessonOneHundredTwentyTwoPractice[2].fields.map(f=>f.answers[0])).toEqual(['26,394','37'])});
