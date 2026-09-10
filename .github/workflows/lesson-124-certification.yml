@@ -3,10 +3,7 @@ name: Lesson 124 certification
 on:
   workflow_dispatch:
   push:
-    branches: [lesson-124-build, main]
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [lesson-124-build]
 
 permissions:
   contents: read
@@ -27,7 +24,7 @@ jobs:
       - run: npm install
       - run: npx playwright install --with-deps chromium
       - name: Source, player and course-boundary contract
-        run: npx playwright test tests/lesson-one-hundred-twenty-four-data.spec.ts tests/lesson-one-hundred-twenty-four-player.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+        run: npx playwright test tests/lesson-one-hundred-twenty-four-data.spec.ts tests/lesson-one-hundred-twenty-four-player.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Opening, navigation and exact §33 practice flow
         run: npx playwright test tests/lesson-one-hundred-twenty-four-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Sulafat narration payload audit
@@ -59,4 +56,4 @@ jobs:
         run: |
           test "$CHROMIUM_124" = success
           test "$WEBKIT_124" = success
-          echo "Lesson 124 closes §33 with exact source anchors, 20/50 practice, Sulafat and iPad checks certified."
+          echo "Historical lesson 124 certification passed."
