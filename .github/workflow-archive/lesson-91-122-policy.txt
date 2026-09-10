@@ -1,0 +1,1 @@
+Historical lesson-specific workflow definitions 91-122 are retained by Git history/archive and must not auto-run on unrelated pull requests. Current automatic checkpoint: lesson 123.
