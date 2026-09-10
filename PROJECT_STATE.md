@@ -13,13 +13,14 @@
 
 ## Current course checkpoint — 2026-09-10
 - Official plan: **175 Merzlyak grade-5 lessons**.
-- Production-ready: **lessons 1–123**.
-- Latest production lesson: **123 — §33 lesson 5 of 6**, mandatory practice **20 tasks / exactly 50 response slots**.
-- Production SHA: `66342966bf4407fce858c7dc17ea7c2eda4b7b8b`.
+- Production-ready: **lessons 1–124**.
+- Latest production lesson: **124 — §33 lesson 6 of 6**, final consolidation before Control Work №7.
+- Production SHA: `e9f0d0b93a07011a5b7de4764d7188c914bf0f76`.
 - `Production · deployed SHA matches main` passed for this SHA.
-- Current build branch: **lesson-124-build**.
-- Lesson 124: **§33 lesson 6 of 6**, final consolidation before Control Work №7.
-- Next lesson after 124: **125 — Control Work №7**.
+- Current build branch: **lesson-125-build**.
+- Lesson 125: **Control Work №7**, exact variant 1 workload: **8 source tasks / 14 evaluated responses**.
+- Control mode: answers and explanations hidden before submission; primary response snapshot and score freeze on submission; correction mode edits only wrong fields and cannot change the primary score.
+- Next lesson after 125: **126** according to the official year plan.
 
 ## CI / release protection
 - `Build` remains the general always-on gate.
