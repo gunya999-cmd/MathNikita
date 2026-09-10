@@ -1,0 +1,3 @@
+import {ControlWorkSevenPlayer} from './ControlWorkSevenPlayer';
+
+export function ControlWorkSevenGuard(){return <><style>{`.lesson-course-shell:has(.control-seven-page) .mentor-learning-layout{grid-template-columns:minmax(0,1fr)!important}.lesson-course-shell:has(.control-seven-page) .cat-mentor,.lesson-course-shell:has(.control-seven-page) .progressive-hint-coach,.lesson-course-shell:has(.control-seven-page) .lesson-reflection{display:none!important}`}</style><ControlWorkSevenPlayer/></>}

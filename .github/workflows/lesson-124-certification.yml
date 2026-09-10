@@ -1,9 +1,9 @@
-name: Lesson 124 certification
+name: Lesson 125 certification
 
 on:
   workflow_dispatch:
   push:
-    branches: [lesson-124-build, main]
+    branches: [lesson-125-build, main]
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -12,12 +12,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: lesson-124-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  group: lesson-125-certification-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  chromium-124:
-    name: Chromium · source, flow and Sulafat lesson 124
+  chromium-125:
+    name: Chromium · exact control 7 and frozen primary result
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -27,14 +27,12 @@ jobs:
       - run: npm install
       - run: npx playwright install --with-deps chromium
       - name: Source, player and course-boundary contract
-        run: npx playwright test tests/lesson-one-hundred-twenty-four-data.spec.ts tests/lesson-one-hundred-twenty-four-player.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
-      - name: Opening, navigation and exact §33 practice flow
-        run: npx playwright test tests/lesson-one-hundred-twenty-four-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
-      - name: Sulafat narration payload audit
-        run: npx playwright test tests/lesson-one-hundred-twenty-four-voice.spec.ts --config=playwright.desktop.config.ts --workers=1
+        run: npx playwright test tests/lesson-one-hundred-twenty-five-data.spec.ts tests/lesson-one-hundred-twenty-five-player.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Exact control flow, answer secrecy and correction isolation
+        run: npx playwright test tests/lesson-one-hundred-twenty-five-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
 
-  webkit-124:
-    name: iPad WebKit · lesson 124
+  webkit-125:
+    name: iPad WebKit · control work 7
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -43,20 +41,20 @@ jobs:
         with: {node-version: 24}
       - run: npm install
       - run: npx playwright install --with-deps webkit
-      - name: iPad layout and first exact source task
-        run: npx playwright test tests/lesson-one-hundred-twenty-four-ipad.spec.ts --workers=1
+      - name: iPad layout and answer secrecy
+        run: npx playwright test tests/lesson-one-hundred-twenty-five-ipad.spec.ts --workers=1
 
   certified:
-    name: LESSON 124 CERTIFIED
+    name: LESSON 125 CERTIFIED
     if: always()
-    needs: [chromium-124, webkit-124]
+    needs: [chromium-125, webkit-125]
     runs-on: ubuntu-latest
     steps:
       - name: Require Chromium and iPad lanes
         env:
-          CHROMIUM_124: ${{ needs.chromium-124.result }}
-          WEBKIT_124: ${{ needs.webkit-124.result }}
+          CHROMIUM_125: ${{ needs.chromium-125.result }}
+          WEBKIT_125: ${{ needs.webkit-125.result }}
         run: |
-          test "$CHROMIUM_124" = success
-          test "$WEBKIT_124" = success
-          echo "Lesson 124 closes §33 with exact source anchors, 20/50 practice, Sulafat and iPad checks certified."
+          test "$CHROMIUM_125" = success
+          test "$WEBKIT_125" = success
+          echo "Lesson 125 control work 7 is certified: source-exact workload, hidden answers before submission, frozen primary result, isolated correction and iPad coverage."
