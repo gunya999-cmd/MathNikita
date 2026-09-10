@@ -1,0 +1,1 @@
+Only repository-wide CI and the current lesson certification should run automatically on pull requests/main. Completed lesson workflows are historical; exact definitions remain in Git history and archived repository content. Use the manual historical regression workflow when a past lesson needs a smoke/regression check.
