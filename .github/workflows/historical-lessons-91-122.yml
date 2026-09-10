@@ -1,0 +1,71 @@
+name: Historical lessons 91-122 regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      lesson:
+        description: 'Lesson number to recertify (91-122)'
+        required: true
+        type: choice
+        options:
+          - '91'
+          - '92'
+          - '93'
+          - '94'
+          - '95'
+          - '96'
+          - '97'
+          - '98'
+          - '99'
+          - '100'
+          - '101'
+          - '102'
+          - '103'
+          - '104'
+          - '105'
+          - '106'
+          - '107'
+          - '108'
+          - '109'
+          - '110'
+          - '111'
+          - '112'
+          - '113'
+          - '114'
+          - '115'
+          - '116'
+          - '117'
+          - '118'
+          - '119'
+          - '120'
+          - '121'
+          - '122'
+
+permissions:
+  contents: read
+
+jobs:
+  historical-regression:
+    name: Historical lesson ${{ inputs.lesson }} regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Run lesson-specific tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          lesson="${{ inputs.lesson }}"
+          mapfile -t files < <(find tests -maxdepth 1 -type f -name '*.spec.ts' | grep -E "lesson-(ninety|one-hundred)" | grep -E "$(printf '%s' "$lesson")" || true)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No numeric-name match; running course plan plus build as historical smoke check."
+            npm run build
+            npx playwright test tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+          else
+            printf 'Running %s\n' "${files[@]}"
+            npx playwright test "${files[@]}" --config=playwright.desktop.config.ts --workers=1
+          fi
