@@ -1,0 +1,1 @@
+Completed lesson workflows must not auto-run on unrelated PRs or main pushes.
