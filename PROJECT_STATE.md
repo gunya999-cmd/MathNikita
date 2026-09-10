@@ -11,19 +11,22 @@
 ## Non-negotiable deployment invariant
 `main` is the production source of truth. A lesson is production-ready only after exact-head lesson certification, merge of the tested head, Cloudflare deployment, and `Production · deployed SHA matches main` for the resulting production SHA.
 
-## Current course checkpoint — 2026-09-09
+## Current course checkpoint — 2026-09-10
 - Official plan: **175 Merzlyak grade-5 lessons**.
-- Production-ready: **lessons 1–122**.
-- Latest production lesson: **122 — §33 composite problems**, mandatory practice **20 tasks / exactly 50 response slots**.
-- Latest production merge SHA before this maintenance change: `dcd0570a331cebd9690ce73074d1dc814a4a85d1`.
-- `Production · deployed SHA matches main` passed for that production state.
-- Next lesson to build: **123**.
+- Production-ready: **lessons 1–123**.
+- Latest production lesson: **123 — §33 lesson 5 of 6**, mandatory practice **20 tasks / exactly 50 response slots**.
+- Production SHA: `66342966bf4407fce858c7dc17ea7c2eda4b7b8b`.
+- `Production · deployed SHA matches main` passed for this SHA.
+- Current build branch: **lesson-124-build**.
+- Lesson 124: **§33 lesson 6 of 6**, final consolidation before Control Work №7.
+- Next lesson after 124: **125 — Control Work №7**.
 
 ## CI / release protection
 - `Build` remains the general always-on gate.
-- The current latest lesson certification is allowed to run on `main`, so the merged production state receives a full Chromium + iPad/WebKit lesson certificate.
-- Closed lesson workflows are release-specific checks, not cumulative every-PR gates. They remain manually runnable and may run on their own `lesson-N-build` branch, but must not recertify on every unrelated future push/PR.
-- As the course advances, move the `main` certification responsibility from the previous latest lesson to the new latest lesson.
+- Only the current latest lesson certification should run automatically on its release branch, pull request and `main`.
+- Closed lesson workflows must not recertify on unrelated future pull requests or main pushes.
+- Historical lessons 91–122 have been removed from active automatic GitHub Actions; regression remains available through Git history/archive and the manual historical workflow.
+- As the course advances, move automatic `main` certification from the previous latest lesson to the new latest lesson.
 - Cumulative/course-wide regression workflows remain separate from lesson-specific certification.
 
 ## Ordinary interactive lesson quality contract
