@@ -1,0 +1,1 @@
+Release only after exact-head Chromium + Sulafat + iPad/WebKit certification, merge of that tested head, Cloudflare deploy, and production SHA match.
