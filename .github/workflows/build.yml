@@ -36,10 +36,10 @@ jobs:
         run: npx playwright install --with-deps chromium webkit
       - name: Certify lesson 125 regression
         run: npx playwright test tests/lesson-one-hundred-twenty-five-data.spec.ts tests/lesson-one-hundred-twenty-five-player.spec.ts tests/lesson-one-hundred-twenty-five-flow.spec.ts --config=playwright.desktop.config.ts --workers=1
-      - name: Certify lessons 126-127 source, catalog and browser flow
-        run: npx playwright test tests/lesson-one-hundred-twenty-six.spec.ts tests/lesson-one-hundred-twenty-six-flow.spec.ts tests/lesson-one-hundred-twenty-seven.spec.ts tests/lesson-one-hundred-twenty-seven-flow.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
-      - name: Certify iPad/WebKit for lessons 125-127
-        run: npx playwright test tests/lesson-one-hundred-twenty-five-ipad.spec.ts tests/lesson-one-hundred-twenty-six-ipad.spec.ts tests/lesson-one-hundred-twenty-seven-ipad.spec.ts --workers=1
+      - name: Certify lessons 126-128 source, catalog and browser flow
+        run: npx playwright test tests/lesson-one-hundred-twenty-six.spec.ts tests/lesson-one-hundred-twenty-six-flow.spec.ts tests/lesson-one-hundred-twenty-seven.spec.ts tests/lesson-one-hundred-twenty-seven-flow.spec.ts tests/lesson-one-hundred-twenty-eight.spec.ts tests/lesson-one-hundred-twenty-eight-flow.spec.ts tests/course-plan.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Certify iPad/WebKit for lessons 125-128
+        run: npx playwright test tests/lesson-one-hundred-twenty-five-ipad.spec.ts tests/lesson-one-hundred-twenty-six-ipad.spec.ts tests/lesson-one-hundred-twenty-seven-ipad.spec.ts tests/lesson-one-hundred-twenty-eight-ipad.spec.ts --workers=1
       - name: Upload production bundle
         uses: actions/upload-artifact@v4
         with:
