@@ -10,7 +10,7 @@ export const extendedPracticeLesson143:ExtendedPracticeSet={
     type:'multi-input' as const,
     prompt:task.prompt,
     instruction:'Реши задачу полностью на бумаге и заполни все поля. Проверка засчитывается только целиком.',
-    fields:task.fields.map(field=>({...field,validation:'decimal' as const})),
+    fields:task.fields.map(field=>({...field,validation:'exact-decimal' as const})),
     hint:task.hint,
     explanation:task.explanation,
     provenance:'curated' as const,
