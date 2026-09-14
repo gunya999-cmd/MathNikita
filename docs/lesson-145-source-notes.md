@@ -1,0 +1,25 @@
+# Lesson 145 source notes
+
+## Route
+
+Fresh KTP verification keeps lessons 143–145 in §36 «Среднее арифметическое. Среднее значение величины». The canonical 175-lesson route assigns lesson 145 the final consolidation set **№1045, №1047, №1054(1), additional №1055** before lesson 146 starts §37 «Проценты».
+
+## Exact source anchors used
+
+1. **№1045** — 2 kg at 64 r/kg, 4 kg at 82 r/kg and 3 kg of a third kind; overall mean price 88 r/kg. Third kind: `112 r/kg`.
+2. **№1047** — mean of four numbers is `2.1`, mean of three other numbers is `2.8`; mean of all seven is `2.4`.
+3. **№1054(1)** — `32 kg : 25 = 1.28 kg`, rounded to tenths → `1.3 kg`.
+4. **№1055** — three fish, two fit in the pan, one side takes one minute. Six sides at two sides per minute can be scheduled in `3 min`.
+
+## Lesson contract
+
+- 7 theory stages;
+- 20 practice tasks;
+- exactly 50 checked responses;
+- 1 summary stage;
+- total 28 stages;
+- localStorage key `mathnikita-lesson-145-progress-v1`;
+- strict canonical decimal matching without floating tolerance;
+- mandatory completion practice uses `exact-decimal`;
+- Chromium flow and iPad/WebKit coverage;
+- lesson 145 enabled, lesson 146 remains locked until its own certification.
