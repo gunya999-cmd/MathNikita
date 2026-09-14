@@ -3,7 +3,7 @@ export type ExtendedPracticeField = {
   label: string;
   answers: string[];
   placeholder?: string;
-  validation?: 'loose' | 'decimal';
+  validation?: 'loose' | 'decimal' | 'exact-decimal';
 };
 
 export type ExtendedPracticeProvenance = 'curated' | 'parametric';
