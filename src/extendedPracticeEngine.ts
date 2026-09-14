@@ -31,6 +31,27 @@ export function normalizeDecimalPracticeAnswer(value:string){
   return Number.isFinite(numeric)?String(numeric):normalized;
 }
 
+export function normalizeExactDecimalPracticeAnswer(value:string):string|null{
+  let normalized=value
+    .normalize('NFKC')
+    .toLocaleLowerCase('ru-RU')
+    .replace(/ё/g,'е')
+    .replace(/[\s\u00a0]+/g,'')
+    .replace(/,/g,'.')
+    .replace(/[−–—]/g,'-');
+  if(!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized))return null;
+  let sign='';
+  if(normalized.startsWith('+')||normalized.startsWith('-')){
+    sign=normalized.startsWith('-')?'-':'';
+    normalized=normalized.slice(1);
+  }
+  let[whole,frac='']=normalized.split('.');
+  whole=(whole||'0').replace(/^0+(?=\d)/,'');
+  frac=frac.replace(/0+$/,'');
+  if(whole==='0'&&!frac)sign='';
+  return `${sign}${whole}${frac?`.${frac}`:''}`;
+}
+
 export function loadExtendedPracticeProgress(lessonNumber:number,taskCount:number){
   try{
     const value=Number(window.localStorage.getItem(extendedPracticeStorageKey(lessonNumber))??0);
@@ -46,6 +67,10 @@ export function isExtendedPracticeAnswerCorrect(task:ExtendedPracticeTask,respon
   if(task.type==='multi-input'){
     if(typeof response==='string')return false;
     return task.fields.every(field=>{
+      if(field.validation==='exact-decimal'){
+        const normalized=normalizeExactDecimalPracticeAnswer(response[field.id]??'');
+        return normalized!==null&&field.answers.some(answer=>normalized===normalizeExactDecimalPracticeAnswer(answer));
+      }
       const normalize=field.validation==='decimal'?normalizeDecimalPracticeAnswer:normalizePracticeAnswer;
       const normalized=normalize(response[field.id]??'');
       return field.answers.some(answer=>normalized===normalize(answer));
