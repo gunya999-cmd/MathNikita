@@ -1,0 +1,2 @@
+import {expect,test} from '@playwright/test';import fs from 'node:fs';
+test('lesson 153 player keeps stage and persistence contract',()=>{const source=fs.readFileSync('src/InversePercentFinalePlayer.tsx','utf8');expect(source).toContain("mathnikita-lesson-153-progress-v1");expect(source).toContain("lessonNumber!==153");expect(source).toContain("lessonOneHundredFiftyThreeStageCount=stages.length");expect(source).toContain("lessonOneHundredFiftyThreePracticeResponseCount=lessonOneHundredFiftyThreeResponseCount");expect(source).toContain("§38 завершён");});
