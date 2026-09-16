@@ -17,8 +17,9 @@ import {extendedPracticeLesson149} from './extendedPracticeLesson149';
 import {extendedPracticeLesson150} from './extendedPracticeLesson150';
 import {extendedPracticeLesson151} from './extendedPracticeLesson151';
 import {extendedPracticeLesson152} from './extendedPracticeLesson152';
+import {extendedPracticeLesson154} from './extendedPracticeLesson154';
 import type {ExtendedPracticeSet} from './extendedPracticeTypes';
 
-export const extendedPracticeByLesson:Record<number,ExtendedPracticeSet>={...baseExtendedPracticeByLesson,83:extendedPracticeLesson83,84:extendedPracticeLesson84,85:extendedPracticeLesson85,86:extendedPracticeLesson86,87:extendedPracticeLesson87,88:extendedPracticeLesson88,89:extendedPracticeLesson89,141:extendedPracticeLesson141,143:extendedPracticeLesson143,144:extendedPracticeLesson144,145:extendedPracticeLesson145,146:extendedPracticeLesson146,147:extendedPracticeLesson147,148:extendedPracticeLesson148,149:extendedPracticeLesson149,150:extendedPracticeLesson150,151:extendedPracticeLesson151,152:extendedPracticeLesson152};
+export const extendedPracticeByLesson:Record<number,ExtendedPracticeSet>={...baseExtendedPracticeByLesson,83:extendedPracticeLesson83,84:extendedPracticeLesson84,85:extendedPracticeLesson85,86:extendedPracticeLesson86,87:extendedPracticeLesson87,88:extendedPracticeLesson88,89:extendedPracticeLesson89,141:extendedPracticeLesson141,143:extendedPracticeLesson143,144:extendedPracticeLesson144,145:extendedPracticeLesson145,146:extendedPracticeLesson146,147:extendedPracticeLesson147,148:extendedPracticeLesson148,149:extendedPracticeLesson149,150:extendedPracticeLesson150,151:extendedPracticeLesson151,152:extendedPracticeLesson152,154:extendedPracticeLesson154};
 export const extendedPracticeLessonNumbers=Object.keys(extendedPracticeByLesson).map(Number);
 export type{ExtendedPracticeSet,ExtendedPracticeTask}from'./extendedPracticeTypes';
