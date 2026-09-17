@@ -13,6 +13,6 @@ export const extendedPracticeLesson157:ExtendedPracticeSet={
     fields:task.fields.map(field=>({...field,validation:'exact-decimal' as const})),
     hint:task.hint,
     explanation:task.explanation,
-    provenance:task.sourceExact?'source-exact' as const:'curated' as const,
+    provenance:'curated' as const,
   })),
 };
