@@ -1,4 +1,4 @@
-name: Late lessons 153-158
+name: Late lessons 153-159
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   certify:
-    name: Lessons 153-158 regression
+    name: Lessons 153-159 regression
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -32,7 +32,7 @@ jobs:
         run: npm run build
       - name: Install browsers
         run: npx playwright install --with-deps chromium webkit
-      - name: Certify lessons 153-158 and catalog in Chromium
+      - name: Certify lessons 153-159 and catalog in Chromium
         run: >-
           npx playwright test
           tests/lesson-one-hundred-fifty-three.spec.ts
@@ -53,9 +53,12 @@ jobs:
           tests/lesson-one-hundred-fifty-eight.spec.ts
           tests/lesson-one-hundred-fifty-eight-player.spec.ts
           tests/lesson-one-hundred-fifty-eight-flow.spec.ts
+          tests/lesson-one-hundred-fifty-nine.spec.ts
+          tests/lesson-one-hundred-fifty-nine-player.spec.ts
+          tests/lesson-one-hundred-fifty-nine-flow.spec.ts
           tests/course-plan.spec.ts
           --config=playwright.desktop.config.ts --workers=1
-      - name: Certify lessons 153-158 on iPad WebKit
+      - name: Certify lessons 153-159 on iPad WebKit
         run: >-
           npx playwright test
           tests/lesson-one-hundred-fifty-three-ipad.spec.ts
@@ -64,4 +67,5 @@ jobs:
           tests/lesson-one-hundred-fifty-six-ipad.spec.ts
           tests/lesson-one-hundred-fifty-seven-ipad.spec.ts
           tests/lesson-one-hundred-fifty-eight-ipad.spec.ts
+          tests/lesson-one-hundred-fifty-nine-ipad.spec.ts
           --workers=1
