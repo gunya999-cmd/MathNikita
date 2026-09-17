@@ -9,14 +9,17 @@ import {lessonOneHundredFiftyFiveOpening} from './LessonOneHundredFiftyFiveOpeni
 import {ControlNineRehearsalPlayer} from './ControlNineRehearsalPlayer';
 import {lessonOneHundredFiftySixOpening} from './LessonOneHundredFiftySixOpening';
 import {ControlWorkNineGuard} from './ControlWorkNineGuard';
+import {lessonOneHundredFiftySevenOpening} from './LessonOneHundredFiftySevenOpening';
+import {NaturalNumberCourseReviewPlayer} from './NaturalNumberCourseReviewPlayer';
 
-export const LATEST_READY_LESSON=156;
+export const LATEST_READY_LESSON=157;
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{
   if(lessonNumber===153)return lessonOneHundredFiftyThreeOpening;
   if(lessonNumber===154)return lessonOneHundredFiftyFourOpening;
   if(lessonNumber===155)return lessonOneHundredFiftyFiveOpening;
   if(lessonNumber===156)return lessonOneHundredFiftySixOpening;
+  if(lessonNumber===157)return lessonOneHundredFiftySevenOpening;
   return baseOpeningForLesson(lessonNumber);
 }
 
@@ -25,5 +28,6 @@ export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   if(lessonNumber===154)return <MeanPercentReviewPlayer key="lesson-154"/>;
   if(lessonNumber===155)return <ControlNineRehearsalPlayer key="lesson-155"/>;
   if(lessonNumber===156)return <ControlWorkNineGuard key="lesson-156"/>;
+  if(lessonNumber===157)return <NaturalNumberCourseReviewPlayer key="lesson-157"/>;
   return baseRuntimeForLesson(lessonNumber);
 }
