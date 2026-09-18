@@ -23,8 +23,10 @@ import {lessonOneHundredSixtyTwoOpening} from './LessonOneHundredSixtyTwoOpening
 import {PercentCourseReviewPlayer} from './PercentCourseReviewPlayer';
 import {lessonOneHundredSixtyThreeOpening} from './LessonOneHundredSixtyThreeOpening';
 import {AdvancedPercentReviewPlayer} from './AdvancedPercentReviewPlayer';
+import {lessonOneHundredSixtyFourOpening} from './LessonOneHundredSixtyFourOpening';
+import {PolygonPerimeterReviewPlayer} from './PolygonPerimeterReviewPlayer';
 
-export const LATEST_READY_LESSON=163;
+export const LATEST_READY_LESSON=164;
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{
   if(lessonNumber===153)return lessonOneHundredFiftyThreeOpening;
@@ -38,6 +40,7 @@ export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null
   if(lessonNumber===161)return lessonOneHundredSixtyOneOpening;
   if(lessonNumber===162)return lessonOneHundredSixtyTwoOpening;
   if(lessonNumber===163)return lessonOneHundredSixtyThreeOpening;
+  if(lessonNumber===164)return lessonOneHundredSixtyFourOpening;
   return baseOpeningForLesson(lessonNumber);
 }
 
@@ -53,5 +56,6 @@ export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   if(lessonNumber===161)return <DecimalMultiplicationDivisionReviewPlayer key="lesson-161"/>;
   if(lessonNumber===162)return <PercentCourseReviewPlayer key="lesson-162"/>;
   if(lessonNumber===163)return <AdvancedPercentReviewPlayer key="lesson-163"/>;
+  if(lessonNumber===164)return <PolygonPerimeterReviewPlayer key="lesson-164"/>;
   return baseRuntimeForLesson(lessonNumber);
 }
