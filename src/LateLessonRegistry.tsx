@@ -19,8 +19,10 @@ import {lessonOneHundredSixtyOpening} from './LessonOneHundredSixtyOpening';
 import {DecimalAdditionSubtractionReviewPlayer} from './DecimalAdditionSubtractionReviewPlayer';
 import {lessonOneHundredSixtyOneOpening} from './LessonOneHundredSixtyOneOpening';
 import {DecimalMultiplicationDivisionReviewPlayer} from './DecimalMultiplicationDivisionReviewPlayer';
+import {lessonOneHundredSixtyTwoOpening} from './LessonOneHundredSixtyTwoOpening';
+import {PercentCourseReviewPlayer} from './PercentCourseReviewPlayer';
 
-export const LATEST_READY_LESSON=161;
+export const LATEST_READY_LESSON=162;
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{
   if(lessonNumber===153)return lessonOneHundredFiftyThreeOpening;
@@ -32,6 +34,7 @@ export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null
   if(lessonNumber===159)return lessonOneHundredFiftyNineOpening;
   if(lessonNumber===160)return lessonOneHundredSixtyOpening;
   if(lessonNumber===161)return lessonOneHundredSixtyOneOpening;
+  if(lessonNumber===162)return lessonOneHundredSixtyTwoOpening;
   return baseOpeningForLesson(lessonNumber);
 }
 
@@ -45,5 +48,6 @@ export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   if(lessonNumber===159)return <CommonFractionsReviewPlayer key="lesson-159"/>;
   if(lessonNumber===160)return <DecimalAdditionSubtractionReviewPlayer key="lesson-160"/>;
   if(lessonNumber===161)return <DecimalMultiplicationDivisionReviewPlayer key="lesson-161"/>;
+  if(lessonNumber===162)return <PercentCourseReviewPlayer key="lesson-162"/>;
   return baseRuntimeForLesson(lessonNumber);
 }
