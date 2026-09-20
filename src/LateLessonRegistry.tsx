@@ -45,8 +45,10 @@ import {lessonOneHundredSeventyThreeOpening} from './LessonOneHundredSeventyThre
 import {CourseDiagnosticReviewPlayer} from './CourseDiagnosticReviewPlayer';
 import {lessonOneHundredSeventyFourOpening} from './LessonOneHundredSeventyFourOpening';
 import {FinalControlRehearsalPlayer} from './FinalControlRehearsalPlayer';
+import {lessonOneHundredSeventyFiveOpening} from './LessonOneHundredSeventyFiveOpening';
+import {FinalCourseControlGuard} from './FinalCourseControlGuard';
 
-export const LATEST_READY_LESSON=174;
+export const LATEST_READY_LESSON=175;
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{
   if(lessonNumber===153)return lessonOneHundredFiftyThreeOpening;
@@ -62,7 +64,7 @@ export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null
   if(lessonNumber===163)return lessonOneHundredSixtyThreeOpening;
   if(lessonNumber===164)return lessonOneHundredSixtyFourOpening;
   if(lessonNumber===165)return lessonOneHundredSixtyFiveOpening;
-  if(lessonNumber===166)return lessonOneHundredSixtySixOpening;
+  if(lessonNumber===166)return lessonOneHundredSiSixOpening;
   if(lessonNumber===167)return lessonOneHundredSixtySevenOpening;
   if(lessonNumber===168)return lessonOneHundredSixtyEightOpening;
   if(lessonNumber===169)return lessonOneHundredSixtyNineOpening;
@@ -71,6 +73,7 @@ export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null
   if(lessonNumber===172)return lessonOneHundredSeventyTwoOpening;
   if(lessonNumber===173)return lessonOneHundredSeventyThreeOpening;
   if(lessonNumber===174)return lessonOneHundredSeventyFourOpening;
+  if(lessonNumber===175)return lessonOneHundredSeventyFiveOpening;
   return baseOpeningForLesson(lessonNumber);
 }
 
@@ -97,5 +100,6 @@ export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   if(lessonNumber===172)return <ExpressionsFormulasEquationsReviewPlayer key="lesson-172"/>;
   if(lessonNumber===173)return <CourseDiagnosticReviewPlayer key="lesson-173"/>;
   if(lessonNumber===174)return <FinalControlRehearsalPlayer key="lesson-174"/>;
+  if(lessonNumber===175)return <FinalCourseControlGuard key="lesson-175"/>;
   return baseRuntimeForLesson(lessonNumber);
 }
