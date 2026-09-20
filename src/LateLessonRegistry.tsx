@@ -56,7 +56,7 @@ export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null
   if(lessonNumber===163)return lessonOneHundredSixtyThreeOpening;
   if(lessonNumber===164)return lessonOneHundredSixtyFourOpening;
   if(lessonNumber===165)return lessonOneHundredSixtyFiveOpening;
-  if(lessonNumber===166)return lessonOneHundredSiSixOpening;
+  if(lessonNumber===166)return lessonOneHundredSixtySixOpening;
   if(lessonNumber===167)return lessonOneHundredSixtySevenOpening;
   if(lessonNumber===168)return lessonOneHundredSixtyEightOpening;
   if(lessonNumber===169)return lessonOneHundredSixtyNineOpening;
