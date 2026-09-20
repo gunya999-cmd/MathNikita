@@ -41,8 +41,10 @@ import {lessonOneHundredSeventyOneOpening} from './LessonOneHundredSeventyOneOpe
 import {FinalTextProblemReviewPlayer} from './FinalTextProblemReviewPlayer';
 import {lessonOneHundredSeventyTwoOpening} from './LessonOneHundredSeventyTwoOpening';
 import {ExpressionsFormulasEquationsReviewPlayer} from './ExpressionsFormulasEquationsReviewPlayer';
+import {lessonOneHundredSeventyThreeOpening} from './LessonOneHundredSeventyThreeOpening';
+import {CourseDiagnosticReviewPlayer} from './CourseDiagnosticReviewPlayer';
 
-export const LATEST_READY_LESSON=172;
+export const LATEST_READY_LESSON=173;
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{
   if(lessonNumber===153)return lessonOneHundredFiftyThreeOpening;
@@ -65,6 +67,7 @@ export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null
   if(lessonNumber===170)return lessonOneHundredSeventyOpening;
   if(lessonNumber===171)return lessonOneHundredSeventyOneOpening;
   if(lessonNumber===172)return lessonOneHundredSeventyTwoOpening;
+  if(lessonNumber===173)return lessonOneHundredSeventyThreeOpening;
   return baseOpeningForLesson(lessonNumber);
 }
 
@@ -89,5 +92,6 @@ export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   if(lessonNumber===170)return <MultiStepTextProblemReviewPlayer key="lesson-170"/>;
   if(lessonNumber===171)return <FinalTextProblemReviewPlayer key="lesson-171"/>;
   if(lessonNumber===172)return <ExpressionsFormulasEquationsReviewPlayer key="lesson-172"/>;
+  if(lessonNumber===173)return <CourseDiagnosticReviewPlayer key="lesson-173"/>;
   return baseRuntimeForLesson(lessonNumber);
 }
