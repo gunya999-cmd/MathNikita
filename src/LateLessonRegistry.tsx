@@ -33,8 +33,10 @@ import {lessonOneHundredSixtySevenOpening} from './LessonOneHundredSixtySevenOpe
 import {CombinatorialReviewPlayer} from './CombinatorialReviewPlayer';
 import {lessonOneHundredSixtyEightOpening} from './LessonOneHundredSixtyEightOpening';
 import {AdvancedCombinatorialReviewPlayer} from './AdvancedCombinatorialReviewPlayer';
+import {lessonOneHundredSixtyNineOpening} from './LessonOneHundredSixtyNineOpening';
+import {TextProblemModelingReviewPlayer} from './TextProblemModelingReviewPlayer';
 
-export const LATEST_READY_LESSON=168;
+export const LATEST_READY_LESSON=169;
 
 export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null{
   if(lessonNumber===153)return lessonOneHundredFiftyThreeOpening;
@@ -53,6 +55,7 @@ export function lateOpeningForLesson(lessonNumber:number):LessonOpeningData|null
   if(lessonNumber===166)return lessonOneHundredSixtySixOpening;
   if(lessonNumber===167)return lessonOneHundredSixtySevenOpening;
   if(lessonNumber===168)return lessonOneHundredSixtyEightOpening;
+  if(lessonNumber===169)return lessonOneHundredSixtyNineOpening;
   return baseOpeningForLesson(lessonNumber);
 }
 
@@ -73,5 +76,6 @@ export function lateRuntimeForLesson(lessonNumber:number):ReactNode|null{
   if(lessonNumber===166)return <AngleMeasurementReviewPlayer key="lesson-166"/>;
   if(lessonNumber===167)return <CombinatorialReviewPlayer key="lesson-167"/>;
   if(lessonNumber===168)return <AdvancedCombinatorialReviewPlayer key="lesson-168"/>;
+  if(lessonNumber===169)return <TextProblemModelingReviewPlayer key="lesson-169"/>;
   return baseRuntimeForLesson(lessonNumber);
 }
