@@ -32,7 +32,9 @@ export function nextBossAfter(lessonNumber:number){
 
 export function bossReadiness(snapshot:DashboardSnapshot,bossNumber:number){
   const boss=yearLessonByNumber.get(bossNumber);if(!boss)return 0;
-  const unitRows=snapshot.lessons.filter(row=>yearLessonByNumber.get(row.lessonNumber)?.unit===boss.unit&&row.lessonNumber<bossNumber);
+  const unitRows=boss.lessonType==='final'
+    ?snapshot.lessons.filter(row=>row.lessonNumber>=157&&row.lessonNumber<bossNumber)
+    :snapshot.lessons.filter(row=>yearLessonByNumber.get(row.lessonNumber)?.unit===boss.unit&&row.lessonNumber<bossNumber);
   if(!unitRows.length)return 0;
   const completed=unitRows.filter(row=>row.completed);
   const completion=completed.length/unitRows.length*70;
