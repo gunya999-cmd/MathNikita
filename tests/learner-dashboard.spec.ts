@@ -31,16 +31,22 @@ async function seedDashboard(page:Page){
   });
 }
 
-test('student dashboard makes the 175-lesson path, quality and motivation immediately understandable',async({page})=>{
+test('student dashboard turns progress into a living 175-lesson math world',async({page})=>{
   await seedDashboard(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  await expect(page.getByText('Мой путь по математике')).toBeVisible();
+  await expect(page.getByText('Мой математический мир').first()).toBeVisible();
   await expect(page.locator('.sdv3-progress-number')).toContainText('2');
   await expect(page.locator('.sdv3-progress-number')).toContainText('/ 175 уроков');
   await expect(page.getByText('Урок 7',{exact:true}).first()).toBeVisible();
+  await expect(page.locator('.sdv3-tim')).toContainText('TIM');
+  await expect(page.getByRole('heading',{name:'Твой мир растёт от знаний'})).toBeVisible();
+  await expect(page.locator('.sdv3-world-path article')).toHaveCount(7);
+  await expect(page.getByText('Город чисел',{exact:true}).first()).toBeVisible();
+  await expect(page.getByText('Архипелаг дробей',{exact:true})).toBeVisible();
+  await expect(page.locator('.sdv3-artifacts')).toContainText('Коллекция артефактов');
   await expect(page.getByRole('heading',{name:'Миссия недели'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Математический мир'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/Boss Level · №20/})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Мои математические силы'})).toBeVisible();
   await expect(page.getByRole('heading',{name:'Все 175 уроков'})).toBeVisible();
   await expect(page.locator('.sdv3-lesson-node')).toHaveCount(175);
@@ -50,8 +56,27 @@ test('student dashboard makes the 175-lesson path, quality and motivation immedi
   await expect(detail).toContainText('90%');
   await expect(detail).toContainText('Ошибки');
   await expect(detail.getByRole('button',{name:/Открыть урок для повторения/})).toBeVisible();
+  await page.getByRole('button',{name:/Урок 20:/}).click();
+  await expect(detail).toContainText('BOSS LEVEL');
+  await detail.getByRole('button',{name:/Войти в Boss Level/}).click();
+  const boss=page.getByRole('dialog',{name:'Boss Level 20'});
+  await expect(boss).toBeVisible();
+  await expect(boss).toContainText('Награда за победу');
+  await expect(boss).toContainText('Компас чисел');
+  await boss.getByRole('button',{name:'Закрыть'}).click();
   await page.getByText('Подробная статистика').click();
   await expect(page.locator('.sdv3-details span').first()).toContainText('Экран');
+});
+
+test('student receives an unlock celebration only for new progress',async({page})=>{
+  await seedDashboard(page);
+  await page.addInitScript(()=>localStorage.setItem('mathnikita:student-wow:v1',JSON.stringify({seenCompleted:5})));
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:'Кабинет'}).click();
+  const celebration=page.getByRole('dialog',{name:/НОВАЯ ТЕРРИТОРИЯ|BOSS ПОБЕЖДЁН/});
+  await expect(celebration).toBeVisible();
+  await celebration.getByRole('button',{name:'Забрать открытие'}).click();
+  await expect(celebration).toBeHidden();
 });
 
 test('parent dashboard shows KPI, recovered errors and compares the same seven-day window',async({page})=>{
