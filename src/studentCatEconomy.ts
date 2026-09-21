@@ -29,6 +29,7 @@ type StoredEconomy={
   version:1;
   purchases:Record<string,Purchase>;
   equipped:Partial<Record<PythagorasCategory,string>>;
+  seenEarnedCoins?:number;
   updatedAt?:string;
 };
 
@@ -83,11 +84,11 @@ export function loadPythagorasState():StoredEconomy{
   return emptyState();
 }
 
-function savePythagorasState(state:StoredEconomy){
+function savePythagorasState(state:StoredEconomy,notify=true){
   if(typeof localStorage==='undefined')return;
   state.updatedAt=new Date().toISOString();
   localStorage.setItem(PYTHAGORAS_ECONOMY_KEY,JSON.stringify(state));
-  if(typeof window!=='undefined')window.dispatchEvent(new CustomEvent(PYTHAGORAS_UPDATED_EVENT));
+  if(notify&&typeof window!=='undefined')window.dispatchEvent(new CustomEvent(PYTHAGORAS_UPDATED_EVENT));
 }
 
 function isControlLesson(row:LessonAnalyticsRow){
@@ -134,6 +135,16 @@ export function buildPythagorasEconomy(snapshot:DashboardSnapshot):PythagorasEco
   const stage=pythagorasStageForLessons(snapshot.completedLessons);
   const nextStage=stages.find(item=>item.id===stage.id+1)??null;
   return{earnedCoins,spentCoins,balance:Math.max(0,earnedCoins-spentCoins),stage,nextStage,purchased:new Set(Object.keys(state.purchases)),equipped:state.equipped,topicBonuses};
+}
+
+export function consumePythagorasCoinReward(snapshot:DashboardSnapshot){
+  const economy=buildPythagorasEconomy(snapshot);const state=loadPythagorasState();
+  if(typeof state.seenEarnedCoins!=='number'){
+    state.seenEarnedCoins=economy.earnedCoins;savePythagorasState(state,false);return 0;
+  }
+  const delta=Math.max(0,economy.earnedCoins-state.seenEarnedCoins);
+  if(delta>0){state.seenEarnedCoins=economy.earnedCoins;savePythagorasState(state,false)}
+  return delta;
 }
 
 export function nextPythagorasTarget(snapshot:DashboardSnapshot){
