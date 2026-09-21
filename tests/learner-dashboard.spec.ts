@@ -51,7 +51,7 @@ test('student dashboard makes the 175-lesson path, quality and motivation immedi
   await expect(detail).toContainText('Ошибки');
   await expect(detail.getByRole('button',{name:/Открыть урок для повторения/})).toBeVisible();
   await page.getByText('Подробная статистика').click();
-  await expect(page.getByText('Экран',{exact:true})).toBeVisible();
+  await expect(page.locator('.sdv3-details span').first()).toContainText('Экран');
 });
 
 test('parent dashboard shows KPI, recovered errors and compares the same seven-day window',async({page})=>{
