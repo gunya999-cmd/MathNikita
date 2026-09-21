@@ -68,13 +68,21 @@ test('student dashboard turns progress into a living 175-lesson math world',asyn
   await expect(page.locator('.sdv3-details span').first()).toContainText('Экран');
 });
 
-test('student receives an unlock celebration only for new progress',async({page})=>{
+test('student receives an unlock celebration only for a meaningful boss milestone',async({page})=>{
   await seedDashboard(page);
-  await page.addInitScript(()=>localStorage.setItem('mathnikita:student-wow:v1',JSON.stringify({seenCompleted:5})));
+  await page.addInitScript(()=>{
+    const at=new Date().toISOString();
+    const store=JSON.parse(localStorage.getItem('mathnikita:student-analytics:v1')??'null');
+    store.lessons['20']={lessonNumber:20,sessions:1,screenSeconds:1200,focusSeconds:1120,activeSeconds:1080,correct:18,wrong:2,firstTryCorrect:16,recoveredErrors:2,hints:0,mentorActions:0,narrationPlays:0,practiceCorrect:0,practiceWrong:0,completedAt:at,firstSeenAt:at,lastSeenAt:at};
+    localStorage.setItem('mathnikita:student-analytics:v1',JSON.stringify(store));
+    localStorage.setItem('mathnikita:lesson-complete:20',JSON.stringify({completedAt:at,activeSeconds:1080}));
+    localStorage.setItem('mathnikita:student-wow:v1',JSON.stringify({seenCompleted:19}));
+  });
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  const celebration=page.getByRole('dialog',{name:/НОВАЯ ТЕРРИТОРИЯ|BOSS ПОБЕЖДЁН/});
+  const celebration=page.getByRole('dialog',{name:'BOSS ПОБЕЖДЁН'});
   await expect(celebration).toBeVisible();
+  await expect(celebration).toContainText('Контрольная работа № 1');
   await celebration.getByRole('button',{name:'Забрать открытие'}).click();
   await expect(celebration).toBeHidden();
 });
