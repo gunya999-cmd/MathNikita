@@ -1,0 +1,51 @@
+name: Student dashboard certification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/LearnerDashboard.tsx'
+      - 'src/StudentDashboardV3.tsx'
+      - 'src/ParentDashboardV3.tsx'
+      - 'src/studentDashboardV3.css'
+      - 'src/studentAnalytics.ts'
+      - 'src/dashboardKpi.ts'
+      - 'tests/learner-dashboard.spec.ts'
+      - 'tests/learner-dashboard-ipad.spec.ts'
+      - '.github/workflows/student-dashboard.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/LearnerDashboard.tsx'
+      - 'src/StudentDashboardV3.tsx'
+      - 'src/ParentDashboardV3.tsx'
+      - 'src/studentDashboardV3.css'
+      - 'tests/learner-dashboard.spec.ts'
+      - 'tests/learner-dashboard-ipad.spec.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    name: Student and parent dashboard regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Build application
+        run: npm run build
+      - name: Install Chromium and WebKit
+        run: npx playwright install --with-deps chromium webkit
+      - name: Certify student dashboard and parent analytics in Chromium
+        run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Certify student dashboard on iPad WebKit
+        run: npx playwright test tests/learner-dashboard-ipad.spec.ts --workers=1
