@@ -19,5 +19,5 @@ function useSnapshot(){
 
 export function LearnerDashboard({mode,state,onContinue}:Props){
   const snapshot=useSnapshot();
-  return mode==='student'?<StudentDashboardV4 snapshot={snapshot} onContinue={onContinue}/>:<ParentDashboardV3 snapshot={snapshot} state={state}/>;
+  return mode==='student'?<StudentDashboardV4 snapshot={snapshot} state={state} onContinue={onContinue}/>:<ParentDashboardV3 snapshot={snapshot} state={state}/>;
 }

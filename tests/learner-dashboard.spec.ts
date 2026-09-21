@@ -14,6 +14,24 @@ async function seedDashboard(page:Page){
     localStorage.setItem('mathnikita:lesson-complete:6',JSON.stringify({completedAt:yesterday.toISOString(),activeSeconds:2100}));
     localStorage.setItem('mathnikita:lesson-timing:5:v1',JSON.stringify({version:1,activeSeconds:1900,sessions:2,updatedAt:before.toISOString()}));
     localStorage.setItem('mathnikita:lesson-timing:6:v1',JSON.stringify({version:1,activeSeconds:2200,sessions:2,updatedAt:yesterday.toISOString()}));
+    localStorage.setItem('math-course-state-v3',JSON.stringify({
+      version:3,diagnosticDone:true,currentLessonIndex:6,currentSessionTaskIds:['d-ar-1'],currentTaskIndex:0,xp:140,completedSessions:4,completedTaskIds:[],
+      skills:{
+        arithmetic:{mastery:82,attempts:4,correct:4,firstTryCorrect:3,streak:4,hintUses:0,needsReview:false,lastSeenLesson:6},
+        expressions:{mastery:67,attempts:3,correct:2,firstTryCorrect:2,streak:1,hintUses:0,needsReview:false,lastSeenLesson:5},
+        wordProblems:{mastery:73,attempts:3,correct:3,firstTryCorrect:2,streak:3,hintUses:1,needsReview:false,lastSeenLesson:6},
+        fractions:{mastery:76,attempts:4,correct:4,firstTryCorrect:3,streak:4,hintUses:0,needsReview:false,lastSeenLesson:6},
+        geometry:{mastery:54,attempts:2,correct:1,firstTryCorrect:1,streak:0,hintUses:1,needsReview:true,lastSeenLesson:4},
+        logic:{mastery:62,attempts:2,correct:2,firstTryCorrect:1,streak:2,hintUses:0,needsReview:false,lastSeenLesson:5},
+        combinatorics:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0}
+      },
+      attempts:[
+        {taskId:'a1',skill:'fractions',correct:true,firstTry:true,usedHint:false,atLesson:5,createdAt:before.toISOString()},
+        {taskId:'a2',skill:'fractions',correct:true,firstTry:false,usedHint:false,atLesson:6,createdAt:yesterday.toISOString()},
+        {taskId:'a3',skill:'arithmetic',correct:true,firstTry:true,usedHint:false,atLesson:6,createdAt:yesterday.toISOString()},
+        {taskId:'a4',skill:'wordProblems',correct:true,firstTry:false,usedHint:true,atLesson:6,createdAt:yesterday.toISOString()}
+      ]
+    }));
     localStorage.setItem('mathnikita:student-analytics:v1',JSON.stringify({version:1,lessons:{
       '5':{lessonNumber:5,sessions:2,screenSeconds:2000,focusSeconds:1750,activeSeconds:1650,correct:16,wrong:4,firstTryCorrect:13,recoveredErrors:3,hints:2,mentorActions:3,narrationPlays:4,practiceCorrect:10,practiceWrong:2,completedAt:before.toISOString(),firstSeenAt:before.toISOString(),lastSeenAt:before.toISOString()},
       '6':{lessonNumber:6,sessions:2,screenSeconds:2400,focusSeconds:2150,activeSeconds:2000,correct:18,wrong:2,firstTryCorrect:16,recoveredErrors:2,hints:1,mentorActions:2,narrationPlays:3,practiceCorrect:12,practiceWrong:1,completedAt:yesterday.toISOString(),firstSeenAt:yesterday.toISOString(),lastSeenAt:yesterday.toISOString()},
@@ -25,36 +43,39 @@ async function seedDashboard(page:Page){
       [key(yesterday)]:{screenSeconds:2400,focusSeconds:2150,activeSeconds:2000,correct:18,wrong:2,completedLessons:1},
       [key(now)]:{screenSeconds:900,focusSeconds:820,activeSeconds:760,correct:5,wrong:0,completedLessons:0}
     },events:[
-      {id:'wrong-1',at:new Date(yesterday.getTime()-60_000).toISOString(),lessonNumber:6,type:'answer_wrong',area:'practice',key:'practice:l6-source-47',label:'Построй отрезок 6 см 3 мм'},
-      {id:'correct-1',at:yesterday.toISOString(),lessonNumber:6,type:'answer_correct',area:'practice',key:'practice:l6-source-47',label:'Построй отрезок 6 см 3 мм',recovered:true}
+      {id:'wrong-1',at:new Date(yesterday.getTime()-120_000).toISOString(),lessonNumber:6,type:'answer_wrong',area:'practice',key:'practice:l6-source-47',label:'Построй отрезок 6 см 3 мм'},
+      {id:'correct-1',at:new Date(yesterday.getTime()-60_000).toISOString(),lessonNumber:6,type:'answer_correct',area:'practice',key:'practice:l6-source-47',label:'Построй отрезок 6 см 3 мм',recovered:true},
+      {id:'correct-2',at:yesterday.toISOString(),lessonNumber:6,type:'answer_correct',area:'practice',key:'practice:l6-source-48',label:'Следующая задача'}
     ]}));
   });
 }
 
-test('student dashboard v4 keeps the next lesson and real progress in focus',async({page})=>{
+test('student dashboard matches the focused reference structure and uses real progress',async({page})=>{
   await seedDashboard(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  await expect(page.getByRole('heading',{name:'Твой курс'})).toBeVisible();
-  await expect(page.locator('.sdv4-course-number')).toContainText('2');
-  await expect(page.locator('.sdv4-course-number')).toContainText('/ 175');
+  await expect(page.getByText('Сегодня',{exact:true})).toBeVisible();
   await expect(page.getByText('Урок 7',{exact:true})).toBeVisible();
-  await expect(page.getByRole('button',{name:/Продолжить урок/})).toBeVisible();
-  await expect(page.getByText('Твой прогресс',{exact:true})).toBeVisible();
-  await expect(page.getByText('Пифагор растёт вместе с тобой')).toBeVisible();
-  await expect(page.locator('.sdv4-growth-grid')).toContainText('Исправлено ошибок');
-  await expect(page.locator('.sdv4-growth-grid')).toContainText('5');
-  await expect(page.getByText(/Все уроки и подробный прогресс/)).toBeVisible();
+  await expect(page.getByRole('button',{name:/Продолжить/})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Мой рост'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Твой маршрут'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Мои навыки'})).toBeVisible();
+  await expect(page.locator('.sdv4-growth-cards')).toContainText('Дроби');
+  await expect(page.locator('.sdv4-growth-cards')).toContainText('76%');
+  await expect(page.locator('.sdv4-motivation')).toContainText('2 подряд');
+  await expect(page.locator('.sdv4-motivation')).toContainText('правильных ответов без ошибки');
+  await expect(page.locator('.sdv4-route-track article')).toHaveCount(6);
+  const sizes=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth}));
+  expect(sizes.scrollWidth-sizes.clientWidth).toBeLessThanOrEqual(2);
 });
 
-test('student dashboard keeps the full 175-lesson course behind one disclosure',async({page})=>{
+test('student dashboard keeps the full 175-lesson course one action away',async({page})=>{
   await seedDashboard(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  const details=page.locator('.sdv4-all-lessons');
-  await expect(details).not.toHaveAttribute('open','');
-  await page.getByText('Все уроки и подробный прогресс').click();
-  await expect(details).toHaveAttribute('open','');
+  await expect(page.locator('.sdv4-course-list')).toHaveCount(0);
+  await page.getByRole('button',{name:/Весь курс/}).click();
+  await expect(page.locator('.sdv4-course-list')).toBeVisible();
   await expect(page.locator('.sdv4-lesson')).toHaveCount(175);
 });
 
