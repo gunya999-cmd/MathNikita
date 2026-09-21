@@ -31,60 +31,31 @@ async function seedDashboard(page:Page){
   });
 }
 
-test('student dashboard turns progress into a living 175-lesson math world',async({page})=>{
+test('student dashboard v4 keeps the next lesson and real progress in focus',async({page})=>{
   await seedDashboard(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  await expect(page.getByText('Мой математический мир').first()).toBeVisible();
-  await expect(page.locator('.sdv3-progress-number')).toContainText('2');
-  await expect(page.locator('.sdv3-progress-number')).toContainText('/ 175 уроков');
-  await expect(page.getByText('Урок 7',{exact:true}).first()).toBeVisible();
-  await expect(page.locator('.sdv3-tim')).toContainText('TIM');
-  await expect(page.getByRole('heading',{name:'Твой мир растёт от знаний'})).toBeVisible();
-  await expect(page.locator('.sdv3-world-path article')).toHaveCount(7);
-  await expect(page.getByText('Город чисел',{exact:true}).first()).toBeVisible();
-  await expect(page.getByText('Архипелаг дробей',{exact:true})).toBeVisible();
-  await expect(page.locator('.sdv3-artifacts')).toContainText('Коллекция артефактов');
-  await expect(page.getByRole('heading',{name:'Миссия недели'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:/Boss Level · №20/})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Мои математические силы'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Все 175 уроков'})).toBeVisible();
-  await expect(page.locator('.sdv3-lesson-node')).toHaveCount(175);
-  await page.getByRole('button',{name:/Урок 6:/}).click();
-  const detail=page.locator('.sdv3-lesson-detail');
-  await expect(detail).toContainText('Урок 6');
-  await expect(detail).toContainText('90%');
-  await expect(detail).toContainText('Ошибки');
-  await expect(detail.getByRole('button',{name:/Открыть урок для повторения/})).toBeVisible();
-  await page.getByRole('button',{name:/Урок 20:/}).click();
-  await expect(detail).toContainText('BOSS LEVEL');
-  await detail.getByRole('button',{name:/Войти в Boss Level/}).click();
-  const boss=page.getByRole('dialog',{name:'Boss Level 20'});
-  await expect(boss).toBeVisible();
-  await expect(boss).toContainText('Награда за победу');
-  await expect(boss).toContainText('Компас чисел');
-  await boss.getByRole('button',{name:'Закрыть'}).click();
-  await page.getByText('Подробная статистика').click();
-  await expect(page.locator('.sdv3-details span').first()).toContainText('Экран');
+  await expect(page.getByRole('heading',{name:'Твой курс'})).toBeVisible();
+  await expect(page.locator('.sdv4-course-number')).toContainText('2');
+  await expect(page.locator('.sdv4-course-number')).toContainText('/ 175');
+  await expect(page.getByText('Урок 7',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:/Продолжить урок/})).toBeVisible();
+  await expect(page.getByText('Твой прогресс',{exact:true})).toBeVisible();
+  await expect(page.getByText('Пифагор растёт вместе с тобой')).toBeVisible();
+  await expect(page.locator('.sdv4-growth-grid')).toContainText('Исправлено ошибок');
+  await expect(page.locator('.sdv4-growth-grid')).toContainText('5');
+  await expect(page.getByText(/Все уроки и подробный прогресс/)).toBeVisible();
 });
 
-test('student receives an unlock celebration only for a meaningful boss milestone',async({page})=>{
+test('student dashboard keeps the full 175-lesson course behind one disclosure',async({page})=>{
   await seedDashboard(page);
-  await page.addInitScript(()=>{
-    const at=new Date().toISOString();
-    const store=JSON.parse(localStorage.getItem('mathnikita:student-analytics:v1')??'null');
-    store.lessons['20']={lessonNumber:20,sessions:1,screenSeconds:1200,focusSeconds:1120,activeSeconds:1080,correct:18,wrong:2,firstTryCorrect:16,recoveredErrors:2,hints:0,mentorActions:0,narrationPlays:0,practiceCorrect:0,practiceWrong:0,completedAt:at,firstSeenAt:at,lastSeenAt:at};
-    localStorage.setItem('mathnikita:student-analytics:v1',JSON.stringify(store));
-    localStorage.setItem('mathnikita:lesson-complete:20',JSON.stringify({completedAt:at,activeSeconds:1080}));
-    localStorage.setItem('mathnikita:student-wow:v1',JSON.stringify({seenCompleted:19}));
-  });
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  const celebration=page.getByRole('dialog',{name:'BOSS ПОБЕЖДЁН'});
-  await expect(celebration).toBeVisible();
-  await expect(celebration).toContainText('Контрольная работа № 1');
-  await celebration.getByRole('button',{name:'Забрать открытие'}).click();
-  await expect(celebration).toBeHidden();
+  const details=page.locator('.sdv4-all-lessons');
+  await expect(details).not.toHaveAttribute('open','');
+  await page.getByText('Все уроки и подробный прогресс').click();
+  await expect(details).toHaveAttribute('open','');
+  await expect(page.locator('.sdv4-lesson')).toHaveCount(175);
 });
 
 test('parent dashboard shows KPI, recovered errors and compares the same seven-day window',async({page})=>{
