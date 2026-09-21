@@ -31,22 +31,27 @@ async function seedDashboard(page:Page){
   });
 }
 
-test('student dashboard leads with next action and uses an evidence-based KPI instead of speed',async({page})=>{
+test('student dashboard makes the 175-lesson path, quality and motivation immediately understandable',async({page})=>{
   await seedDashboard(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
-  await expect(page.getByRole('heading',{name:'Продолжим с урока 7'})).toBeVisible();
-  await expect(page.getByText('Учебный KPI',{exact:true}).first()).toBeVisible();
-  await expect(page.getByText(/Время и скорость в оценку не входят/)).toBeVisible();
-  await expect(page.getByText('С первой попытки').first()).toBeVisible();
-  await expect(page.getByText('Самостоятельность').first()).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Где ты сейчас'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Что получается и что подтянуть'})).toBeVisible();
-  await expect(page.getByText('Подробная статистика')).toBeVisible();
+  await expect(page.getByText('Мой путь по математике')).toBeVisible();
+  await expect(page.locator('.sdv3-progress-number')).toContainText('2');
+  await expect(page.locator('.sdv3-progress-number')).toContainText('/ 175 уроков');
+  await expect(page.getByText('Урок 7',{exact:true}).first()).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Миссия недели'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Математический мир'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Мои математические силы'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Все 175 уроков'})).toBeVisible();
+  await expect(page.locator('.sdv3-lesson-node')).toHaveCount(175);
+  await page.getByRole('button',{name:/Урок 6:/}).click();
+  const detail=page.locator('.sdv3-lesson-detail');
+  await expect(detail).toContainText('Урок 6');
+  await expect(detail).toContainText('90%');
+  await expect(detail).toContainText('Ошибки');
+  await expect(detail.getByRole('button',{name:/Открыть урок для повторения/})).toBeVisible();
   await page.getByText('Подробная статистика').click();
-  await expect(page.getByText('Время на экране')).toBeVisible();
-  await page.getByRole('button',{name:'Продолжить обучение'}).click();
-  await expect(page.getByRole('button',{name:/Открыть урок 7:/})).toBeVisible();
+  await expect(page.getByText('Экран',{exact:true})).toBeVisible();
 });
 
 test('parent dashboard shows KPI, recovered errors and compares the same seven-day window',async({page})=>{
