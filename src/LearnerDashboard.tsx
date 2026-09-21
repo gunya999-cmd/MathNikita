@@ -1,7 +1,7 @@
 import { useEffect,useState } from 'react';
 import type { LearnerState } from './learningEngine';
 import { buildDashboardSnapshot,type DashboardSnapshot } from './studentAnalytics';
-import { StudentDashboardV3 } from './StudentDashboardV3';
+import { StudentDashboardV4 } from './StudentDashboardV4';
 import { ParentDashboardV3 } from './ParentDashboardV3';
 
 type Props={mode:'student'|'parent';state:LearnerState;onContinue?:()=>void};
@@ -19,5 +19,5 @@ function useSnapshot(){
 
 export function LearnerDashboard({mode,state,onContinue}:Props){
   const snapshot=useSnapshot();
-  return mode==='student'?<StudentDashboardV3 snapshot={snapshot} state={state} onContinue={onContinue}/>:<ParentDashboardV3 snapshot={snapshot} state={state}/>;
+  return mode==='student'?<StudentDashboardV4 snapshot={snapshot} state={state} onContinue={onContinue}/>:<ParentDashboardV3 snapshot={snapshot} state={state}/>;
 }
