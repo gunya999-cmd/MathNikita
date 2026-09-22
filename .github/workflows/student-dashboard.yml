@@ -10,14 +10,20 @@ on:
       - 'src/ParentDashboardV3.tsx'
       - 'src/studentDashboardV3.css'
       - 'src/studentDashboardV4.css'
+      - 'src/adaptiveDashboard.css'
+      - 'src/ReviewTrainer.tsx'
+      - 'src/reviewTrainer.css'
+      - 'src/studentReview.ts'
       - 'src/studentAnalytics.ts'
       - 'src/studentEconomy.ts'
       - 'src/PythagorasEconomy.tsx'
       - 'src/pythagorasEconomy.css'
       - 'src/LessonCourseShell.tsx'
       - 'src/dashboardKpi.ts'
+      - 'src/App.tsx'
       - 'tests/learner-dashboard.spec.ts'
       - 'tests/learner-dashboard-ipad.spec.ts'
+      - 'tests/adaptive-dashboard.spec.ts'
       - 'tests/student-economy.spec.ts'
       - '.github/workflows/student-dashboard.yml'
   push:
@@ -29,14 +35,20 @@ on:
       - 'src/ParentDashboardV3.tsx'
       - 'src/studentDashboardV3.css'
       - 'src/studentDashboardV4.css'
+      - 'src/adaptiveDashboard.css'
+      - 'src/ReviewTrainer.tsx'
+      - 'src/reviewTrainer.css'
+      - 'src/studentReview.ts'
       - 'src/studentAnalytics.ts'
       - 'src/studentEconomy.ts'
       - 'src/PythagorasEconomy.tsx'
       - 'src/pythagorasEconomy.css'
       - 'src/LessonCourseShell.tsx'
       - 'src/dashboardKpi.ts'
+      - 'src/App.tsx'
       - 'tests/learner-dashboard.spec.ts'
       - 'tests/learner-dashboard-ipad.spec.ts'
+      - 'tests/adaptive-dashboard.spec.ts'
       - 'tests/student-economy.spec.ts'
       - '.github/workflows/student-dashboard.yml'
   workflow_dispatch:
@@ -46,7 +58,7 @@ permissions:
 
 jobs:
   certify:
-    name: Student dashboard and Pythagoras economy regression
+    name: Student dashboard, adaptive review and economy regression
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -62,7 +74,7 @@ jobs:
         run: npm run build
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
-      - name: Certify student dashboard, parent analytics and economy in Chromium
-        run: npx playwright test tests/learner-dashboard.spec.ts tests/student-economy.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Certify student dashboard, adaptive review, parent analytics and economy in Chromium
+        run: npx playwright test tests/learner-dashboard.spec.ts tests/adaptive-dashboard.spec.ts tests/student-economy.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Certify student dashboard on iPad WebKit
         run: npx playwright test tests/learner-dashboard-ipad.spec.ts --workers=1
