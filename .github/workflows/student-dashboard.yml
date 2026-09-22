@@ -11,9 +11,14 @@ on:
       - 'src/studentDashboardV3.css'
       - 'src/studentDashboardV4.css'
       - 'src/studentAnalytics.ts'
+      - 'src/studentEconomy.ts'
+      - 'src/PythagorasEconomy.tsx'
+      - 'src/pythagorasEconomy.css'
+      - 'src/LessonCourseShell.tsx'
       - 'src/dashboardKpi.ts'
       - 'tests/learner-dashboard.spec.ts'
       - 'tests/learner-dashboard-ipad.spec.ts'
+      - 'tests/student-economy.spec.ts'
       - '.github/workflows/student-dashboard.yml'
   push:
     branches: [main]
@@ -25,9 +30,14 @@ on:
       - 'src/studentDashboardV3.css'
       - 'src/studentDashboardV4.css'
       - 'src/studentAnalytics.ts'
+      - 'src/studentEconomy.ts'
+      - 'src/PythagorasEconomy.tsx'
+      - 'src/pythagorasEconomy.css'
+      - 'src/LessonCourseShell.tsx'
       - 'src/dashboardKpi.ts'
       - 'tests/learner-dashboard.spec.ts'
       - 'tests/learner-dashboard-ipad.spec.ts'
+      - 'tests/student-economy.spec.ts'
       - '.github/workflows/student-dashboard.yml'
   workflow_dispatch:
 
@@ -36,7 +46,7 @@ permissions:
 
 jobs:
   certify:
-    name: Student and parent dashboard regression
+    name: Student dashboard and Pythagoras economy regression
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -52,7 +62,7 @@ jobs:
         run: npm run build
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
-      - name: Certify student dashboard and parent analytics in Chromium
-        run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Certify student dashboard, parent analytics and economy in Chromium
+        run: npx playwright test tests/learner-dashboard.spec.ts tests/student-economy.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Certify student dashboard on iPad WebKit
         run: npx playwright test tests/learner-dashboard-ipad.spec.ts --workers=1
