@@ -1,5 +1,6 @@
 import { loadLessonTiming } from './lessonTiming';
 import { totalLessons,yearLessonByNumber,yearPlan } from './data/yearPlan';
+import { settleLessonReward } from './studentEconomy';
 
 export type AnalyticsArea='opening'|'main'|'practice';
 export type AnalyticsEventType='lesson_started'|'answer_correct'|'answer_wrong'|'hint'|'mentor_action'|'narration'|'lesson_completed';
@@ -144,6 +145,21 @@ function makeLessonTelemetry(lessonNumber:number):LessonTelemetry{
   const legacy=typeof localStorage!=='undefined'?loadLessonTiming(lessonNumber):{activeSeconds:0};
   return{lessonNumber,sessions:0,screenSeconds:Math.max(0,legacy.activeSeconds||0),focusSeconds:0,activeSeconds:0,correct:0,wrong:0,firstTryCorrect:0,recoveredErrors:0,hints:0,mentorActions:0,narrationPlays:0,practiceCorrect:0,practiceWrong:0,firstSeenAt:now,lastSeenAt:now};
 }
+function longestCorrectRun(events:AnalyticsEvent[]){
+  let current=0;let best=0;
+  for(const event of events){
+    if(event.type==='answer_correct'){current+=1;best=Math.max(best,current)}
+    else if(event.type==='answer_wrong')current=0;
+  }
+  return best;
+}
+function isTopicEnd(lessonNumber:number){
+  const index=yearPlan.findIndex(item=>item.number===lessonNumber);
+  if(index<0)return false;
+  const current=yearPlan[index];
+  const next=yearPlan.slice(index+1).find(item=>item.available);
+  return !next||next.unit!==current.unit;
+}
 
 export function loadAnalyticsStore():AnalyticsStore{
   if(typeof localStorage==='undefined')return emptyStore();
@@ -209,6 +225,18 @@ export function recordAnalyticsEvent(input:Omit<AnalyticsEvent,'id'|'at'>){
   lesson.lastSeenAt=now;
   store.events=[...store.events.slice(-(MAX_EVENTS-1)),event];
   saveAnalyticsStore(store);
+  if(input.type==='lesson_completed'){
+    const plan=yearLessonByNumber.get(input.lessonNumber);
+    settleLessonReward({
+      lessonNumber:input.lessonNumber,
+      correct:lesson.correct,
+      wrong:lesson.wrong,
+      hints:lesson.hints,
+      isControl:plan?.lessonType==='control'||plan?.lessonType==='final',
+      isTopicEnd:isTopicEnd(input.lessonNumber),
+      personalRecord:longestCorrectRun(store.events),
+    });
+  }
 }
 
 function dateFromKey(key:string){const[y,m,d]=key.split('-').map(Number);return new Date(y,m-1,d)}
