@@ -177,10 +177,10 @@ export function StudentDashboardV4({snapshot,state,onContinue,onReview}:Props){
 
       <section className="sdv4-adaptive-plan" aria-label="План на сегодня">
         <div><small>{plan.eyebrow}</small><h2>План на сегодня</h2><b>{plan.title}</b><p>{plan.detail}</p></div>
-        <div className="sdv4-plan-actions">
-          {plan.action==='review'?<button className="is-primary" type="button" onClick={startReview}>Исправить ошибки</button>:<button className="is-primary" type="button" onClick={()=>startLesson(next)}>Продолжить урок</button>}
-          {plan.action==='review'&&<button type="button" onClick={()=>startLesson(next)}>К уроку {next.lessonNumber}</button>}
-        </div>
+        {plan.action==='review'&&<div className="sdv4-plan-actions">
+          <button className="is-primary" type="button" onClick={startReview}>Исправить ошибки</button>
+          <button type="button" onClick={()=>startLesson(next)}>К уроку {next.lessonNumber}</button>
+        </div>}
       </section>
 
       <div className="sdv4-dashboard">
