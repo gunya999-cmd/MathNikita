@@ -6,8 +6,10 @@ on:
     paths:
       - 'src/LearnerDashboard.tsx'
       - 'src/StudentDashboardV3.tsx'
+      - 'src/StudentDashboardV4.tsx'
       - 'src/ParentDashboardV3.tsx'
       - 'src/studentDashboardV3.css'
+      - 'src/studentDashboardV4.css'
       - 'src/studentAnalytics.ts'
       - 'src/dashboardKpi.ts'
       - 'tests/learner-dashboard.spec.ts'
@@ -18,10 +20,15 @@ on:
     paths:
       - 'src/LearnerDashboard.tsx'
       - 'src/StudentDashboardV3.tsx'
+      - 'src/StudentDashboardV4.tsx'
       - 'src/ParentDashboardV3.tsx'
       - 'src/studentDashboardV3.css'
+      - 'src/studentDashboardV4.css'
+      - 'src/studentAnalytics.ts'
+      - 'src/dashboardKpi.ts'
       - 'tests/learner-dashboard.spec.ts'
       - 'tests/learner-dashboard-ipad.spec.ts'
+      - '.github/workflows/student-dashboard.yml'
   workflow_dispatch:
 
 permissions:
