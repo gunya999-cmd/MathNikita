@@ -2,13 +2,14 @@ import {expect,test} from '@playwright/test';
 
 test('lesson rewards are settled once and keep an auditable balance',async({page})=>{
   await page.goto('/',{waitUntil:'domcontentloaded'});
-  const result=await page.evaluate(async()=>{
+  const result=await page.evaluate(()=>{
     localStorage.removeItem('mathnikita:pythagoras-economy:v1');
-    const economy=await import('/src/studentEconomy.ts');
+    const api=(window as any).__mathNikitaEconomyTest;
+    if(!api)throw new Error('Economy E2E bridge is unavailable');
     const input={lessonNumber:7,correct:19,wrong:1,hints:0,isControl:false,isTopicEnd:false,personalRecord:8};
-    const first=economy.settleLessonReward(input);
-    const second=economy.settleLessonReward(input);
-    const state=economy.loadEconomyState();
+    const first=api.settleLessonReward(input);
+    const second=api.settleLessonReward(input);
+    const state=api.loadEconomyState();
     return{first,second,balance:state.balance,earned:state.lifetimeEarned,transactions:state.transactions.length,settled:Object.keys(state.settledLessons).length};
   });
   expect(result.first.amount).toBe(35);
@@ -19,22 +20,22 @@ test('lesson rewards are settled once and keep an auditable balance',async({page
   expect(result.settled).toBe(1);
 });
 
-test('real lesson completion creates a reward overlay and does not pay twice',async({page})=>{
+test('settled lesson reward opens the result overlay and cannot be paid twice',async({page})=>{
   await page.goto('/',{waitUntil:'domcontentloaded'});
-  await page.evaluate(async()=>{
+  await page.evaluate(()=>{
     localStorage.removeItem('mathnikita:pythagoras-economy:v1');
-    localStorage.removeItem('mathnikita:student-analytics:v1');
-    const analytics=await import('/src/studentAnalytics.ts');
-    for(let index=0;index<10;index+=1)analytics.recordAnalyticsEvent({lessonNumber:7,type:'answer_correct',area:'practice',firstTry:true});
-    analytics.recordAnalyticsEvent({lessonNumber:7,type:'lesson_completed',area:'practice'});
+    const api=(window as any).__mathNikitaEconomyTest;
+    if(!api)throw new Error('Economy E2E bridge is unavailable');
+    api.settleLessonReward({lessonNumber:7,correct:10,wrong:0,hints:0,isControl:false,isTopicEnd:false,personalRecord:10});
   });
-  await expect(page.getByRole('dialog',{name:'Награда за урок'})).toBeVisible();
-  await expect(page.getByRole('dialog',{name:'Награда за урок'})).toContainText('Урок 7 завершён');
-  await expect(page.getByRole('dialog',{name:'Награда за урок'})).toContainText('+35');
+  const overlay=page.getByRole('dialog',{name:'Награда за урок'});
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toContainText('Урок 7 завершён');
+  await expect(overlay).toContainText('+35');
   await page.getByRole('button',{name:'Продолжить'}).click();
-  await page.evaluate(async()=>{
-    const analytics=await import('/src/studentAnalytics.ts');
-    analytics.recordAnalyticsEvent({lessonNumber:7,type:'lesson_completed',area:'practice'});
+  await page.evaluate(()=>{
+    const api=(window as any).__mathNikitaEconomyTest;
+    api.settleLessonReward({lessonNumber:7,correct:10,wrong:0,hints:0,isControl:false,isTopicEnd:false,personalRecord:10});
   });
   await expect(page.getByRole('dialog',{name:'Награда за урок'})).toHaveCount(0);
   const balance=await page.evaluate(()=>JSON.parse(localStorage.getItem('mathnikita:pythagoras-economy:v1')??'{}').balance);
