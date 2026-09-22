@@ -120,13 +120,13 @@ export function LessonRewardOverlay(){
   },[]);
   const goal=useMemo(()=>PYTHAGORAS_SHOP.filter(item=>!economy.inventory.includes(item.id)&&item.price>economy.balance).sort((a,b)=>a.price-b.price)[0]??null,[economy]);
   if(!receipt)return null;
-  return <div className="py-reward-layer" role="dialog" aria-modal="true" aria-label="Награда за урок">
+  return <div className="py-reward-layer" role="dialog" aria-modal="false" aria-label="Награда за урок">
     <section className="py-reward-card">
       <small>Урок {receipt.lessonNumber} завершён</small>
       <h2>+{receipt.amount} 🪙</h2>
       <div className="py-reward-lines">{receipt.reasons.map(reason=><div key={reason.code}><span>{reason.label}</span><b>+{reason.amount}</b></div>)}</div>
       <div className="py-reward-balance"><span>Баланс</span><b>{receipt.balanceAfter} 🪙</b></div>
-      {goal&&<p>До «{goal.name}» осталось {goal.price-receipt.balanceAfter} 🪙</p>}
+      {goal&&<p>До «{goal.name}» осталось {Math.max(0,goal.price-receipt.balanceAfter)} 🪙</p>}
       <button type="button" onClick={()=>setReceipt(null)}>Продолжить</button>
     </section>
   </div>;
