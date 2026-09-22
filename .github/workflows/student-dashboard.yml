@@ -74,7 +74,11 @@ jobs:
         run: npm run build
       - name: Install Chromium and WebKit
         run: npx playwright install --with-deps chromium webkit
-      - name: Certify student dashboard, adaptive review, parent analytics and economy in Chromium
-        run: npx playwright test tests/learner-dashboard.spec.ts tests/adaptive-dashboard.spec.ts tests/student-economy.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Certify existing student dashboard and parent analytics in Chromium
+        run: npx playwright test tests/learner-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Certify adaptive error review loop in Chromium
+        run: npx playwright test tests/adaptive-dashboard.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - name: Certify Pythagoras economy in Chromium
+        run: npx playwright test tests/student-economy.spec.ts --config=playwright.desktop.config.ts --workers=1
       - name: Certify student dashboard on iPad WebKit
         run: npx playwright test tests/learner-dashboard-ipad.spec.ts --workers=1
