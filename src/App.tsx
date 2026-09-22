@@ -3,6 +3,7 @@ import { skillLabels, type CourseTask } from './data/course';
 import { totalLessons, yearPlan } from './data/yearPlan';
 import { LessonCourseShell } from './LessonCourseShell';
 import { LearnerDashboard } from './LearnerDashboard';
+import { ReviewTrainer } from './ReviewTrainer';
 import { StudentAccountGate } from './StudentAccountGate';
 import { CloudSyncBadge } from './CloudSyncBadge';
 import { CLOUD_RECONCILED_EVENT, startStudentCloudSync, syncStudentCloudNow } from './cloudStudentSync';
@@ -18,7 +19,7 @@ import {
   type LearnerState,
 } from './learningEngine';
 
-type Screen = 'learn' | 'course' | 'map' | 'progress' | 'parent';
+type Screen = 'learn' | 'course' | 'map' | 'progress' | 'parent' | 'review';
 type Feedback = 'idle' | 'correct' | 'wrong';
 
 const PROFILE_E2E_BYPASS = import.meta.env.VITE_E2E_BYPASS_PROFILE === '1';
@@ -138,7 +139,7 @@ export function App() {
           <button className={screen === 'course' ? 'active' : ''} onClick={() => setScreen('course')}>Уроки</button>
           <button className={screen === 'learn' ? 'active' : ''} onClick={() => setScreen('learn')}>Диагностика</button>
           <button className={screen === 'map' ? 'active' : ''} onClick={() => setScreen('map')}>Карта знаний</button>
-          <button className={screen === 'progress' ? 'active' : ''} onClick={() => setScreen('progress')}>Кабинет</button>
+          <button className={screen === 'progress' || screen === 'review' ? 'active' : ''} onClick={() => setScreen('progress')}>Кабинет</button>
           <button className={screen === 'parent' ? 'active' : ''} onClick={() => setScreen('parent')}>Родителям</button>
         </nav>
         <div className="topbar-profile-actions">
@@ -170,9 +171,10 @@ export function App() {
         </div>
       </main>}
 
-      {screen === 'map' && <main className="dashboard"><header><span>Карта знаний</span><h1>Курс математики 5 класса</h1><p>175 уроков по I варианту планирования Мерзляка.</p></header><div className="world-grid">{islands.map(([icon,title,count],i)=><article key={title}><i>{icon}</i><h3>{title}</h3><p>{count} уроков</p><b>{(()=>{const ready=yearPlan.filter(item=>item.available&&item.unit.includes(title)).length;return ready?`${ready} уроков готово`:'В разработке'})()}</b></article>)}</div></main>}
+      {screen === 'map' && <main className="dashboard"><header><span>Карта знаний</span><h1>Курс математики 5 класса</h1><p>175 уроков по I варианту планирования Мерзляка.</p></header><div className="world-grid">{islands.map(([icon,title,count])=><article key={title}><i>{icon}</i><h3>{title}</h3><p>{count} уроков</p><b>{(()=>{const ready=yearPlan.filter(item=>item.available&&item.unit.includes(title)).length;return ready?`${ready} уроков готово`:'В разработке'})()}</b></article>)}</div></main>}
 
-      {screen === 'progress' && <LearnerDashboard mode="student" state={state} onContinue={() => setScreen('course')}/>}      
+      {screen === 'progress' && <LearnerDashboard mode="student" state={state} onContinue={() => setScreen('course')} onReview={() => setScreen('review')}/>}      
+      {screen === 'review' && <ReviewTrainer state={state} onStateChange={setState} onExit={() => setScreen('progress')}/>}      
       {screen === 'parent' && <LearnerDashboard mode="parent" state={state}/>}      
 
       {routeBuilt && <div className="route-modal"><div><span>🎉</span><h2>Маршрут построен!</h2><p>Начинаем с урока №1.</p><button onClick={() => { setRouteBuilt(false); setScreen('course'); }}>Открыть первый урок</button></div></div>}
