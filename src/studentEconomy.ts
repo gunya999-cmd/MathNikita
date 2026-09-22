@@ -155,3 +155,7 @@ export function equipShopItem(itemId:string){
 export function getEquippedItems(state=loadEconomyState()){
   return Object.values(state.equipped).flatMap(id=>PYTHAGORAS_SHOP.filter(item=>item.id===id));
 }
+
+if(typeof window!=='undefined'&&import.meta.env.VITE_E2E_BYPASS_PROFILE==='1'){
+  (window as typeof window&{__mathNikitaEconomyTest?:{settleLessonReward:typeof settleLessonReward;loadEconomyState:typeof loadEconomyState}}).__mathNikitaEconomyTest={settleLessonReward,loadEconomyState};
+}
