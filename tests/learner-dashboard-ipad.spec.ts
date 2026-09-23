@@ -21,16 +21,20 @@ test('student dashboard keeps the focused 1+2+3+5 structure readable on iPad',as
   expect(sizes.dashboardWidth).toBeLessThanOrEqual(820);
 });
 
-test('Pythagoras wallet and shop fit iPad without horizontal overflow',async({page})=>{
+test('Pythagoras wallet, room and shop fit iPad without horizontal overflow',async({page})=>{
   await page.addInitScript(()=>{
-    localStorage.setItem('mathnikita:pythagoras-economy:v1',JSON.stringify({version:1,balance:240,lifetimeEarned:240,lifetimeSpent:0,rewardedRecordBest:0,settledLessons:{},inventory:[],equipped:{},transactions:[]}));
+    localStorage.setItem('mathnikita:pythagoras-economy:v1',JSON.stringify({version:1,balance:240,lifetimeEarned:480,lifetimeSpent:240,rewardedRecordBest:0,settledLessons:{},inventory:['glasses','desk'],equipped:{style:'glasses',room:'desk'},transactions:[]}));
   });
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Кабинет'}).click();
   await page.getByRole('button',{name:/Открыть Пифагора/}).click();
   await expect(page.getByRole('dialog',{name:'Пифагор'})).toBeVisible();
+  await expect(page.getByRole('region',{name:'Комната Пифагора'})).toBeVisible();
+  await expect(page.locator('.py-world-style')).toContainText('👓');
+  await expect(page.locator('.py-room-desk')).toContainText('🗄️');
   await expect(page.getByRole('heading',{name:'Магазин'})).toBeVisible();
-  const sizes=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,panelWidth:document.querySelector('.py-panel')?.getBoundingClientRect().width??0}));
+  const sizes=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,panelWidth:document.querySelector('.py-panel')?.getBoundingClientRect().width??0,worldWidth:document.querySelector('.py-world')?.getBoundingClientRect().width??0}));
   expect(sizes.scrollWidth-sizes.clientWidth).toBeLessThanOrEqual(2);
   expect(sizes.panelWidth).toBeLessThanOrEqual(820);
+  expect(sizes.worldWidth).toBeLessThanOrEqual(sizes.panelWidth);
 });
