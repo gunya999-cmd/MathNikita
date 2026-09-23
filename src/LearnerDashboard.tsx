@@ -5,7 +5,7 @@ import { StudentDashboardV4 } from './StudentDashboardV4';
 import { ParentDashboardV3 } from './ParentDashboardV3';
 import { PythagorasEntry } from './PythagorasEconomy';
 
-type Props={mode:'student'|'parent';state:LearnerState;onContinue?:()=>void};
+type Props={mode:'student'|'parent';state:LearnerState;onContinue?:()=>void;onReview?:()=>void};
 
 function useSnapshot(){
   const[snapshot,setSnapshot]=useState<DashboardSnapshot>(()=>buildDashboardSnapshot());
@@ -26,11 +26,11 @@ function catStage(progress:number){
   return'Котёнок';
 }
 
-export function LearnerDashboard({mode,state,onContinue}:Props){
+export function LearnerDashboard({mode,state,onContinue,onReview}:Props){
   const snapshot=useSnapshot();
   if(mode==='parent')return <ParentDashboardV3 snapshot={snapshot} state={state}/>;
   return <>
-    <StudentDashboardV4 snapshot={snapshot} state={state} onContinue={onContinue}/>
+    <StudentDashboardV4 snapshot={snapshot} state={state} onContinue={onContinue} onReview={onReview}/>
     <div className="py-floating-entry"><PythagorasEntry progress={snapshot.courseProgress} stage={catStage(snapshot.courseProgress)}/></div>
   </>;
 }

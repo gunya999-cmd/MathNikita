@@ -3,9 +3,11 @@ import {skillLabels,type SkillId} from './data/course';
 import {yearLessonByNumber} from './data/yearPlan';
 import type {LearnerState} from './learningEngine';
 import {loadAnalyticsStore,type DashboardSnapshot,type LessonAnalyticsRow} from './studentAnalytics';
+import {buildActiveErrors,saveReviewQueue} from './studentReview';
 import './studentDashboardV4.css';
+import './adaptiveDashboard.css';
 
-type Props={snapshot:DashboardSnapshot;state:LearnerState;onContinue?:()=>void};
+type Props={snapshot:DashboardSnapshot;state:LearnerState;onContinue?:()=>void;onReview?:()=>void};
 type GrowthRow={id:SkillId;label:string;current:number|null;previous:number|null;delta:number|null;recentAttempts:number;totalAttempts:number};
 type WowEvent={id:string;eyebrow:string;title:string;detail:string};
 
@@ -19,6 +21,12 @@ function pluralLessons(value:number){
   if(mod10===1&&mod100!==11)return'урок';
   if(mod10>=2&&mod10<=4&&(mod100<12||mod100>14))return'урока';
   return'уроков';
+}
+function pluralErrors(value:number){
+  const mod10=value%10;const mod100=value%100;
+  if(mod10===1&&mod100!==11)return'ошибку';
+  if(mod10>=2&&mod10<=4&&(mod100<12||mod100>14))return'ошибки';
+  return'ошибок';
 }
 function formatToday(){
   const value=new Intl.DateTimeFormat('ru-RU',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).replace(/^./,letter=>letter.toUpperCase());
@@ -89,7 +97,7 @@ function PythagorasProgress({progress}: {progress:number}){
   </div>;
 }
 
-export function StudentDashboardV4({snapshot,state,onContinue}:Props){
+export function StudentDashboardV4({snapshot,state,onContinue,onReview}:Props){
   const[showCourse,setShowCourse]=useState(false);
   const[wow,setWow]=useState<WowEvent|null>(null);
   const next=findNextLesson(snapshot);
@@ -98,6 +106,7 @@ export function StudentDashboardV4({snapshot,state,onContinue}:Props){
   const weekAccuracy=accuracyFor(last7);const previousAccuracy=accuracyFor(previous7);
   const accuracyDelta=weekAccuracy!==null&&previousAccuracy!==null?weekAccuracy-previousAccuracy:null;
   const growthRows=useMemo(()=>buildGrowthRows(state),[state]);
+  const activeErrors=useMemo(()=>buildActiveErrors(state),[state]);
   const record=useMemo(()=>longestCorrectRun(),[snapshot.correct,snapshot.wrong]);
   const nextControl=snapshot.lessons.find(row=>row.lessonNumber>=next.lessonNumber&&['control','final'].includes(yearLessonByNumber.get(row.lessonNumber)?.lessonType??''));
   const distanceToControl=nextControl?Math.max(0,nextControl.lessonNumber-next.lessonNumber):0;
@@ -110,6 +119,15 @@ export function StudentDashboardV4({snapshot,state,onContinue}:Props){
   const currentUnitRows=snapshot.lessons.filter(row=>(yearLessonByNumber.get(row.lessonNumber)?.unit??row.paragraph??'Курс')===currentUnit);
   const currentUnitCompleted=currentUnitRows.filter(row=>row.completed).length;
   const currentUnitTotal=currentUnitRows.length;
+  const weakestSkill=skills.filter(({skill})=>skill.attempts>0).sort((a,b)=>a.skill.mastery-b.skill.mastery)[0];
+  const latestAttempt=state.attempts.reduce<string|null>((latest,attempt)=>!latest||attempt.createdAt>latest?attempt.createdAt:latest,null);
+  const inactiveDays=latestAttempt?Math.max(0,Math.floor((Date.now()-new Date(latestAttempt).getTime())/DAY)):null;
+  const shouldReview=activeErrors.length>0&&((weakestSkill?.skill.mastery??100)<60||distanceToControl<=1||activeErrors.length>=3);
+  const plan=shouldReview
+    ?{eyebrow:'Приоритет',title:`Исправить ${Math.min(activeErrors.length,5)} ${pluralErrors(Math.min(activeErrors.length,5))}`,detail:distanceToControl<=1?'Перед контрольной лучше закрыть свежие ошибки.':`Самый слабый навык: ${weakestSkill?.label??skillLabels[activeErrors[0].skill]}.`,action:'review' as const}
+    :inactiveDays!==null&&inactiveDays>=3
+      ?{eyebrow:'Возвращаем ритм',title:`Продолжить с урока ${next.lessonNumber}`,detail:`Перерыв ${inactiveDays} дн. Начни с одного короткого урока.`,action:'lesson' as const}
+      :{eyebrow:'Следующий шаг',title:`Урок ${next.lessonNumber}: ${next.title}`,detail:activeErrors.length?`${activeErrors.length} ${pluralErrors(activeErrors.length)} остаются в очереди повторения.`:'Активных ошибок нет — можно двигаться дальше.',action:'lesson' as const};
   const heroSignal=accuracyDelta!==null&&weekAccuracy!==null
     ?{label:'Точность за 7 дней',value:`${weekAccuracy}%`,detail:`${accuracyDelta>0?'+':''}${accuracyDelta} п.п. к прошлой неделе`}
     :weeklyCompleted>0
@@ -132,6 +150,11 @@ export function StudentDashboardV4({snapshot,state,onContinue}:Props){
     localStorage.setItem('mathnikita-selected-lesson',String(row.lessonNumber));
     onContinue?.();
   };
+  const startReview=()=>{
+    if(!activeErrors.length)return;
+    saveReviewQueue(activeErrors.slice(0,5).map(error=>error.taskId));
+    onReview?.();
+  };
   const scrollTo=(id:string)=>document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'});
   const openCourse=()=>{setShowCourse(true);window.setTimeout(()=>scrollTo('sdv4-course-list'),40)};
 
@@ -151,6 +174,14 @@ export function StudentDashboardV4({snapshot,state,onContinue}:Props){
         <div><small>{wow.eyebrow}</small><b>{wow.title}</b><span>{wow.detail}</span></div>
         <button type="button" onClick={()=>setWow(null)} aria-label="Закрыть достижение">×</button>
       </section>}
+
+      <section className="sdv4-adaptive-plan" aria-label="План на сегодня">
+        <div><small>{plan.eyebrow}</small><h2>План на сегодня</h2><b>{plan.title}</b><p>{plan.detail}</p></div>
+        {plan.action==='review'&&<div className="sdv4-plan-actions">
+          <button className="is-primary" type="button" onClick={startReview}>Исправить ошибки</button>
+          <button type="button" onClick={()=>startLesson(next)}>К уроку {next.lessonNumber}</button>
+        </div>}
+      </section>
 
       <div className="sdv4-dashboard">
         <section className="sdv4-hero" aria-label="Следующий урок">
@@ -222,6 +253,13 @@ export function StudentDashboardV4({snapshot,state,onContinue}:Props){
           <div className="sdv4-challenge-stat"><small>Курс</small><b>{snapshot.completedLessons}/{TOTAL_LESSONS}</b><span>{snapshot.courseProgress}% завершено</span></div>
         </section>
       </div>
+
+      {activeErrors.length>0&&<section className="sdv4-errors" aria-label="Работа над ошибками">
+        <header><div><small>Активная очередь</small><h2>Работа над ошибками</h2><p>Здесь остаются только ошибки, после которых ещё не было правильного ответа на то же задание.</p></div><button type="button" onClick={startReview}>Исправить {Math.min(activeErrors.length,5)}</button></header>
+        <div className="sdv4-error-grid">{activeErrors.slice(0,3).map(error=><article key={error.taskId}>
+          <span>{skillLabels[error.skill]}</span><b>{error.title}</b><p>{error.prompt}</p><small>Урок {error.atLesson}{error.wrongCount>1?` · ошибок: ${error.wrongCount}`:''}</small>
+        </article>)}</div>
+      </section>}
 
       {showCourse&&<section className="sdv4-course-list" id="sdv4-course-list">
         <header><div><small>Полная программа</small><h2>Все уроки</h2><p>{snapshot.completedLessons} из {TOTAL_LESSONS} пройдено</p></div><button type="button" onClick={()=>setShowCourse(false)}>Скрыть ×</button></header>
