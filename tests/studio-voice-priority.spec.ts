@@ -1,6 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 
-type VoiceEvent={kind:'request'|'play';id:string};
+type VoiceEvent={kind:'request'|'play'|'foreground';id:string};
 
 async function installAudioAudit(page:Page){
   await page.addInitScript(()=>{
@@ -8,6 +8,10 @@ async function installAudioAudit(page:Page){
     const blobIds=new WeakMap<Blob,string>();
     const nativeFetch=window.fetch.bind(window);
     const nativeCreateObjectURL=URL.createObjectURL.bind(URL);
+    window.addEventListener('mathnikita-audio-request',event=>{
+      const source=(event as CustomEvent<{source?:string}>).detail?.source??'';
+      if(source==='narrator'||source==='practice-narrator')events.push({kind:'foreground',id:source});
+    });
     window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;
       let id='';
@@ -43,17 +47,22 @@ async function installAudioAudit(page:Page){
 }
 
 async function events(page:Page){return page.evaluate(()=>(window as unknown as {__voicePriorityEvents:VoiceEvent[]}).__voicePriorityEvents)}
+async function clearEvents(page:Page){await page.evaluate(()=>(window as unknown as {__voicePriorityEvents:VoiceEvent[]}).__voicePriorityEvents.splice(0))}
 
-test('current lesson narration outranks mentor warmup and mentor speculation stays bounded',async({page})=>{
-  test.setTimeout(60_000);
-  await installAudioAudit(page);
+async function routeStudio(page:Page,delayMs=0){
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'gemini',voice:'Sulafat'})}));
   await page.route('**/api/narration',async route=>{
     const body=route.request().postDataJSON() as {id?:string};
     const id=body.id??'';
+    if(delayMs>0&&!id.startsWith('mentor-'))await new Promise(resolve=>setTimeout(resolve,delayMs));
     if(id.startsWith('mentor-'))await new Promise(resolve=>setTimeout(resolve,80));
     await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-priority-test'});
   });
+}
+
+test('current lesson narration outranks mentor warmup and mentor speculation stays bounded',async({page})=>{
+  test.setTimeout(60_000);
+  await installAudioAudit(page);await routeStudio(page);
 
   await page.goto('/',{waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:/Открыть урок 6:/}).click();
@@ -69,4 +78,25 @@ test('current lesson narration outranks mentor warmup and mentor speculation sta
   const mentorIds=Array.from(new Set((await events(page)).filter(event=>event.kind==='request'&&event.id.startsWith('mentor-l6-intro-')).map(event=>event.id)));
   expect(mentorIds.every(id=>/(?:-hint|-welcome)$/.test(id)),`unexpected current-scene speculative mentor ids: ${mentorIds.join(', ')}`).toBeTruthy();
   expect(mentorIds.length,'current-scene mentor background warmup must stay bounded').toBeLessThanOrEqual(2);
+});
+
+test('current stage TTS starts warming before foreground playback and is not requested twice',async({page})=>{
+  test.setTimeout(60_000);
+  await installAudioAudit(page);await routeStudio(page,350);
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:/Открыть урок 6:/}).click();
+  await clearEvents(page);
+  await page.locator('.lesson-opening-start').click();
+  await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible();
+
+  const narrationId='lesson-06-stage-l6-story';
+  await expect.poll(async()=>{const list=await events(page);return list.filter(event=>event.kind==='request'&&event.id===narrationId).length},{timeout:3_000}).toBe(1);
+  await expect.poll(async()=>{const list=await events(page);return list.some(event=>event.kind==='play'&&event.id===narrationId)},{timeout:6_000}).toBeTruthy();
+
+  const list=await events(page);
+  const requestIndex=list.findIndex(event=>event.kind==='request'&&event.id===narrationId);
+  const foregroundIndex=list.findIndex(event=>event.kind==='foreground'&&event.id==='narrator');
+  expect(requestIndex,'current stage warmup request must exist').toBeGreaterThanOrEqual(0);
+  expect(foregroundIndex,'auto narrator foreground request must exist').toBeGreaterThan(requestIndex);
+  expect(list.filter(event=>event.kind==='request'&&event.id===narrationId)).toHaveLength(1);
 });
