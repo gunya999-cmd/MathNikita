@@ -13,6 +13,7 @@ const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
 const readyMentorAudioById=new Map<string,string>();
 const mentorAudioPromiseById=new Map<string,Promise<string>>();
+const dynamicPrefetchKeyById=new Map<string,string>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
 type PrefetchItem={key:string;id:string;text:string};
 const prefetchQueue:PrefetchItem[]=[];
@@ -76,7 +77,10 @@ function drainPrefetchQueue(){
 export function prefetchStudioAudioUrl(id:string,text:string){
   if(!id||!text||isSpeculativeDynamicId(id))return;
   const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
-  if(isCurrentLessonNarrationId(id)){void getStudioAudioUrl(id,text).catch(()=>undefined);return}
+  if(isCurrentLessonNarrationId(id)){
+    if(dynamicPrefetchKeyById.has(id))return;dynamicPrefetchKeyById.set(id,key);
+    void getStudioAudioUrl(id,text).catch(()=>{if(dynamicPrefetchKeyById.get(id)===key)dynamicPrefetchKeyById.delete(id)});return;
+  }
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
 }
