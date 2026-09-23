@@ -10,6 +10,7 @@ import {
   type EconomyReceipt,
   type EconomyState,
 } from './studentEconomy';
+import {PythagorasWorld} from './PythagorasWorld';
 import './pythagorasEconomy.css';
 
 function useEconomy(){
@@ -78,6 +79,8 @@ export function PythagorasHub({progress,stage,onClose}:{progress:number;stage:st
         </div>
         <div className="py-stats"><div><small>Заработано</small><b>{state.lifetimeEarned} 🪙</b></div><div><small>Куплено</small><b>{state.inventory.length}</b></div></div>
       </section>
+
+      <PythagorasWorld progress={progress} state={state}/>
 
       {notice&&<div className="py-notice" role="status">{notice}<button type="button" onClick={()=>setNotice('')}>×</button></div>}
 
