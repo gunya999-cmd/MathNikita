@@ -34,8 +34,12 @@ function cancelStaleStudioGeneration(){
 
 if(typeof window!=='undefined'){
   window.addEventListener('mathnikita-audio-request',event=>{
-    cancelStaleStudioGeneration();
     const source=(event as CustomEvent<{source?:string}>).detail?.source;
+    // Narrator/practice foreground playback must reuse a matching in-flight warmup.
+    // Navigation still dispatches mathnikita-stop-narration, which aborts genuinely
+    // stale generations before the next scene is resolved.
+    if(source==='narrator'||source==='practice-narrator')return;
+    cancelStaleStudioGeneration();
     if(source!=='mentor'&&source!=='practice-mentor')return;
     mentorForegroundTickets=1;
     queueMicrotask(()=>{mentorForegroundTickets=0});
@@ -60,7 +64,7 @@ export function peekStudioAudioUrl(id:string,text:string){
   if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
   return ready;
 }
-function isSpeculativeDynamicId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)||id.startsWith('mentor-')}
+function blocksBackgroundPrefetch(id:string){return id.startsWith('mentor-')}
 
 function drainPrefetchQueue(){
   if(prefetchRunning)return;const next=prefetchQueue.shift();if(!next)return;queuedPrefetchKeys.delete(next.key);
@@ -68,7 +72,7 @@ function drainPrefetchQueue(){
   prefetchRunning=true;void getStudioAudioUrl(next.id,next.text).catch(()=>undefined).finally(()=>{prefetchRunning=false;window.setTimeout(drainPrefetchQueue,120)});
 }
 export function prefetchStudioAudioUrl(id:string,text:string){
-  if(!id||!text||isSpeculativeDynamicId(id))return;
+  if(!id||!text||blocksBackgroundPrefetch(id))return;
   const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
