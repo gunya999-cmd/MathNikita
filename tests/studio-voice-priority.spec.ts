@@ -1,6 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 
-type VoiceEvent={kind:'request'|'play'|'foreground';id:string};
+type VoiceEvent={kind:'request'|'play'|'foreground'|'audio-request'|'stop';id:string;meta?:string};
 
 async function installAudioAudit(page:Page){
   await page.addInitScript(()=>{
@@ -10,16 +10,18 @@ async function installAudioAudit(page:Page){
     const nativeCreateObjectURL=URL.createObjectURL.bind(URL);
     window.addEventListener('mathnikita-audio-request',event=>{
       const source=(event as CustomEvent<{source?:string}>).detail?.source??'';
+      events.push({kind:'audio-request',id:source});
       if(source==='narrator'||source==='practice-narrator')events.push({kind:'foreground',id:source});
     });
+    window.addEventListener('mathnikita-stop-narration',()=>events.push({kind:'stop',id:'global'}));
     window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;
-      let id='';
+      let id='';let requestText='';
       if(url.includes('/api/narration')){
         let body=init?.body;
         if(body==null&&input instanceof Request){try{body=await input.clone().text()}catch{}}
-        if(typeof body==='string'){try{id=(JSON.parse(body) as {id?:string}).id??''}catch{}}
-        if(id)events.push({kind:'request',id});
+        if(typeof body==='string'){try{const parsed=JSON.parse(body) as {id?:string;text?:string};id=parsed.id??'';requestText=parsed.text??''}catch{}}
+        if(id)events.push({kind:'request',id,meta:`len=${requestText.length};text=${requestText.slice(0,160)}`});
       }
       const response=await nativeFetch(input,init);
       if(!id)return response;
@@ -94,9 +96,10 @@ test('current stage TTS starts warming before foreground playback and is not req
   await expect.poll(async()=>{const list=await events(page);return list.some(event=>event.kind==='play'&&event.id===narrationId)},{timeout:6_000}).toBeTruthy();
 
   const list=await events(page);
+  console.log('VOICE_EVENT_SEQUENCE',JSON.stringify(list));
   const requestIndex=list.findIndex(event=>event.kind==='request'&&event.id===narrationId);
   const foregroundIndex=list.findIndex(event=>event.kind==='foreground'&&event.id==='narrator');
   expect(requestIndex,'current stage warmup request must exist').toBeGreaterThanOrEqual(0);
   expect(foregroundIndex,'auto narrator foreground request must exist').toBeGreaterThan(requestIndex);
-  expect(list.filter(event=>event.kind==='request'&&event.id===narrationId)).toHaveLength(1);
+  expect(list.filter(event=>event.kind==='request'&&event.id===narrationId),`voice events: ${JSON.stringify(list)}`).toHaveLength(1);
 });
