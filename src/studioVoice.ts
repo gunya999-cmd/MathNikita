@@ -11,6 +11,8 @@ export const DEFAULT_VOICE_RATE=.94;
 
 const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
+const readyLessonAudioById=new Map<string,string>();
+const lessonAudioPromiseById=new Map<string,Promise<string>>();
 const readyMentorAudioById=new Map<string,string>();
 const mentorAudioPromiseById=new Map<string,Promise<string>>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
@@ -29,7 +31,7 @@ function abortError(){const error=new Error('Studio narration aborted');error.na
 function clearMentorForegroundTicket(){mentorForegroundTickets=0}
 function cancelStaleStudioGeneration(){
   for(const[key,controller]of activeStudioControllers){controller.abort();audioUrlCache.delete(key)}
-  activeStudioControllers.clear();prefetchQueue.length=0;queuedPrefetchKeys.clear();
+  activeStudioControllers.clear();lessonAudioPromiseById.clear();mentorAudioPromiseById.clear();prefetchQueue.length=0;queuedPrefetchKeys.clear();
 }
 
 if(typeof window!=='undefined'){
@@ -58,9 +60,11 @@ export function loadVoiceSettings():StoredVoiceSettings{
 export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSettings(settings)}
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
 function normalizedCache(id:string,text:string){const prepared=studioNarrationText(text);return{prepared,key:`${STUDIO_VOICE_VERSION}:${id}:${prepared}`}}
-function mentorIdKey(id:string){return`${STUDIO_VOICE_VERSION}:${id}`}
+function narrationIdKey(id:string){return`${STUDIO_VOICE_VERSION}:${id}`}
+function isStableLessonNarrationId(id:string){return/^lesson-\d+-(?:opening|stage|practice|reflection)(?:-|$)/.test(id)}
 export function peekStudioAudioUrl(id:string,text:string){
-  const ready=id.startsWith('mentor-')?readyMentorAudioById.get(mentorIdKey(id))??readyAudioUrlCache.get(normalizedCache(id,text).key):readyAudioUrlCache.get(normalizedCache(id,text).key);
+  const exact=readyAudioUrlCache.get(normalizedCache(id,text).key);
+  const ready=id.startsWith('mentor-')?readyMentorAudioById.get(narrationIdKey(id))??exact:isStableLessonNarrationId(id)?readyLessonAudioById.get(narrationIdKey(id))??exact:exact;
   if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
   return ready;
 }
@@ -68,12 +72,14 @@ function blocksBackgroundPrefetch(id:string){return id.startsWith('mentor-')}
 
 function drainPrefetchQueue(){
   if(prefetchRunning)return;const next=prefetchQueue.shift();if(!next)return;queuedPrefetchKeys.delete(next.key);
-  if(readyAudioUrlCache.has(next.key)||audioUrlCache.has(next.key)){drainPrefetchQueue();return}
+  const lessonKey=isStableLessonNarrationId(next.id)?narrationIdKey(next.id):'';
+  if(readyAudioUrlCache.has(next.key)||audioUrlCache.has(next.key)||(lessonKey&&(readyLessonAudioById.has(lessonKey)||lessonAudioPromiseById.has(lessonKey)))){drainPrefetchQueue();return}
   prefetchRunning=true;void getStudioAudioUrl(next.id,next.text).catch(()=>undefined).finally(()=>{prefetchRunning=false;window.setTimeout(drainPrefetchQueue,120)});
 }
 export function prefetchStudioAudioUrl(id:string,text:string){
   if(!id||!text||blocksBackgroundPrefetch(id))return;
-  const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
+  const {key}=normalizedCache(id,text);const lessonKey=isStableLessonNarrationId(id)?narrationIdKey(id):'';
+  if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key)||(lessonKey&&(readyLessonAudioById.has(lessonKey)||lessonAudioPromiseById.has(lessonKey))))return;
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
 }
@@ -97,9 +103,11 @@ async function requestStudioAudio(id:string,prepared:string,signal:AbortSignal,a
 }
 
 export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOverride=false):Promise<string>{
-  const {prepared,key}=normalizedCache(id,text);const mentorKey=id.startsWith('mentor-')?mentorIdKey(id):'';
+  const {prepared,key}=normalizedCache(id,text);const mentorKey=id.startsWith('mentor-')?narrationIdKey(id):'';const lessonKey=isStableLessonNarrationId(id)?narrationIdKey(id):'';
   if(mentorKey){const mentorPromise=mentorAudioPromiseById.get(mentorKey);if(mentorPromise){if(mentorForegroundTickets>0)clearMentorForegroundTicket();return mentorPromise}}
-  const ready=(mentorKey?readyMentorAudioById.get(mentorKey):undefined)??readyAudioUrlCache.get(key);if(ready){if(mentorKey&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
+  if(lessonKey){const lessonPromise=lessonAudioPromiseById.get(lessonKey);if(lessonPromise)return lessonPromise}
+  const ready=mentorKey?readyMentorAudioById.get(mentorKey)??readyAudioUrlCache.get(key):lessonKey?readyLessonAudioById.get(lessonKey)??readyAudioUrlCache.get(key):readyAudioUrlCache.get(key);
+  if(ready){if(mentorKey&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
   if(mentorKey){
     const foreground=mentorForegroundOverride||mentorForegroundTickets>0;
     if(foreground&&mentorForegroundTickets>0)clearMentorForegroundTicket();
@@ -107,8 +115,8 @@ export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOv
   }
   const controller=new AbortController();activeStudioControllers.set(key,controller);
   const request=requestStudioAudio(id,prepared,controller.signal)
-    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);if(mentorKey)readyMentorAudioById.set(mentorKey,url);return url})
-    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);if(mentorKey){readyMentorAudioById.delete(mentorKey);mentorAudioPromiseById.delete(mentorKey)}throw error})
+    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);if(mentorKey)readyMentorAudioById.set(mentorKey,url);if(lessonKey)readyLessonAudioById.set(lessonKey,url);return url})
+    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);if(mentorKey){readyMentorAudioById.delete(mentorKey);if(mentorAudioPromiseById.get(mentorKey)===request)mentorAudioPromiseById.delete(mentorKey)}if(lessonKey){readyLessonAudioById.delete(lessonKey);if(lessonAudioPromiseById.get(lessonKey)===request)lessonAudioPromiseById.delete(lessonKey)}throw error})
     .finally(()=>{if(activeStudioControllers.get(key)===controller)activeStudioControllers.delete(key)});
-  audioUrlCache.set(key,request);if(mentorKey)mentorAudioPromiseById.set(mentorKey,request);return request;
+  audioUrlCache.set(key,request);if(mentorKey)mentorAudioPromiseById.set(mentorKey,request);if(lessonKey)lessonAudioPromiseById.set(lessonKey,request);return request;
 }
