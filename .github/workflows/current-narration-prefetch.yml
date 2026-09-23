@@ -1,0 +1,38 @@
+name: Current narration prefetch
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/studioVoice.ts'
+      - 'tests/studio-voice-priority.spec.ts'
+      - '.github/workflows/current-narration-prefetch.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: current-narration-prefetch-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  chromium:
+    name: Chromium · warm current narration once
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Verify warmup handoff, priority and request dedupe
+        run: npx playwright test tests/studio-voice-priority.spec.ts --config=playwright.desktop.config.ts --workers=1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-narration-prefetch-${{ github.sha }}
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
