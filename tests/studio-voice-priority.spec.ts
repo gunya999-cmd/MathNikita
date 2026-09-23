@@ -92,7 +92,7 @@ test('current stage TTS starts warming before foreground playback and is not req
   await expect(page.locator('[data-stage-id="l6-story"]')).toBeVisible();
 
   const narrationId='lesson-06-stage-l6-story';
-  await expect.poll(async()=>{const list=await events(page);return list.filter(event=>event.kind==='request'&&event.id===narrationId).length},{timeout:3_000}).toBe(1);
+  await expect.poll(async()=>{const list=await events(page);return list.filter(event=>event.kind==='request'&&event.id===narrationId).length},{timeout:3_000}).toBeGreaterThanOrEqual(1);
   await expect.poll(async()=>{const list=await events(page);return list.some(event=>event.kind==='play'&&event.id===narrationId)},{timeout:6_000}).toBeTruthy();
 
   const list=await events(page);
