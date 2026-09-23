@@ -7,7 +7,7 @@ import { DEFAULT_VOICE_RATE,getStudioAudioUrl,loadVoiceSettings,peekStudioAudioU
 import './voiceNarrator.css';
 
 type VoiceNarratorProps={rootRef:RefObject<HTMLElement|null>;mode:'opening'|'lesson';lessonNumber:number;openingText:string};
-type AudioRequestDetail={source?:'narrator'|'mentor'|string};
+type AudioRequestDetail={source?:'narrator'|'mentor'|string;narrationId?:string};
 type StudioStatus='checking'|'ready'|'unavailable';
 type Narration={id:string;text:string};
 
@@ -146,7 +146,7 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     if(!text||!narrationId)return;
     stop();setStudioIssue('');const session=sessionRef.current+1;sessionRef.current=session;
     if(autoStage){autoStageSessionRef.current=session;autoStageIdRef.current=narrationId;setStageNarrationActive(true,narrationId)}
-    window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator'}}));
+    window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator',narrationId}}));
     if(engine==='studio'){const readySource=peekStudioAudioUrl(narrationId,text);if(readySource){playStudioSource(readySource,session,narrationId,autoStage);return}void startStudioSpeech(text,narrationId,session,autoStage);return}
     startSystemSpeech(text,narrationId,session,autoStage);
   }
