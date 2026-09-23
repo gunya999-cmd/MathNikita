@@ -27,20 +27,25 @@ let mentorForegroundTickets=0;
 
 function abortError(){const error=new Error('Studio narration aborted');error.name='AbortError';return error}
 function clearMentorForegroundTicket(){mentorForegroundTickets=0}
-function cancelStaleStudioGeneration(){
-  for(const[key,controller]of activeStudioControllers){controller.abort();audioUrlCache.delete(key)}
-  activeStudioControllers.clear();prefetchQueue.length=0;queuedPrefetchKeys.clear();
+function narrationKeyPrefix(id:string){return`${STUDIO_VOICE_VERSION}:${id}:`}
+function cancelStaleStudioGeneration(keepNarrationId=''){
+  const keepPrefix=keepNarrationId?narrationKeyPrefix(keepNarrationId):'';
+  for(const[key,controller]of activeStudioControllers){if(keepPrefix&&key.startsWith(keepPrefix))continue;controller.abort();audioUrlCache.delete(key);activeStudioControllers.delete(key)}
+  if(keepNarrationId){
+    for(let index=prefetchQueue.length-1;index>=0;index-=1){const item=prefetchQueue[index];if(item.id===keepNarrationId)continue;prefetchQueue.splice(index,1);queuedPrefetchKeys.delete(item.key)}
+  }else{prefetchQueue.length=0;queuedPrefetchKeys.clear()}
 }
 
 if(typeof window!=='undefined'){
   window.addEventListener('mathnikita-audio-request',event=>{
-    cancelStaleStudioGeneration();
-    const source=(event as CustomEvent<{source?:string}>).detail?.source;
+    const detail=(event as CustomEvent<{source?:string;narrationId?:string}>).detail;
+    cancelStaleStudioGeneration(detail?.source==='narrator'?detail.narrationId??'':'');
+    const source=detail?.source;
     if(source!=='mentor'&&source!=='practice-mentor')return;
     mentorForegroundTickets=1;
     queueMicrotask(()=>{mentorForegroundTickets=0});
   });
-  window.addEventListener('mathnikita-stop-narration',cancelStaleStudioGeneration);
+  window.addEventListener('mathnikita-stop-narration',()=>cancelStaleStudioGeneration());
 }
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
@@ -60,7 +65,7 @@ export function peekStudioAudioUrl(id:string,text:string){
   if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
   return ready;
 }
-function isSpeculativeDynamicId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)||id.startsWith('mentor-')}
+function isSpeculativeDynamicId(id:string){return id.startsWith('mentor-')}
 
 function drainPrefetchQueue(){
   if(prefetchRunning)return;const next=prefetchQueue.shift();if(!next)return;queuedPrefetchKeys.delete(next.key);
