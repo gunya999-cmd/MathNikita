@@ -66,6 +66,7 @@ export function peekStudioAudioUrl(id:string,text:string){
   return ready;
 }
 function isSpeculativeDynamicId(id:string){return id.startsWith('mentor-')}
+function isCurrentLessonNarrationId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)}
 
 function drainPrefetchQueue(){
   if(prefetchRunning)return;const next=prefetchQueue.shift();if(!next)return;queuedPrefetchKeys.delete(next.key);
@@ -75,6 +76,7 @@ function drainPrefetchQueue(){
 export function prefetchStudioAudioUrl(id:string,text:string){
   if(!id||!text||isSpeculativeDynamicId(id))return;
   const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
+  if(isCurrentLessonNarrationId(id)){void getStudioAudioUrl(id,text).catch(()=>undefined);return}
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
 }
