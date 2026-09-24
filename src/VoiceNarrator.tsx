@@ -13,7 +13,7 @@ type Narration={id:string;text:string};
 
 function visiblePractice(root:HTMLElement){return root.querySelector<HTMLElement>('.lesson-reflection .extended-practice[data-practice-task]')}
 function visibleFinalReflection(root:HTMLElement){const finalStep=root.querySelector<HTMLElement>('.lesson-reflection .reflection-final-step');return finalStep&&!finalStep.hidden&&!finalStep.closest('[hidden]')?finalStep:null}
-function collectVisibleText(scope:HTMLElement,selectors:string[]){const parts=selectors.flatMap(selector=>Array.from(scope.querySelectorAll<HTMLElement>>(selector)).filter(node=>!node.closest('[hidden]')).map(node=>node.textContent?.trim()??'').filter(Boolean));return Array.from(new Set(parts)).join('. ')}
+function collectVisibleText(scope:HTMLElement,selectors:string[]){const parts=selectors.flatMap(selector=>Array.from(scope.querySelectorAll<HTMLElement>(selector)).filter(node=>!node.closest('[hidden]')).map(node=>node.textContent?.trim()??'').filter(Boolean));return Array.from(new Set(parts)).join('. ')}
 function safeNarrationToken(value:string){return value.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,96)}
 function canCreateAudioElement(){return typeof document!=='undefined'&&typeof document.createElement==='function'}
 function createNarrationAudio(source:string):HTMLAudioElement|null{try{if(typeof Audio!=='undefined')return new Audio(source);if(!canCreateAudioElement())return null;const audio=document.createElement('audio');audio.src=source;return audio}catch{return null}}
