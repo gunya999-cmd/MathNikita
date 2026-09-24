@@ -7,7 +7,7 @@ import { DEFAULT_VOICE_RATE,getStudioAudioUrl,loadVoiceSettings,peekStudioAudioU
 import './voiceNarrator.css';
 
 type VoiceNarratorProps={rootRef:RefObject<HTMLElement|null>;mode:'opening'|'lesson';lessonNumber:number;openingText:string};
-type AudioRequestDetail={source?:'narrator'|'mentor'|string};
+type AudioRequestDetail={source?:'narrator'|'mentor'|string;narrationId?:string};
 type StudioStatus='checking'|'ready'|'unavailable';
 type Narration={id:string;text:string};
 
@@ -103,7 +103,7 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     if(engine!=='studio')return;
     if(mode==='opening'){const id=getNarrationId(null,mode,lessonNumber);const text=getNarrationText(null,mode,openingText,lessonNumber);if(id&&text)prefetchStudioAudioUrl(id,text);return}
     let retryTimer:number|null=null;let retries=0;
-    const warm=()=>{const root=rootRef.current;const id=getNarrationId(root,mode,lessonNumber);const text=getNarrationText(root,mode,openingText,lessonNumber);if(id&&text){prefetchStudioAudioUrl(id,text);retries=0;return}if(retries<6){retries+=1;retryTimer=window.setTimeout(warm,60*retries)}};
+    const warm=()=>{const root=rootRef.current;const stage=root?resolveStageNarration(root,lessonNumber):null;if(stage&&!isSummaryStage(stage)){retries=0;return}const id=getNarrationId(root,mode,lessonNumber);const text=getNarrationText(root,mode,openingText,lessonNumber);if(id&&text){prefetchStudioAudioUrl(id,text);retries=0;return}if(retries<6){retries+=1;retryTimer=window.setTimeout(warm,60*retries)}};
     const scheduleWarm=()=>{if(retryTimer!==null)window.clearTimeout(retryTimer);retryTimer=window.setTimeout(warm,0)};warm();const root=rootRef.current;
     if(!root){retryTimer=window.setTimeout(warm,80);return()=>{if(retryTimer!==null)window.clearTimeout(retryTimer)}}
     const observer=new MutationObserver(scheduleWarm);observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();if(retryTimer!==null)window.clearTimeout(retryTimer)};
@@ -115,9 +115,17 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     let timer:number|null=null;
     const schedule=()=>{
       const stage=resolveStageNarration(root,lessonNumber);if(!stage||stage.id===lastAutoStageRef.current)return;
-      lastAutoStageRef.current=stage.id;
       if(timer!==null)window.clearTimeout(timer);
-      timer=window.setTimeout(()=>{const latest=resolveStageNarration(root,lessonNumber);if(latest?.id===stage.id)playNarration(latest.text,latest.id,true)},70);
+      timer=window.setTimeout(()=>{
+        const latest=resolveStageNarration(root,lessonNumber);if(!latest||latest.id===lastAutoStageRef.current)return;
+        lastAutoStageRef.current=latest.id;
+        if(engine==='studio'){
+          prefetchStudioAudioUrl(latest.id,latest.text);
+          queueMicrotask(()=>{const current=resolveStageNarration(root,lessonNumber);if(!current||current.id!==latest.id||lastAutoStageRef.current!==latest.id)return;playNarration(latest.text,latest.id,true)});
+          return;
+        }
+        playNarration(latest.text,latest.id,true);
+      },70);
     };
     schedule();
     const observer=new MutationObserver(schedule);observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-stage-id','hidden']});
@@ -146,7 +154,7 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     if(!text||!narrationId)return;
     stop();setStudioIssue('');const session=sessionRef.current+1;sessionRef.current=session;
     if(autoStage){autoStageSessionRef.current=session;autoStageIdRef.current=narrationId;setStageNarrationActive(true,narrationId)}
-    window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator'}}));
+    window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'narrator',narrationId}}));
     if(engine==='studio'){const readySource=peekStudioAudioUrl(narrationId,text);if(readySource){playStudioSource(readySource,session,narrationId,autoStage);return}void startStudioSpeech(text,narrationId,session,autoStage);return}
     startSystemSpeech(text,narrationId,session,autoStage);
   }

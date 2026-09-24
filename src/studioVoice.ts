@@ -13,6 +13,7 @@ const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
 const readyMentorAudioById=new Map<string,string>();
 const mentorAudioPromiseById=new Map<string,Promise<string>>();
+const dynamicPrefetchKeyById=new Map<string,string>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
 type PrefetchItem={key:string;id:string;text:string};
 const prefetchQueue:PrefetchItem[]=[];
@@ -27,20 +28,30 @@ let mentorForegroundTickets=0;
 
 function abortError(){const error=new Error('Studio narration aborted');error.name='AbortError';return error}
 function clearMentorForegroundTicket(){mentorForegroundTickets=0}
-function cancelStaleStudioGeneration(){
-  for(const[key,controller]of activeStudioControllers){controller.abort();audioUrlCache.delete(key)}
-  activeStudioControllers.clear();prefetchQueue.length=0;queuedPrefetchKeys.clear();
+function narrationKeyPrefix(id:string){return`${STUDIO_VOICE_VERSION}:${id}:`}
+function summaryPracticePrefix(id:string){const match=id.match(/^lesson-(\d+)-stage-.*summary$/);return match?`${STUDIO_VOICE_VERSION}:lesson-${match[1]}-practice-`:''}
+function summaryPracticeIdPrefix(id:string){const match=id.match(/^lesson-(\d+)-stage-.*summary$/);return match?`lesson-${match[1]}-practice-`:''}
+function cancelStaleStudioGeneration(keepNarrationId=''){
+  const keepPrefix=keepNarrationId?narrationKeyPrefix(keepNarrationId):'';
+  const keepPracticePrefix=keepNarrationId?summaryPracticePrefix(keepNarrationId):'';
+  const keepPracticeIdPrefix=keepNarrationId?summaryPracticeIdPrefix(keepNarrationId):'';
+  for(const[key,controller]of activeStudioControllers){if((keepPrefix&&key.startsWith(keepPrefix))||(keepPracticePrefix&&key.startsWith(keepPracticePrefix)))continue;controller.abort();audioUrlCache.delete(key);activeStudioControllers.delete(key)}
+  if(keepNarrationId){
+    for(let index=prefetchQueue.length-1;index>=0;index-=1){const item=prefetchQueue[index];if(item.id===keepNarrationId||(keepPracticeIdPrefix&&item.id.startsWith(keepPracticeIdPrefix)))continue;prefetchQueue.splice(index,1);queuedPrefetchKeys.delete(item.key)}
+  }else{prefetchQueue.length=0;queuedPrefetchKeys.clear()}
 }
 
 if(typeof window!=='undefined'){
   window.addEventListener('mathnikita-audio-request',event=>{
-    cancelStaleStudioGeneration();
-    const source=(event as CustomEvent<{source?:string}>).detail?.source;
+    const detail=(event as CustomEvent<{source?:string;narrationId?:string}>).detail;
+    const source=detail?.source;
+    const keepNarrationId=source==='narrator'||source==='practice-narrator'?detail?.narrationId??'':'';
+    cancelStaleStudioGeneration(keepNarrationId);
     if(source!=='mentor'&&source!=='practice-mentor')return;
     mentorForegroundTickets=1;
     queueMicrotask(()=>{mentorForegroundTickets=0});
   });
-  window.addEventListener('mathnikita-stop-narration',cancelStaleStudioGeneration);
+  window.addEventListener('mathnikita-stop-narration',()=>cancelStaleStudioGeneration());
 }
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
@@ -60,7 +71,8 @@ export function peekStudioAudioUrl(id:string,text:string){
   if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
   return ready;
 }
-function isSpeculativeDynamicId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)||id.startsWith('mentor-')}
+function isSpeculativeDynamicId(id:string){return id.startsWith('mentor-')}
+function isCurrentLessonNarrationId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)}
 
 function drainPrefetchQueue(){
   if(prefetchRunning)return;const next=prefetchQueue.shift();if(!next)return;queuedPrefetchKeys.delete(next.key);
@@ -70,6 +82,10 @@ function drainPrefetchQueue(){
 export function prefetchStudioAudioUrl(id:string,text:string){
   if(!id||!text||isSpeculativeDynamicId(id))return;
   const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
+  if(isCurrentLessonNarrationId(id)){
+    if(dynamicPrefetchKeyById.has(id))return;dynamicPrefetchKeyById.set(id,key);
+    void getStudioAudioUrl(id,text).catch(()=>{if(dynamicPrefetchKeyById.get(id)===key)dynamicPrefetchKeyById.delete(id)});return;
+  }
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
 }

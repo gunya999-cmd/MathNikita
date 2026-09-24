@@ -12,7 +12,7 @@ import './extendedPracticeLab.css';
 type Props={lessonNumber:number;onComplete?:()=>void;onRestart?:()=>void};
 type CheckState='idle'|'correct'|'wrong';
 type PracticeDraft={taskId:string;response:string;multiResponse:Record<string,string>};
-type AudioRequestDetail={source?:string};
+type AudioRequestDetail={source?:string;narrationId?:string};
 
 function draftStorageKey(lessonNumber:number){return `${extendedPracticeStorageKey(lessonNumber)}:draft`}
 function loadDraft(lessonNumber:number,taskId:string):PracticeDraft|null{
@@ -48,9 +48,9 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     const settings=loadVoiceSettings();const audio=new Audio(source);audioRef.current=audio;audio.preload='auto';audio.playbackRate=settings.rate;audio.onended=()=>{if(token===speechTokenRef.current)setPracticeSpeaking(false);audioRef.current=null};const fail=()=>{if(token===speechTokenRef.current){audioRef.current=null;setPracticeSpeaking(false);setPracticeVoiceIssue(true)}};audio.onerror=fail;void audio.play().catch(fail);
   }
   function playTaskNarration(task:ExtendedPracticeTask,index:number){
-    stopPracticeVoice();setPracticeVoiceIssue(false);lastSpokenTaskRef.current=task.id;const token=++speechTokenRef.current;const settings=loadVoiceSettings();const text=practiceNarrationText(task,index,practice?.tasks.length??1);window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'practice-narrator'}}));
+    stopPracticeVoice();setPracticeVoiceIssue(false);lastSpokenTaskRef.current=task.id;const token=++speechTokenRef.current;const settings=loadVoiceSettings();const text=practiceNarrationText(task,index,practice?.tasks.length??1);const id=practiceNarrationId(lessonNumber,task);window.dispatchEvent(new CustomEvent('mathnikita-audio-request',{detail:{source:'practice-narrator',narrationId:id}}));
     if(settings.engine!=='studio'){playSystemNarration(text,token);return}
-    const id=practiceNarrationId(lessonNumber,task);const ready=peekStudioAudioUrl(id,text);setPracticeSpeaking(true);if(ready){playAudioSource(ready,token);return}
+    const ready=peekStudioAudioUrl(id,text);setPracticeSpeaking(true);if(ready){playAudioSource(ready,token);return}
     void getStudioAudioUrl(id,text).then(source=>{if(token===speechTokenRef.current)playAudioSource(source,token)}).catch(()=>{if(token===speechTokenRef.current){setPracticeSpeaking(false);setPracticeVoiceIssue(true)}});
   }
 
