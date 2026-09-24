@@ -15,6 +15,7 @@ const readyMentorAudioById=new Map<string,string>();
 const mentorAudioPromiseById=new Map<string,Promise<string>>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
 type PrefetchItem={key:string;id:string;text:string};
+type AudioRequestDetail={source?:string;narrationId?:string;narrationText?:string};
 const prefetchQueue:PrefetchItem[]=[];
 const queuedPrefetchKeys=new Set<string>();
 const PREFETCH_QUEUE_LIMIT=24;
@@ -27,20 +28,9 @@ let mentorForegroundTickets=0;
 
 function abortError(){const error=new Error('Studio narration aborted');error.name='AbortError';return error}
 function clearMentorForegroundTicket(){mentorForegroundTickets=0}
-function cancelStaleStudioGeneration(){
-  for(const[key,controller]of activeStudioControllers){controller.abort();audioUrlCache.delete(key)}
-  activeStudioControllers.clear();prefetchQueue.length=0;queuedPrefetchKeys.clear();
-}
-
-if(typeof window!=='undefined'){
-  window.addEventListener('mathnikita-audio-request',event=>{
-    cancelStaleStudioGeneration();
-    const source=(event as CustomEvent<{source?:string}>).detail?.source;
-    if(source!=='mentor'&&source!=='practice-mentor')return;
-    mentorForegroundTickets=1;
-    queueMicrotask(()=>{mentorForegroundTickets=0});
-  });
-  window.addEventListener('mathnikita-stop-narration',cancelStaleStudioGeneration);
+function cancelStaleStudioGeneration(keepKey=''){
+  for(const[key,controller]of activeStudioControllers){if(key===keepKey)continue;controller.abort();audioUrlCache.delete(key);activeStudioControllers.delete(key)}
+  for(let index=prefetchQueue.length-1;index>=0;index-=1){const item=prefetchQueue[index];if(item.key===keepKey)continue;prefetchQueue.splice(index,1);queuedPrefetchKeys.delete(item.key)}
 }
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
@@ -55,12 +45,25 @@ export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSett
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
 function normalizedCache(id:string,text:string){const prepared=studioNarrationText(text);return{prepared,key:`${STUDIO_VOICE_VERSION}:${id}:${prepared}`}}
 function mentorIdKey(id:string){return`${STUDIO_VOICE_VERSION}:${id}`}
+
+if(typeof window!=='undefined'){
+  window.addEventListener('mathnikita-audio-request',event=>{
+    const detail=(event as CustomEvent<AudioRequestDetail>).detail??{};
+    const keepKey=detail.source==='narrator'&&detail.narrationId&&detail.narrationText?normalizedCache(detail.narrationId,detail.narrationText).key:'';
+    cancelStaleStudioGeneration(keepKey);
+    if(detail.source!=='mentor'&&detail.source!=='practice-mentor')return;
+    mentorForegroundTickets=1;
+    queueMicrotask(()=>{mentorForegroundTickets=0});
+  });
+  window.addEventListener('mathnikita-stop-narration',()=>cancelStaleStudioGeneration());
+}
+
 export function peekStudioAudioUrl(id:string,text:string){
   const ready=id.startsWith('mentor-')?readyMentorAudioById.get(mentorIdKey(id))??readyAudioUrlCache.get(normalizedCache(id,text).key):readyAudioUrlCache.get(normalizedCache(id,text).key);
   if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
   return ready;
 }
-function isSpeculativeDynamicId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)||id.startsWith('mentor-')}
+function isSpeculativeDynamicId(id:string){return id.startsWith('mentor-')}
 
 function drainPrefetchQueue(){
   if(prefetchRunning)return;const next=prefetchQueue.shift();if(!next)return;queuedPrefetchKeys.delete(next.key);
