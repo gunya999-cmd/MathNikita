@@ -29,19 +29,24 @@ let mentorForegroundTickets=0;
 function abortError(){const error=new Error('Studio narration aborted');error.name='AbortError';return error}
 function clearMentorForegroundTicket(){mentorForegroundTickets=0}
 function narrationKeyPrefix(id:string){return`${STUDIO_VOICE_VERSION}:${id}:`}
+function summaryPracticePrefix(id:string){const match=id.match(/^lesson-(\d+)-stage-.*summary$/);return match?`${STUDIO_VOICE_VERSION}:lesson-${match[1]}-practice-`:''}
+function summaryPracticeIdPrefix(id:string){const match=id.match(/^lesson-(\d+)-stage-.*summary$/);return match?`lesson-${match[1]}-practice-`:''}
 function cancelStaleStudioGeneration(keepNarrationId=''){
   const keepPrefix=keepNarrationId?narrationKeyPrefix(keepNarrationId):'';
-  for(const[key,controller]of activeStudioControllers){if(keepPrefix&&key.startsWith(keepPrefix))continue;controller.abort();audioUrlCache.delete(key);activeStudioControllers.delete(key)}
+  const keepPracticePrefix=keepNarrationId?summaryPracticePrefix(keepNarrationId):'';
+  const keepPracticeIdPrefix=keepNarrationId?summaryPracticeIdPrefix(keepNarrationId):'';
+  for(const[key,controller]of activeStudioControllers){if((keepPrefix&&key.startsWith(keepPrefix))||(keepPracticePrefix&&key.startsWith(keepPracticePrefix)))continue;controller.abort();audioUrlCache.delete(key);activeStudioControllers.delete(key)}
   if(keepNarrationId){
-    for(let index=prefetchQueue.length-1;index>=0;index-=1){const item=prefetchQueue[index];if(item.id===keepNarrationId)continue;prefetchQueue.splice(index,1);queuedPrefetchKeys.delete(item.key)}
+    for(let index=prefetchQueue.length-1;index>=0;index-=1){const item=prefetchQueue[index];if(item.id===keepNarrationId||(keepPracticeIdPrefix&&item.id.startsWith(keepPracticeIdPrefix)))continue;prefetchQueue.splice(index,1);queuedPrefetchKeys.delete(item.key)}
   }else{prefetchQueue.length=0;queuedPrefetchKeys.clear()}
 }
 
 if(typeof window!=='undefined'){
   window.addEventListener('mathnikita-audio-request',event=>{
     const detail=(event as CustomEvent<{source?:string;narrationId?:string}>).detail;
-    cancelStaleStudioGeneration(detail?.source==='narrator'?detail.narrationId??'':'');
     const source=detail?.source;
+    const keepNarrationId=source==='narrator'||source==='practice-narrator'?detail?.narrationId??'':'';
+    cancelStaleStudioGeneration(keepNarrationId);
     if(source!=='mentor'&&source!=='practice-mentor')return;
     mentorForegroundTickets=1;
     queueMicrotask(()=>{mentorForegroundTickets=0});
