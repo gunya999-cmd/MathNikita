@@ -116,7 +116,16 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     const schedule=()=>{
       const stage=resolveStageNarration(root,lessonNumber);if(!stage||stage.id===lastAutoStageRef.current)return;
       if(timer!==null)window.clearTimeout(timer);
-      timer=window.setTimeout(()=>{const latest=resolveStageNarration(root,lessonNumber);if(!latest||latest.id===lastAutoStageRef.current)return;lastAutoStageRef.current=latest.id;if(engine==='studio')prefetchStudioAudioUrl(latest.id,latest.text);playNarration(latest.text,latest.id,true)},70);
+      timer=window.setTimeout(()=>{
+        const latest=resolveStageNarration(root,lessonNumber);if(!latest||latest.id===lastAutoStageRef.current)return;
+        lastAutoStageRef.current=latest.id;
+        if(engine==='studio'){
+          prefetchStudioAudioUrl(latest.id,latest.text);
+          queueMicrotask(()=>{const current=resolveStageNarration(root,lessonNumber);if(!current||current.id!==latest.id||lastAutoStageRef.current!==latest.id)return;playNarration(latest.text,latest.id,true)});
+          return;
+        }
+        playNarration(latest.text,latest.id,true);
+      },70);
     };
     schedule();
     const observer=new MutationObserver(schedule);observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-stage-id','hidden']});
