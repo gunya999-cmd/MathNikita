@@ -7,7 +7,7 @@ import {buildActiveErrors,saveReviewQueue} from './studentReview';
 import './studentDashboardV4.css';
 import './adaptiveDashboard.css';
 
-type Props={snapshot:DashboardSnapshot;state:LearnerState;onContinue?:()=>void;onReview?:()=>void};
+type Props={snapshot:DashboardSnapshot;state:LearnerState;studentName?:string;studentAvatar?:string;onContinue?:()=>void;onReview?:()=>void};
 type GrowthRow={id:SkillId;label:string;current:number|null;previous:number|null;delta:number|null;recentAttempts:number;totalAttempts:number};
 type WowEvent={id:string;eyebrow:string;title:string;detail:string};
 
@@ -97,7 +97,7 @@ function PythagorasProgress({progress}: {progress:number}){
   </div>;
 }
 
-export function StudentDashboardV4({snapshot,state,onContinue,onReview}:Props){
+export function StudentDashboardV4({snapshot,state,studentName='Ученик',studentAvatar='🙂',onContinue,onReview}:Props){
   const[showCourse,setShowCourse]=useState(false);
   const[wow,setWow]=useState<WowEvent|null>(null);
   const next=findNextLesson(snapshot);
@@ -166,7 +166,7 @@ export function StudentDashboardV4({snapshot,state,onContinue,onReview}:Props){
         <button type="button" onClick={openCourse}>Уроки</button>
         <button type="button" onClick={()=>scrollTo('sdv4-growth')}>Прогресс</button>
       </nav>
-      <div className="sdv4-profile"><span><b>Никита</b><small>{stage}</small></span><div className="sdv4-mini-cat" aria-hidden="true">⌃•ﻌ•⌃</div></div>
+      <div className="sdv4-profile" aria-label={`Профиль ученика ${studentName}`}><span><b>{studentName}</b><small>{stage}</small></span><div className="sdv4-mini-cat sdv4-profile-avatar" style={{fontSize:20}} aria-hidden="true">{studentAvatar}</div></div>
     </header>
 
     <main className="sdv4" id="sdv4-home">

@@ -173,7 +173,7 @@ export function App() {
 
       {screen === 'map' && <main className="dashboard"><header><span>Карта знаний</span><h1>Курс математики 5 класса</h1><p>175 уроков по I варианту планирования Мерзляка.</p></header><div className="world-grid">{islands.map(([icon,title,count])=><article key={title}><i>{icon}</i><h3>{title}</h3><p>{count} уроков</p><b>{(()=>{const ready=yearPlan.filter(item=>item.available&&item.unit.includes(title)).length;return ready?`${ready} уроков готово`:'В разработке'})()}</b></article>)}</div></main>}
 
-      {screen === 'progress' && <LearnerDashboard mode="student" state={state} onContinue={() => setScreen('course')} onReview={() => setScreen('review')}/>}      
+      {screen === 'progress' && <LearnerDashboard mode="student" state={state} studentName={profile?.name} studentAvatar={profile?.avatar} onContinue={() => setScreen('course')} onReview={() => setScreen('review')}/>}      
       {screen === 'review' && <ReviewTrainer state={state} onStateChange={setState} onExit={() => setScreen('progress')}/>}      
       {screen === 'parent' && <LearnerDashboard mode="parent" state={state}/>}      
 

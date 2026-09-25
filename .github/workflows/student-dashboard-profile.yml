@@ -1,0 +1,49 @@
+name: Student dashboard profile
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/App.tsx'
+      - 'src/LearnerDashboard.tsx'
+      - 'src/StudentDashboardV4.tsx'
+      - 'src/studentProfiles.ts'
+      - 'tests/student-dashboard-profile.spec.ts'
+      - 'playwright.profile.config.ts'
+      - '.github/workflows/student-dashboard-profile.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/App.tsx'
+      - 'src/LearnerDashboard.tsx'
+      - 'src/StudentDashboardV4.tsx'
+      - 'src/studentProfiles.ts'
+      - 'tests/student-dashboard-profile.spec.ts'
+      - 'playwright.profile.config.ts'
+      - '.github/workflows/student-dashboard-profile.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: student-dashboard-profile-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  profile-identity:
+    name: Active student identity in dashboard
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify active profile name and avatar
+        run: npx playwright test tests/student-dashboard-profile.spec.ts --config=playwright.profile.config.ts --workers=1
