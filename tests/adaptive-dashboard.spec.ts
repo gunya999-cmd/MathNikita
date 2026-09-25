@@ -23,6 +23,29 @@ async function seedActiveError(page:any){
   });
 }
 
+async function seedWeeklyGrowth(page:any){
+  await page.addInitScript(()=>{
+    const DAY=86_400_000;const now=Date.now();
+    const attempt=(correct:boolean,daysAgo:number)=>({taskId:'d-ar-1',skill:'arithmetic',correct,firstTry:correct,usedHint:false,atLesson:1,createdAt:new Date(now-daysAgo*DAY).toISOString()});
+    localStorage.setItem('math-course-state-v3',JSON.stringify({
+      version:3,diagnosticDone:true,currentLessonIndex:1,currentSessionTaskIds:['r-ar-1'],currentTaskIndex:0,xp:36,completedSessions:1,completedTaskIds:[],
+      skills:{
+        arithmetic:{mastery:55,attempts:8,correct:5,firstTryCorrect:5,streak:1,hintUses:0,needsReview:false,lastSeenLesson:1},
+        expressions:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0},
+        wordProblems:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0},
+        fractions:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0},
+        geometry:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0},
+        logic:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0},
+        combinatorics:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0}
+      },
+      attempts:[
+        attempt(true,10),attempt(false,9),attempt(true,8.5),attempt(false,8),
+        attempt(true,4),attempt(true,3),attempt(false,2),attempt(true,1)
+      ]
+    }));
+  });
+}
+
 test('dashboard prioritizes an unresolved error and removes it after correction',async({page})=>{
   await seedActiveError(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
@@ -44,4 +67,17 @@ test('dashboard prioritizes an unresolved error and removes it after correction'
 
   await expect(page.getByRole('region',{name:'Работа над ошибками'})).toHaveCount(0);
   await expect(page.getByRole('region',{name:'План на сегодня'})).toContainText('Активных ошибок нет');
+});
+
+test('weekly growth compares weekly accuracy instead of lifetime mastery',async({page})=>{
+  await seedWeeklyGrowth(page);
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:'Кабинет'}).click();
+
+  const card=page.locator('.sdv4-growth-cards article').filter({hasText:'Вычисления'}).first();
+  await expect(card).toBeVisible();
+  await expect(card.locator('.sdv4-growth-value small')).toHaveText('50%');
+  await expect(card.locator('.sdv4-growth-value b')).toHaveText('75%');
+  await expect(card).toContainText('+25 п.п.');
+  await expect(card.locator('.sdv4-growth-value')).not.toContainText('55%');
 });
