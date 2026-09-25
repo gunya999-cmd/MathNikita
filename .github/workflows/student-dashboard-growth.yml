@@ -1,0 +1,41 @@
+name: Student dashboard growth
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/StudentDashboardV4.tsx'
+      - 'tests/adaptive-dashboard.spec.ts'
+      - '.github/workflows/student-dashboard-growth.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/StudentDashboardV4.tsx'
+      - 'tests/adaptive-dashboard.spec.ts'
+      - '.github/workflows/student-dashboard-growth.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: student-dashboard-growth-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  weekly-growth:
+    name: Weekly growth metric consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Verify weekly growth uses weekly accuracy
+        run: npx playwright test tests/adaptive-dashboard.spec.ts --grep "weekly growth compares weekly accuracy instead of lifetime mastery" --workers=1
