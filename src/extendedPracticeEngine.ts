@@ -59,8 +59,8 @@ function looksLikeIntegerSequence(value:string){
 }
 
 function flexiblePracticeAnswerMatch(value:string,answer:string){
-  if(normalizePracticeAnswer(value)===normalizePracticeAnswer(answer))return true;
   if(looksLikeIntegerSequence(answer))return answersEquivalent(value,answer,'sequence');
+  if(normalizePracticeAnswer(value)===normalizePracticeAnswer(answer))return true;
   return answersEquivalent(value,answer,'auto');
 }
 
