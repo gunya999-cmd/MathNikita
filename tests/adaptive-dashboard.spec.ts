@@ -25,8 +25,11 @@ async function seedActiveError(page:any){
 
 async function seedWeeklyGrowth(page:any){
   await page.addInitScript(()=>{
-    const DAY=86_400_000;const now=Date.now();
-    const attempt=(correct:boolean,daysAgo:number)=>({taskId:'d-ar-1',skill:'arithmetic',correct,firstTry:correct,usedHint:false,atLesson:1,createdAt:new Date(now-daysAgo*DAY).toISOString()});
+    const now=new Date();
+    const attempt=(correct:boolean,daysAgo:number,hour=12,minute=0)=>({
+      taskId:'d-ar-1',skill:'arithmetic',correct,firstTry:correct,usedHint:false,atLesson:1,
+      createdAt:new Date(now.getFullYear(),now.getMonth(),now.getDate()-daysAgo,hour,minute,0,0).toISOString()
+    });
     localStorage.setItem('math-course-state-v3',JSON.stringify({
       version:3,diagnosticDone:true,currentLessonIndex:1,currentSessionTaskIds:['r-ar-1'],currentTaskIndex:0,xp:36,completedSessions:1,completedTaskIds:[],
       skills:{
@@ -39,8 +42,8 @@ async function seedWeeklyGrowth(page:any){
         combinatorics:{mastery:40,attempts:0,correct:0,firstTryCorrect:0,streak:0,hintUses:0,needsReview:false,lastSeenLesson:0}
       },
       attempts:[
-        attempt(true,10),attempt(false,9),attempt(true,8.5),attempt(false,8),
-        attempt(true,4),attempt(true,3),attempt(false,2),attempt(true,1)
+        attempt(true,10),attempt(false,9),attempt(true,8),attempt(false,7,23,59),
+        attempt(true,6),attempt(true,4),attempt(false,2),attempt(true,1)
       ]
     }));
   });
@@ -79,5 +82,6 @@ test('weekly growth compares weekly accuracy instead of lifetime mastery',async(
   await expect(card.locator('.sdv4-growth-value small')).toHaveText('50%');
   await expect(card.locator('.sdv4-growth-value b')).toHaveText('75%');
   await expect(card).toContainText('+25 п.п.');
+  await expect(card).toContainText('4 ответов за 7 дней');
   await expect(card.locator('.sdv4-growth-value')).not.toContainText('55%');
 });
