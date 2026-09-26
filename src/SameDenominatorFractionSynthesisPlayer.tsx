@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -8,7 +9,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-100-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
+const answerMatches=(value:string,answers:string[])=>answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 
 const conceptStages:Stage[]=[
   {id:'l100-two-step',eyebrow:'Урок 100 · § 27 · 2 из 2',title:'Сначала модель, потом вычисление',body:'В итоговых задачах § 27 ответ редко получается одним действием. Сначала определяем, что неизвестно: в № 750 нужно восстановить путь за второй час, а уже затем найти общий путь.',note:'Два действия должны отвечать двум разным вопросам условия.'},

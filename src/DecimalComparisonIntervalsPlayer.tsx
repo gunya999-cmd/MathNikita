@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredFourteenPractice,lessonOneHundredFourteenResponseCount,type Lesson114Practice} from './data/lessonOneHundredFourteenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-114-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l114-double-inequality',eyebrow:'Урок 114 · § 31 · 2 из 3',title:'Двойное неравенство задаёт две границы',body:'Запись «число больше левой границы и меньше правой» означает, что нужно выполнить оба условия одновременно. Для натуральных решений проверяй только целые положительные числа внутри интервала.',note:'Если знак строгий, сами границы в ответ не входят.'},
 {id:'l114-natural-solutions',eyebrow:'Натуральные решения',title:'Перечисляй числа системно',body:'Сначала найди первое натуральное число, которое строго больше левой границы, затем двигайся по единице до последнего числа, которое ещё меньше правой границы.',note:'Так легче не пропустить крайнее значение.'},

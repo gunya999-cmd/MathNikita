@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredThirteenPractice,lessonOneHundredThirteenResponseCount,type Lesson113Practice} from './data/lessonOneHundredThirteenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-113-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l113-trailing-zero',eyebrow:'Урок 113 · § 31 · 1 из 3',title:'Нули справа не меняют десятичную дробь',body:'Если после последней цифры дробной части приписать один или несколько нулей, значение числа не изменится. Поэтому 7,4, 7,40 и 7,400 обозначают одно число.',note:'Нули можно дописывать и убирать только справа в дробной части.'},
 {id:'l113-equalize',eyebrow:'Подготовка к сравнению',title:'Уравняй количество знаков после запятой',body:'Чтобы разряды стояли друг под другом, допиши справа нули. Например, 24,9 удобно представить как 24,90, а 18,5 как 18,500.',note:'Это не меняет числа, но делает сравнение прозрачным.'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-63-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyThreeStages:Stage[]=[
 {id:'l63-mission',kind:'story',eyebrow:'Урок 63 · § 18 · задачи',title:'Текстовая задача — это модель, а не угадывание действия',body:'Сегодня деление работает внутри задач. Сначала переводим текст в величины и связи, затем строим короткий арифметический план и только после этого считаем.',note:'Технологическая карта урока 63: № 454, 472, 474, 476, 478, 480. Цель — решать текстовые задачи арифметическим способом.',visual:'mission'},

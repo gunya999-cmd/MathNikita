@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-71-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventyOneStages:LessonSeventyOneStage[]=[
 {id:'l71-mission',kind:'story',eyebrow:'Урок 71 · § 20 · новая тема',title:'Степень — короткая запись длинного произведения',body:'Сегодня появляется новое арифметическое действие: возведение в степень. Научимся читать запись aⁿ, различать основание и показатель, превращать одинаковые множители в степень и обратно, понимать квадрат и куб и правильно ставить степень первой в порядке действий.',note:'Технологическая карта урока 71: устно № 1–2, с. 136; теория § 20; № 548, 549, 550, 552; повторение № 560 (1–2); домашний перенос § 20, вопросы 1–6, № 551, 553, 561.',visual:'mission'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import {loadLessonTiming} from './lessonTiming';
 import './lessonPlayer.css';
@@ -51,7 +52,7 @@ function isAnswered(field:ControlField,response:string){if(field.type==='angle-p
 function correct(field:ControlField,response:string,rayAngle:number){
   if(field.type==='angle-names'){const actual=angleNames(response);return actual.length===2&&actual.join('|')===['CKA','MKC'].sort().join('|')}
   if(field.type==='angle-pair'){const actual=anglePair(response);return actual.length===2&&actual[0]===String(TOTAL_ANGLE-rayAngle)&&actual[1]===String(rayAngle)}
-  return[field.answer,...(field.accepted??[])].some(answer=>normalize(response)===normalize(answer));
+  return[field.answer,...(field.accepted??[])].some(answer=>semanticAnswersEquivalent(String(response),String(answer)));
 }
 function loadSaved():Saved{
   try{

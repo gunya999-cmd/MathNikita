@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -30,7 +31,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-58-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonFiftyEightStages:Stage[]=[
   {id:'l58-mission',kind:'story',eyebrow:'Урок 58 · § 17 · новая тема',title:'Скобки превращают длинное произведение в короткий путь',body:'В трёх и более множителях можно сначала вычислить одну группу, затем другую. Сегодня докажем, когда такая перегруппировка законна, и научимся замечать пары, которые сразу дают 10, 100 или 1000.',note:'Маршрут по учебнику Мерзляка: § 17, № 420–423 · модель → формула → удобные пары → буквенные коэффициенты.',visual:'mission'},

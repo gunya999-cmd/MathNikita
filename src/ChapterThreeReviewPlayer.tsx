@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -12,7 +13,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-88-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
 const numericValue=(value:string)=>{const compact=value.normalize('NFKC').trim().replace(/\s/g,'').replace(',','.');return/^[+-]?\d+(?:\.\d+)?$/.test(compact)?Number(compact):null};
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return normalize(value)===normalize(item)})};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return semanticAnswersEquivalent(String(value),String(item))})};
 
 export const lessonEightyEightStages:LessonEightyEightStage[]=[
 {id:'l88-mission',kind:'story',eyebrow:'Урок 88 · повторение главы 3 · 1 из 2',title:'Глава 3 как единая система',body:'Перед контрольной №5 у нас два урока повторения. Сегодня сначала восстановим карту правил §§16–24, затем полностью пройдём авторское «Задание №3 “Проверьте себя”» из 12 вопросов.',note:'Источник: учебник Мерзляка, «Проверьте себя» №3, с.167–168, и «Итоги главы 3», с.168–169. Отдельной технологической карты для уроков 88–89 в методическом пособии нет.',visual:'mission'},

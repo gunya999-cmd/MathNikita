@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect,useMemo,useState } from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -75,7 +76,7 @@ export function NaturalNumberComparisonPracticePlayer(){
     if(!activity)return;
     const isCorrect=activity.type==='order'
       ?Array.isArray(activity.answer)&&activity.answer.length===order.length&&activity.answer.every((item,index)=>item===order[index])
-      :normalize(answer)===normalize(String(activity.answer));
+      :semanticAnswersEquivalent(String(answer),String(String(activity.answer)));
     setChecked(previous=>({...previous,[activity.id]:true}));
     setResults(previous=>({...previous,[activity.id]:isCorrect}));
   }

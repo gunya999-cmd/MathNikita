@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-76-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventySixStages:LessonSeventySixStage[]=[
 {id:'l76-mission',kind:'story',eyebrow:'Урок 76 · § 21 · практическое закрепление',title:'Площадь в реальных расчётах',body:'Сегодня формула S=ab работает не сама по себе: после площади нужно вычислять расход семян, количество плиток или массу краски, а затем сравнивать требуемое количество с имеющимся.',note:'Технологическая карта урока 76: устно № 3, с. 141; № 580, 581, 583, 590, 592; домашнее задание § 21, № 582, 591.',visual:'mission'},

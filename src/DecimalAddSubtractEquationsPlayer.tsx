@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentyOnePractice,lessonOneHundredTwentyOneResponseCount,type Lesson121Field,type Lesson121Practice} from './data/lessonOneHundredTwentyOnePractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-121-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.').replace(/[–—−]/g,'-');
-const matchField=(value:string,field:Lesson121Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson121Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
  {id:'l121-inverse-operations',eyebrow:'Урок 121 · § 33 · 3 из 6',title:'Сложение и вычитание работают как обратные действия',body:'Уравнение показывает связь между компонентами действия. Чтобы найти неизвестное, сначала определи его роль, а затем используй обратное действие. Это надёжнее, чем угадывать знак операции.',note:'Смысл компонента важнее внешнего вида примера.'},
  {id:'l121-unknown-addend',eyebrow:'Неизвестное слагаемое',title:'Из суммы вычитаем известное слагаемое',body:'Если известно, что некоторое число вместе с 15,62 даёт 20, то неизвестную часть находим разностью 20 и 15,62. После вычисления обязательно проверь сумму.',note:'Неизвестное слагаемое = сумма минус известное слагаемое.'},

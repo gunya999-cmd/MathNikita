@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwelvePractice,lessonOneHundredTwelveResponseCount,type Lesson112Practice} from './data/lessonOneHundredTwelvePractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-112-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l112-power-division',eyebrow:'Урок 112 · § 30 · 4 из 4',title:'Деление на тысячу и десять тысяч',body:'Когда делим натуральное число на тысячу или десять тысяч, число нулей в делителе задаёт три или четыре десятичных разряда. Так 58, делённое на тысячу, превращается в 0,058.',note:'Не двигай запятую на глаз — сначала определи нужное число разрядов.'},
 {id:'l112-leading-zero',eyebrow:'Разрядная запись',title:'Ведущие нули сохраняют место цифры',body:'Если цифр делимого меньше, чем нужно разрядов после запятой, дополняй запись нулями слева. Семь десятитысячных записываются как 0,0007.',note:'Ноль здесь не украшение, а указатель разряда.'},

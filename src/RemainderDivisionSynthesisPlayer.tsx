@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-70-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventyStages:LessonSeventyStage[]=[
 {id:'l70-mission',kind:'story',eyebrow:'Урок 70 · § 19 · итог',title:'Деление с остатком как система, а не отдельный алгоритм',body:'Финальный урок § 19. Сегодня нужно уметь двигаться в обе стороны: от деления к формуле и от формулы к неизвестному компоненту, находить все допустимые делители, объяснять циклы дней недели и строить выражения с заданным остатком.',note:'Технологическая карта урока 70: устно № 4–6, с. 132–133; обобщение № 531, 537, 538, 540, 543, 544; повторение № 547; домашний перенос § 19, № 532, 539, 545 (3, 4).',visual:'mission'},

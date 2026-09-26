@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -56,7 +57,7 @@ export function NaturalNumberWordProblemsPlayer(){
   function stopVoice(){window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));window.speechSynthesis?.cancel()}
   function moveTo(index:number){stopVoice();setStageIndex(Math.max(0,Math.min(index,steps.length-1)));window.scrollTo({top:0,behavior:'smooth'})}
   function setResponse(value:string){setResponses(current=>({...current,[step.id]:value}));setChecked(current=>({...current,[step.id]:false}));setResults(current=>({...current,[step.id]:false}))}
-  function checkAnswer(){if(!step.answer||!response.trim())return;const correct=normalize(response)===normalize(step.answer);setChecked(current=>({...current,[step.id]:true}));setResults(current=>({...current,[step.id]:correct}))}
+  function checkAnswer(){if(!step.answer||!response.trim())return;const correct=semanticAnswersEquivalent(String(response),String(step.answer));setChecked(current=>({...current,[step.id]:true}));setResults(current=>({...current,[step.id]:correct}))}
   const kindLabel=step.kind==='theory'?'Разбираемся':step.kind==='example'?'Пример':step.kind==='practice'?'Практика':step.kind==='control'?'Контроль':step.kind==='olympiad'?'Олимпиадная задача':'Итог';
 
   return <main className="lesson-player"><div className="lesson-progress" aria-label={`Пройдено ${percent}% урока`}><i style={{width:`${percent}%`}}/></div>

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-60-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyStages:Stage[]=[
   {id:'l60-mission',kind:'story',eyebrow:'Урок 60 · § 17 · итог темы',title:'Не считай длиннее, чем нужно',body:'Свойства умножения становятся настоящим инструментом, когда ты сам выбираешь маршрут. Сегодня завершим § 17: сначала упростим структуру, затем подставим числа, соберём круглые произведения и применим те же идеи к величинам, геометрии и логике.',note:'Маршрут по учебнику Мерзляка: § 17, № 430–446 · буквенные выражения → удобные группы → составные величины → нули → модели задач.',visual:'mission'},

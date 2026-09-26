@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentyThreePractice,lessonOneHundredTwentyThreeResponseCount,type Lesson123Field,type Lesson123Practice} from './data/lessonOneHundredTwentyThreePractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-123-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.').replace(/[–—−]/g,'-');
-const matchField=(value:string,field:Lesson123Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson123Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
  {id:'l123-grouping',eyebrow:'Урок 123 · § 33 · 5 из 6',title:'Сначала ищем удобные пары',body:'В длинной сумме переместительное и сочетательное свойства позволяют поставить рядом числа, которые дают круглую сумму. Это сокращает вычисления и число ошибок.',note:'У сложения можно менять порядок слагаемых; у цепочки зависимых действий — нельзя.'},
  {id:'l123-like-terms',eyebrow:'Упрощение выражений',title:'Числа собираем с числами, одинаковые буквы — друг с другом',body:'В выражении с буквами сначала сгруппируй постоянные числовые слагаемые, а затем одинаковые буквенные части. Так длинная запись превращается в короткую.',note:'Например, m + m = 2m.'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-62-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyTwoStages:Stage[]=[
   {id:'l62-mission',kind:'story',eyebrow:'Урок 62 · § 18 · закрепление',title:'Теперь деление должно стать рабочим инструментом',body:'На прошлом уроке мы разобрали смысл деления. Теперь тренируем вычислительную надёжность: быстрые частные случаи, порядок действий, проверку и задачи, где деление спрятано внутри модели.',note:'Технологическая карта: вопросы 1–6, затем № 452, 455, 465, 466, 468, 470; особое внимание — порядку действий.',visual:'mission'},

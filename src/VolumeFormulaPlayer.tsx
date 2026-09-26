@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -12,7 +13,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-82-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/\^3/g,'3').replace(/³/g,'3').replace(/[²]/g,'2').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
 const numericValue=(value:string)=>{const compact=value.normalize('NFKC').trim().replace(/\s/g,'').replace(',','.');return/^[+-]?\d+(?:\.\d+)?$/.test(compact)?Number(compact):null};
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return normalize(value)===normalize(item)})};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return semanticAnswersEquivalent(String(value),String(item))})};
 
 export const lessonEightyTwoStages:LessonEightyTwoStage[]=[
 {id:'l82-mission',kind:'story',eyebrow:'Урок 82 · § 23 · новый материал',title:'От единичных кубов к формуле объёма',body:'На прошлом уроке объём измеряли единичными кубами. Теперь научимся считать эти кубы без поштучного перебора: по длине, ширине и высоте прямоугольного параллелепипеда.',note:'Маршрут технологической карты: актуализация — устно № 1 и вопросы 1–4; теория § 23, с. 155–156; № 619, 620, 624, 628, 632; повторение № 642; домашнее — вопросы 5–7, № 621, 625, 629.',visual:'mission'},

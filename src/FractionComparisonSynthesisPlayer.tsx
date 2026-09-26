@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -8,7 +9,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-98-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
+const answerMatches=(value:string,answers:string[])=>answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 
 const conceptStages:Stage[]=[
   {id:'l98-synthesis',eyebrow:'Урок 98 · § 26 · 3 из 3',title:'Финал параграфа: не вычисляй дробь, переводи условие',body:'В сложной задаче сначала выясни, что означает слово «правильная», «неправильная» или знак сравнения. После этого дробная запись превращается в обычное условие на числитель, знаменатель или натуральную переменную.',note:'Цель — получить простое целочисленное неравенство и только потом перечислять решения.'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -8,7 +9,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-99-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
+const answerMatches=(value:string,answers:string[])=>answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 
 const conceptStages:Stage[]=[
   {id:'l99-parts',eyebrow:'Урок 99 · § 27 · 1 из 2',title:'Одинаковый знаменатель — одинаковый размер части',body:'Знаменатель показывает, на сколько равных частей разделено целое. Если знаменатели одинаковые, складываются или вычитаются части одного размера. Поэтому меняется количество частей, то есть числитель, а знаменатель остаётся прежним.',note:'Пять девятнадцатых плюс шесть девятнадцатых — это одиннадцать девятнадцатых.'},

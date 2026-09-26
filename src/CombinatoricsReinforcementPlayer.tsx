@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -12,7 +13,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-86-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
 const numericValue=(value:string)=>{const compact=value.normalize('NFKC').trim().replace(/\s/g,'').replace(',','.');return/^[+-]?\d+(?:\.\d+)?$/.test(compact)?Number(compact):null};
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return normalize(value)===normalize(item)})};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return semanticAnswersEquivalent(String(value),String(item))})};
 
 export const lessonEightySixStages:LessonEightySixStage[]=[
 {id:'l86-mission',kind:'story',eyebrow:'Урок 86 · § 24 · закрепление',title:'Ограничение меняет дерево вариантов',body:'Продолжаем §24. Теперь мало просто перемножить количество выборов: сначала нужно понять, какие ветви действительно разрешены. Будем сравнивать числа и коды, учитывать порядок цифр, фиксированную сумму и чётность суммы цифр.',note:'Точный маршрут: устно №2–3 с.163; №651, 653, 655, 656, 658; повторение №670; домашние №652, 654, 657, 671.',visual:'mission'},

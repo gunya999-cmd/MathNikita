@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentyFourPractice,lessonOneHundredTwentyFourResponseCount,type Lesson124Field,type Lesson124Practice} from './data/lessonOneHundredTwentyFourPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-124-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.').replace(/[–—−]/g,'-');
-const matchField=(value:string,field:Lesson124Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson124Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
  {id:'l124-map',eyebrow:'Урок 124 · § 33 · 6 из 6',title:'Перед контрольной собираем карту § 33',body:'В одной теме встретились четыре разных режима: точное сложение и вычитание по разрядам, составные задачи, удобная группировка и буквенные выражения. Сначала определи тип задачи, затем выбирай приём.',note:'Главный навык — не просто считать, а выбирать правильную стратегию.'},
  {id:'l124-composite',eyebrow:'Составная задача',title:'Связи между величинами идут раньше арифметики',body:'Если одна величина больше или меньше другой, сначала восстанови зависимые части. После этого найди итог и проверь, что он согласуется с исходными данными.',note:'№ 887 проверяет именно цепочку зависимостей.'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentyEightPractice,lessonOneHundredTwentyEightResponseCount,type LessonOneHundredTwentyEightField,type LessonOneHundredTwentyEightTask} from './data/lessonOneHundredTwentyEightPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-128-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const matchField=(value:string,field:LessonOneHundredTwentyEightField)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:LessonOneHundredTwentyEightField)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l128-idea',eyebrow:'Урок 128 · § 34 · 3 из 7',title:'Теперь важен не только ответ, но и самый удобный путь',body:'При умножении десятичных дробей можно переставлять множители и менять их группировку. Это те же переместительное и сочетательное свойства, что и для натуральных чисел.',note:'0,2 × 32,8 × 5 = (0,2 × 5) × 32,8 = 32,8.'},
 {id:'l128-pairs',eyebrow:'Удобные пары',title:'Ищи множители, которые дают 1, 10 или 0,1',body:'Пары 0,2 и 5; 0,25 и 4; 0,8 и 12,5; 1,25 и 8 резко упрощают вычисления.',note:'0,8 × 47,5 × 12,5 = (0,8 × 12,5) × 47,5 = 10 × 47,5.'},
