@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   audit:
-    name: ${{ matrix.surface }} · lessons ${{ matrix.from }}-${{ matrix.to }}
+    name: ${{ matrix.surface }} · lessons ${{ matrix.range.from }}-${{ matrix.range.to }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -28,17 +28,12 @@ jobs:
       max-parallel: 5
       matrix:
         surface: [desktop, ipad]
-        include:
-          - from: 1
-            to: 35
-          - from: 36
-            to: 70
-          - from: 71
-            to: 105
-          - from: 106
-            to: 140
-          - from: 141
-            to: 175
+        range:
+          - {from: 1, to: 35}
+          - {from: 36, to: 70}
+          - {from: 71, to: 105}
+          - {from: 106, to: 140}
+          - {from: 141, to: 175}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,8 +53,8 @@ jobs:
           fi
       - name: Run Student Solvability Audit
         env:
-          SOLVABILITY_FROM: ${{ matrix.from }}
-          SOLVABILITY_TO: ${{ matrix.to }}
+          SOLVABILITY_FROM: ${{ matrix.range.from }}
+          SOLVABILITY_TO: ${{ matrix.range.to }}
         shell: bash
         run: |
           if [ "${{ matrix.surface }}" = "ipad" ]; then
@@ -71,7 +66,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: student-solvability-${{ matrix.surface }}-${{ matrix.from }}-${{ matrix.to }}-${{ github.sha }}
+          name: student-solvability-${{ matrix.surface }}-${{ matrix.range.from }}-${{ matrix.range.to }}-${{ github.sha }}
           path: |
             test-results/student-solvability
             test-results/*.json
