@@ -5,6 +5,7 @@ import type {LearnerState} from './learningEngine';
 import {loadAnalyticsStore,type DashboardSnapshot,type LessonAnalyticsRow} from './studentAnalytics';
 import {buildActiveErrors,saveReviewQueue} from './studentReview';
 import './studentDashboardV4.css';
+import './studentDashboardRhythm.css';
 import './adaptiveDashboard.css';
 
 type Props={snapshot:DashboardSnapshot;state:LearnerState;studentName?:string;studentAvatar?:string;onContinue?:()=>void;onReview?:()=>void};
@@ -27,6 +28,12 @@ function pluralErrors(value:number){
   if(mod10===1&&mod100!==11)return'ошибку';
   if(mod10>=2&&mod10<=4&&(mod100<12||mod100>14))return'ошибки';
   return'ошибок';
+}
+function pluralDays(value:number){
+  const mod10=value%10;const mod100=value%100;
+  if(mod10===1&&mod100!==11)return'день';
+  if(mod10>=2&&mod10<=4&&(mod100<12||mod100>14))return'дня';
+  return'дней';
 }
 function formatToday(){
   const value=new Intl.DateTimeFormat('ru-RU',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).replace(/^./,letter=>letter.toUpperCase());
@@ -117,6 +124,8 @@ export function StudentDashboardV4({snapshot,state,studentName='Ученик',st
   const routeStart=Math.max(0,Math.min(snapshot.lessons.length-6,nextIndex-3));
   const route=snapshot.lessons.slice(routeStart,routeStart+6);
   const weeklyCompleted=last7.reduce((sum,day)=>sum+day.completedLessons,0);
+  const weeklyActiveMinutes=Math.round(snapshot.last7ActiveSeconds/60);
+  const weekMaxMinutes=Math.max(1,...last7.map(day=>day.activeMinutes));
   const stage=catStage(snapshot.courseProgress);
   const skills=skillOrder.map(id=>({id,label:skillLabels[id],skill:state.skills[id]}));
   const currentUnitRows=snapshot.lessons.filter(row=>(yearLessonByNumber.get(row.lessonNumber)?.unit??row.paragraph??'Курс')===currentUnit);
@@ -225,6 +234,27 @@ export function StudentDashboardV4({snapshot,state,studentName='Ученик',st
           <div className="sdv4-growth-summary">
             <span>Точность недели</span><b>{weekAccuracy===null?'—':`${weekAccuracy}%`}</b>
             {accuracyDelta!==null&&<em className={accuracyDelta>0?'is-up':accuracyDelta<0?'is-down':''}>{accuracyDelta>0?'+':''}{accuracyDelta} п.п.</em>}
+          </div>
+        </section>
+
+        <section className="sdv4-rhythm" aria-label="Ритм недели">
+          <div className="sdv4-rhythm-summary">
+            <header><div><small>Последние 7 дней</small><h2>Ритм недели</h2></div><span>Реальная активность</span></header>
+            <div className="sdv4-rhythm-stats">
+              <article><small>Активно</small><b>{weeklyActiveMinutes} мин</b><span>за 7 дней</span></article>
+              <article><small>Дни занятий</small><b>{snapshot.studyDaysLast7} / 7</b><span>по 5+ минут</span></article>
+              <article><small>Серия</small><b>{snapshot.streakDays} {pluralDays(snapshot.streakDays)}</b><span>{snapshot.streakDays>0?'подряд':'начни сегодня'}</span></article>
+            </div>
+          </div>
+          <div className="sdv4-rhythm-chart" aria-label="Активные минуты по дням">
+            {last7.map(day=>{
+              const height=day.activeMinutes>0?Math.max(12,Math.round(day.activeMinutes/weekMaxMinutes*100)):4;
+              return <article key={day.date} aria-label={`${day.label}: ${day.activeMinutes} мин`}>
+                <b>{day.activeMinutes>0?day.activeMinutes:''}</b>
+                <i><em style={{height:`${height}%`}}/></i>
+                <span>{day.label}</span>
+              </article>;
+            })}
           </div>
         </section>
 
