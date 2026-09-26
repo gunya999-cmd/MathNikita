@@ -1,0 +1,32 @@
+name: Answer input audit
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: answer-input-audit-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Semantic answer validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm install
+      - name: Run semantic answer and local-validator audits
+        run: >-
+          npx playwright test
+          tests/answer-equivalence.spec.ts
+          tests/coursewide-answer-input.spec.ts
+          tests/local-answer-validator-audit.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
