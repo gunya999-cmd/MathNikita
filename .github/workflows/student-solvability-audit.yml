@@ -1,0 +1,80 @@
+name: Student Solvability Audit 1-175
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/student-solvability-audit.spec.ts'
+      - '.github/workflows/student-solvability-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/student-solvability-audit.spec.ts'
+      - '.github/workflows/student-solvability-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: ${{ matrix.surface }} · lessons ${{ matrix.from }}-${{ matrix.to }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        surface: [desktop, ipad]
+        include:
+          - from: 1
+            to: 35
+          - from: 36
+            to: 70
+          - from: 71
+            to: 105
+          - from: 106
+            to: 140
+          - from: 141
+            to: 175
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install browser
+        shell: bash
+        run: |
+          if [ "${{ matrix.surface }}" = "ipad" ]; then
+            npx playwright install --with-deps webkit
+          else
+            npx playwright install --with-deps chromium
+          fi
+      - name: Run Student Solvability Audit
+        env:
+          SOLVABILITY_FROM: ${{ matrix.from }}
+          SOLVABILITY_TO: ${{ matrix.to }}
+        shell: bash
+        run: |
+          if [ "${{ matrix.surface }}" = "ipad" ]; then
+            npx playwright test tests/student-solvability-audit.spec.ts --config=playwright.config.ts --workers=1
+          else
+            npx playwright test tests/student-solvability-audit.spec.ts --config=playwright.desktop.config.ts --workers=1
+          fi
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-solvability-${{ matrix.surface }}-${{ matrix.from }}-${{ matrix.to }}-${{ github.sha }}
+          path: |
+            test-results/student-solvability
+            test-results/*.json
+            test-results/**/test-failed-*.png
+          if-no-files-found: ignore
+          retention-days: 14
