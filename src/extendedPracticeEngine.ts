@@ -1,4 +1,5 @@
 import type { ExtendedPracticeTask } from './data/extendedPracticeData';
+import { answersEquivalent } from './answerEquivalence';
 
 export type ExtendedPracticeResponse = string | Record<string,string>;
 
@@ -52,6 +53,17 @@ export function normalizeExactDecimalPracticeAnswer(value:string):string|null{
   return `${sign}${whole}${frac?`.${frac}`:''}`;
 }
 
+function looksLikeIntegerSequence(value:string){
+  const tokens=value.normalize('NFKC').trim().split(/[\s,;:|/\\]+/).filter(Boolean);
+  return tokens.length>1&&tokens.every(token=>/^[+-]?\d+$/.test(token));
+}
+
+function flexiblePracticeAnswerMatch(value:string,answer:string){
+  if(looksLikeIntegerSequence(answer))return answersEquivalent(value,answer,'sequence');
+  if(normalizePracticeAnswer(value)===normalizePracticeAnswer(answer))return true;
+  return answersEquivalent(value,answer,'auto');
+}
+
 export function loadExtendedPracticeProgress(lessonNumber:number,taskCount:number){
   try{
     const value=Number(window.localStorage.getItem(extendedPracticeStorageKey(lessonNumber))??0);
@@ -71,13 +83,14 @@ export function isExtendedPracticeAnswerCorrect(task:ExtendedPracticeTask,respon
         const normalized=normalizeExactDecimalPracticeAnswer(response[field.id]??'');
         return normalized!==null&&field.answers.some(answer=>normalized===normalizeExactDecimalPracticeAnswer(answer));
       }
-      const normalize=field.validation==='decimal'?normalizeDecimalPracticeAnswer:normalizePracticeAnswer;
-      const normalized=normalize(response[field.id]??'');
-      return field.answers.some(answer=>normalized===normalize(answer));
+      if(field.validation==='decimal'){
+        const normalized=normalizeDecimalPracticeAnswer(response[field.id]??'');
+        return field.answers.some(answer=>normalized===normalizeDecimalPracticeAnswer(answer));
+      }
+      return field.answers.some(answer=>flexiblePracticeAnswerMatch(response[field.id]??'',answer));
     });
   }
   if(typeof response!=='string')return false;
-  const normalized=normalizePracticeAnswer(response);
-  if(task.type==='choice')return normalized===normalizePracticeAnswer(task.answer);
-  return task.answers.some(answer=>normalized===normalizePracticeAnswer(answer));
+  if(task.type==='choice')return flexiblePracticeAnswerMatch(response,task.answer);
+  return task.answers.some(answer=>flexiblePracticeAnswerMatch(response,answer));
 }
