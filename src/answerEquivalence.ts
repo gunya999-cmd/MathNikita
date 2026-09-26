@@ -16,20 +16,31 @@ const cyrillicLookalikes:Record<string,string>={
   'а':'a','в':'b','с':'c','е':'e','к':'k','м':'m','н':'h','о':'o','р':'p','т':'t','у':'y','х':'x',
 };
 
+const bidiControls=/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;
+const commonCommas=/[\u060c\uff0c]/g;
+const commonDashes=/[\u2010-\u2015\u2212]/g;
+
 function base(value:string){
-  return String(value??'').normalize('NFKC').trim().toLowerCase().replace(/ё/g,'е').replace(/\u00a0/g,' ');
+  return String(value??'')
+    .normalize('NFKC')
+    .replace(bidiControls,'')
+    .replace(commonCommas,',')
+    .replace(commonDashes,'-')
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g,'е')
+    .replace(/\u00a0/g,' ');
 }
 
 function scalar(value:string){
   return base(value)
     .replace(/(\d)\.(\d)/g,'$1,$2')
     .replace(/;/g,',')
-    .replace(/[\s]+/g,'')
-    .replace(/:+/g,'');
+    .replace(/[\s]+/g,'');
 }
 
 function splitSequence(value:string){
-  return base(value).split(/[\s,;:|/\\]+/).filter(Boolean);
+  return base(value).split(/[\s,;|\\]+/).filter(Boolean);
 }
 
 function expectedLetterTokens(value:string){
