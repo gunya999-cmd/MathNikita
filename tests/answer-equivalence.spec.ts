@@ -45,6 +45,7 @@ test('lesson 15 extended practice accepts flexible numeric separators',()=>{
   if(!task)throw new Error('lesson 15 numeric practice task is missing');
   expect(isExtendedPracticeAnswerCorrect(task,'140 / 125')).toBe(true);
   expect(isExtendedPracticeAnswerCorrect(task,'125 140')).toBe(false);
+  expect(isExtendedPracticeAnswerCorrect(task,'140125')).toBe(false);
 });
 
 test('lesson 15 extended practice accepts physical keyboard layout for point letters',()=>{
