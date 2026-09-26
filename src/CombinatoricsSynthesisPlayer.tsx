@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -12,7 +13,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-87-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
 const numericValue=(value:string)=>{const compact=value.normalize('NFKC').trim().replace(/\s/g,'').replace(',','.');return/^[+-]?\d+(?:\.\d+)?$/.test(compact)?Number(compact):null};
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return normalize(value)===normalize(item)})};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return semanticAnswersEquivalent(String(value),String(item))})};
 
 export const lessonEightySevenStages:LessonEightySevenStage[]=[
 {id:'l87-mission',kind:'story',eyebrow:'Урок 87 · § 24 · итог',title:'Комбинаторика: выбрать правильную модель',body:'Завершаем §24. Сегодня важно не просто считать варианты, а сначала определить модель: порядок важен или нет, можно ли перемножать независимые выборы, нужно ли перечислять пары, маршруты или варианты знаков.',note:'Точный маршрут: устно №4 с.163; №659, 661, 663, 664, 666, 667; повторение №672; ДЗ №660, 662, 665; дополнительная №673.',visual:'mission'},

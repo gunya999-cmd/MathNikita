@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect, useMemo, useState } from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -58,7 +59,7 @@ export function SegmentLengthPracticePlayer(){
   function goTo(index:number){setStageIndex(Math.min(Math.max(index,0),lessonSevenStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
   function setAnswer(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}))}
   function setOrder(value:string[]){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}))}
-  function submit(){if(!activity)return;const ok=activity.type==='order'?JSON.stringify(ordered)===JSON.stringify(activity.answer):norm(answer)===norm(String(activity.answer));setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:ok}))}
+  function submit(){if(!activity)return;const ok=activity.type==='order'?JSON.stringify(ordered)===JSON.stringify(activity.answer):semanticAnswersEquivalent(String(answer),String(String(activity.answer)));setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:ok}))}
   function reset(){localStorage.removeItem(KEY);setStageIndex(0);setResponses({});setOrders({});setChecked({});setResults({});window.dispatchEvent(new CustomEvent('mathnikita-lesson-reset',{detail:{lessonNumber:7}}))}
   const model=useMemo(()=>{
     if(['l7-story','l7-rule-model','l7-quiz1'].includes(stage.id))return <div className="l6-addition-model"><div><span>A</span><i/><span>C</span><i/><span>B</span></div><strong>AB = AC + CB</strong></div>;

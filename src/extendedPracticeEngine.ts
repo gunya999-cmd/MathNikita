@@ -15,7 +15,7 @@ export function normalizePracticeAnswer(value:string){
     .normalize('NFKC')
     .toLocaleLowerCase('ru-RU')
     .replace(/ё/g,'е')
-    .replace(/[\s.,;:!?()[\]{}'"«»]/g,'')
+    .replace(/[\s.,;!?()[\]{}'"«»]/g,'')
     .replace(/[−–—]/g,'-');
 }
 
@@ -54,12 +54,20 @@ export function normalizeExactDecimalPracticeAnswer(value:string):string|null{
 }
 
 function looksLikeIntegerSequence(value:string){
-  const tokens=value.normalize('NFKC').trim().split(/[\s,;:|/\\]+/).filter(Boolean);
-  return tokens.length>1&&tokens.every(token=>/^[+-]?\d+$/.test(token));
+  const normalized=value.normalize('NFKC').trim();
+  const tokens=normalized.split(/[\s,;|\\]+/).filter(Boolean);
+  if(tokens.length<2||!tokens.every(token=>/^[+-]?\d+$/.test(token)))return false;
+  if(tokens.length>=3)return true;
+  return /[\s;|\\]/.test(normalized);
 }
 
-function flexiblePracticeAnswerMatch(value:string,answer:string){
+function containsMathematicalValue(value:string){
+  return /\d|[+\-−–—/:=<>]/.test(value);
+}
+
+export function flexiblePracticeAnswerMatch(value:string,answer:string){
   if(looksLikeIntegerSequence(answer))return answersEquivalent(value,answer,'sequence');
+  if(containsMathematicalValue(answer))return answersEquivalent(value,answer,'auto');
   if(normalizePracticeAnswer(value)===normalizePracticeAnswer(answer))return true;
   return answersEquivalent(value,answer,'auto');
 }

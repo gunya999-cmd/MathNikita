@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -12,7 +13,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-84-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[³^]/g,'3').replace(/[²]/g,'2').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
 const numericValue=(value:string)=>{const compact=value.normalize('NFKC').trim().replace(/\s/g,'').replace(',','.');return/^[+-]?\d+(?:\.\d+)?$/.test(compact)?Number(compact):null};
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return normalize(value)===normalize(item)})};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return semanticAnswersEquivalent(String(value),String(item))})};
 
 export const lessonEightyFourStages:LessonEightyFourStage[]=[
 {id:'l84-mission',kind:'story',eyebrow:'Урок 84 · § 23 · итоговое обобщение',title:'Объём: масштаб, модели и реальные задачи',body:'Финальный урок §23 собирает всё вместе: каркас параллелепипеда, масштабирование площади и объёма, согласование единиц, объём с пересекающимися отверстиями и практическую задачу про расход материала.',note:'Технологическая карта урока 84: устно №3, с.156; контроль и коррекция — рабочая тетрадь №154, 157; обобщение — №635, 636, 638, 639, 640; рабочая тетрадь №293–295; повторение №643(5,6); домашнее — §23, №637 и дидактические №153, 155.',visual:'mission'},

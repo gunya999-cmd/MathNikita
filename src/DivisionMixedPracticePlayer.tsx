@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-65-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyFiveStages:Stage[]=[
 {id:'l65-mission',kind:'story',eyebrow:'Урок 65 · § 18 · закрепление',title:'Теперь действие выбирает смысл задачи',body:'Сегодня деление соединяется со сложением, вычитанием и умножением. Сильное решение — это не цепочка случайных вычислений, а план: что означает каждый промежуточный результат, в каких он единицах и зачем нужен следующему шагу.',note:'Технологическая карта урока 65 требует закрепить деление, уравнения и текстовые задачи с применением всех четырёх арифметических действий.',visual:'mission'},

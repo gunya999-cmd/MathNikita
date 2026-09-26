@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect, useMemo, useState } from 'react';
 import { lessonOneSources } from './data/lessonSources';
 import './lessonPlayer.css';
@@ -97,7 +98,7 @@ export function LessonPlayer(){
   function goTo(index:number){setStageIndex(Math.min(Math.max(index,0),lessonOneStages.length-1));resetStage();window.scrollTo({top:0,behavior:'smooth'})}
   function go(delta:number){goTo(stageIndex+delta)}
   function resetLesson(){localStorage.removeItem(STORAGE_KEY);setStageIndex(0);setAnswer('');setOrdered([]);setChecked(false);setCorrect(false);setModelValue(1);setResults({});setCompletedAt(undefined);setRestored(false);window.scrollTo({top:0,behavior:'smooth'})}
-  function submit(value?:string){if(!activity)return;const isCorrect=activity.type==='order'?JSON.stringify(ordered)===JSON.stringify(activity.answer):normalize(value??answer)===normalize(String(activity.answer));setCorrect(isCorrect);setChecked(true);setResults(previous=>({...previous,[activity.id]:isCorrect}))}
+  function submit(value?:string){if(!activity)return;const isCorrect=activity.type==='order'?JSON.stringify(ordered)===JSON.stringify(activity.answer):semanticAnswersEquivalent(String(value??answer),String(String(activity.answer)));setCorrect(isCorrect);setChecked(true);setResults(previous=>({...previous,[activity.id]:isCorrect}))}
 
   const visualModel=useMemo(()=>{
     if(stage.id==='story')return <div className="dual-question-model"><div><span>📚📚📚📚📚</span><b>Счёт</b><small>5 книг</small></div><div><span className="measure-bar"><i/><i/><i/><i/><i/></span><b>Измерение</b><small>5 мерок</small></div></div>;

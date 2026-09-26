@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect,useMemo,useState } from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -56,7 +57,7 @@ export function FormulaPracticePlayer(){
   function stopVoice(){window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));window.speechSynthesis?.cancel()}
   function moveTo(index:number){stopVoice();setStageIndex(Math.max(0,Math.min(index,lessonThirtyTwoStages.length-1)));window.scrollTo({top:0,behavior:'smooth'})}
   function choose(value:string){if(!activity)return;setResponses(current=>({...current,[activity.id]:value}));setChecked(current=>({...current,[activity.id]:false}));setResults(current=>({...current,[activity.id]:false}))}
-  function checkAnswer(){if(!activity||!response.trim())return;const correct=normalize(response)===normalize(activity.answer);setChecked(current=>({...current,[activity.id]:true}));setResults(current=>({...current,[activity.id]:correct}))}
+  function checkAnswer(){if(!activity||!response.trim())return;const correct=semanticAnswersEquivalent(String(response),String(activity.answer));setChecked(current=>({...current,[activity.id]:true}));setResults(current=>({...current,[activity.id]:correct}))}
   const canAdvance=!activity||isCorrect;const percent=Math.round(((stageIndex+1)/lessonThirtyTwoStages.length)*100);
   return <main className="lesson-player"><div className="lesson-progress" aria-label={`Пройдено ${percent}% урока`}><i style={{width:`${percent}%`}}/></div><section className={`interactive-stage ${stage.kind==='summary'?'stage-summary':''}`} data-stage-id={stage.id}>
     <div className="stage-counter"><span>Этап {stageIndex+1} из {lessonThirtyTwoStages.length}</span><div><button type="button" onClick={()=>moveTo(stageIndex-1)} disabled={stageIndex===0} aria-label="Предыдущий этап">←</button><button type="button" onClick={()=>moveTo(stageIndex+1)} disabled={stageIndex===lessonThirtyTwoStages.length-1||!canAdvance} aria-label="Следующий этап">→</button></div></div>

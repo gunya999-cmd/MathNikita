@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -30,7 +31,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-59-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonFiftyNineStages:Stage[]=[
   {id:'l59-mission',kind:'story',eyebrow:'Урок 59 · § 17 · новая идея',title:'Один прямоугольник раскрывает скобки',body:'Умножение можно распределить на каждую часть суммы или разности. Сегодня увидим это на площади, научимся двигаться в обе стороны и превращать громоздкие вычисления в короткие.',note:'Маршрут по учебнику Мерзляка: § 17, № 424–429 · модель площади → формулы → общий множитель → раскрытие скобок → одинаковые буквенные части.',visual:'mission'},

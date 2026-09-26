@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-79-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventyNineStages:LessonSeventyNineStage[]=[
 {id:'l79-mission',kind:'story',eyebrow:'Урок 79 · § 22 · продолжение',title:'Развернуть тело на плоскости',body:'В прошлом уроке мы разобрали грани, рёбра, вершины и площадь поверхности. Теперь научимся мысленно раскрывать прямоугольный параллелепипед в плоскую развёртку и собирать обратно.',note:'Технологическая карта урока 79: устно № 3–4, с. 150; № 608, 610; теория § 22, с. 147–148; № 606; повторение № 613; домашнее № 607, 609, доп. № 616.',visual:'mission'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredFivePractice,lessonOneHundredFiveResponseCount,type Lesson105Practice} from './data/lessonOneHundredFivePractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-105-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l105-expression',eyebrow:'Урок 105 · § 29 · 4 из 5',title:'Сложное выражение разбирай на блоки',body:'Если выражение содержит несколько скобок, сначала вычисли каждую скобку отдельно. Только после этого выполняй действие между полученными смешанными числами.',note:'Промежуточные результаты уменьшают риск потерять перенос или заём.'},
 {id:'l105-brackets',eyebrow:'Скобки',title:'Ищи удобные полные единицы',body:'Суммы дробных частей иногда дают ровно одну целую. Замечай такие случаи сразу: это может превратить длинное выражение в действие с натуральными числами.',note:'Перед вычислением полезно оценить дробные части каждой скобки.'},

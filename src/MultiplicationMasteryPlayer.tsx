@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -30,7 +31,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-57-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonFiftySevenStages:Stage[]=[
   {id:'l57-mission',kind:'story',eyebrow:'Урок 57 · § 16 · итог',title:'Умножение становится инструментом исследователя',body:'Алгоритм уже знаком. Теперь важнее решить, где умножать, как проверить модель и что можно вывести без длинного счёта. Пройдём от многошагового выражения к задачам на движение, изменению произведения, контрпримеру и логическим задачам.',note:'Маршрут по редакциям 2019/2023: № 399–419 · выражения → движение → масштабирование → доказательство → логика → мост к § 17.',visual:'mission'},

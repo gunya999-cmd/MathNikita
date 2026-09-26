@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredEighteenPractice,lessonOneHundredEighteenResponseCount,type Lesson118Field,type Lesson118Practice} from './data/lessonOneHundredEighteenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-118-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.').replace(/[–—-]/g,'');
-const matchField=(value:string,field:Lesson118Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson118Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l118-discarded-digits',eyebrow:'Урок 118 · § 32 · 3 из 3',title:'Отброшенные цифры показывают точность округления',body:'Если после округления последней сохранённой цифрой остаются десятые, значит число округляли до десятых. Если остаются сотые или тысячные, название разряда определяется точно так же. Первая отброшенная цифра решает, менять ли последнюю сохранённую.',note:'В числе 5,874 после сохранения десятых первая отброшенная цифра равна 7, поэтому результат 5,9.'},
 {id:'l118-reverse-rounding',eyebrow:'Обратная задача',title:'По готовому результату можно восстановить возможные цифры',body:'Если округление не увеличило последнюю сохранённую цифру, решающая цифра могла быть от нуля до четырёх. Если последняя сохранённая цифра увеличилась, решающая цифра должна быть от пяти до девяти.',note:'Чтобы 5,47 звёздочка 4 округлялось до 5,47, вместо звёздочки подходят цифры от нуля до четырёх.'},

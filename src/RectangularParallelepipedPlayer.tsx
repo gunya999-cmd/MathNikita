@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-78-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventyEightStages:LessonSeventyEightStage[]=[
 {id:'l78-mission',kind:'story',eyebrow:'Урок 78 · § 22 · новая тема',title:'Из плоскости — в пространство',body:'Прямоугольник имеет два измерения. У прямоугольного параллелепипеда появляется третье измерение, а вместе с ним — грани, рёбра, вершины и площадь всей поверхности.',note:'Технологическая карта урока 78: устно № 1–2, с. 150; теория § 22, с. 145–146; № 598, 599, 602; повторение № 612; вопросы 1–12; домашнее № 600, 601, 603.',visual:'mission'},

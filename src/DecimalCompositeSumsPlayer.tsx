@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentyTwoPractice,lessonOneHundredTwentyTwoResponseCount,type Lesson122Field,type Lesson122Practice} from './data/lessonOneHundredTwentyTwoPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-122-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.').replace(/[–—−]/g,'-');
-const matchField=(value:string,field:Lesson122Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson122Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
  {id:'l122-dependency-map',eyebrow:'Урок 122 · § 33 · 4 из 6',title:'Составная задача начинается с карты зависимостей',body:'Перед вычислениями выпиши, какая величина известна напрямую, какая сравнивается с ней и какая зависит от уже найденной суммы. Такой порядок не даёт потерять смысл между несколькими действиями.',note:'Сначала связи между величинами, затем арифметика.'},
  {id:'l122-more-less',eyebrow:'Слова-сигналы',title:'«На больше» и «на меньше» читаем относительно опорной величины',body:'Если первая величина на некоторое число больше второй, то вторую находим вычитанием из первой. Если нужно найти большую величину по меньшей, используем сложение. Всегда проговаривай, что с чем сравнивается.',note:'Не выбирай действие только по слову «больше» или «меньше».'},

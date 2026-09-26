@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-75-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventyFiveStages:LessonSeventyFiveStage[]=[
 {id:'l75-mission',kind:'story',eyebrow:'Урок 75 · § 21 · закрепление',title:'Площадь: переводим, восстанавливаем, доказываем',body:'Во втором уроке § 21 закрепляем единицы площади и формулы. Главная цель — не просто получить число, а понимать, какую единицу выбрать и какое действие восстанавливает неизвестную сторону.',note:'Технологическая карта урока 75: устно № 2, с. 141; закрепление № 574, 576, 578, 589; повторение № 596(2); домашнее задание § 21, № 575, 577, 579.',visual:'mission'},
