@@ -23,11 +23,10 @@ type Violation={code:string;lesson:number;stageIndex:number;stageId:string;detai
 
 const strongVisualDependencyPatterns=[
   /(?:по|на)\s+(?:рисунк(?:е|у)|чертеж(?:е|у)|схем(?:е|у)|диаграмм(?:е|у)|график(?:е|у)|изображени(?:ю|и)|картинк(?:е|у)|шкал(?:е|у))/i,
-  /(?:по|на)\s+координатн(?:ом|ой)\s+луч(?:е|у)?/i,
   /рис\.?\s*№?\s*\d+/i,
   /рисунк(?:а|е|у)\s*№?\s*\d+/i,
   /показанн(?:ый|ая|ое|ые|ого|ой|ую)\s+(?:угол|фигур|отрез|луч|точк|шкал|диаграмм)/i,
-  /(?:измерь|определи|найди|прочитай)\s+[^.]{0,80}(?:по рисунку|на рисунке|по шкале|на шкале|на координатном луче)/i,
+  /(?:измерь|определи|найди|прочитай|укажи|считай|какова|какие)\s+[^.]{0,120}(?:по рисунку|на рисунке|по шкале|на шкале|на координатном луче)/i,
 ];
 
 function needsVisual(text:string){return strongVisualDependencyPatterns.some(pattern=>pattern.test(text));}
@@ -128,7 +127,6 @@ function evaluateSnapshot(snapshot:StageSnapshot):Violation[]{
 }
 
 mkdirSync(REPORT_DIR,{recursive:true});
-test.describe.configure({mode:'serial'});
 
 for(let lesson=FROM;lesson<=TO;lesson++){
   test(`student solvability · lesson ${lesson}`,async({page})=>{
