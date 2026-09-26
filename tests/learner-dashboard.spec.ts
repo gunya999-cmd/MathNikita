@@ -63,8 +63,11 @@ test('student dashboard matches the focused reference structure and uses real pr
   await expect(page.locator('.sdv4-sidebar')).toHaveCount(0);
   await expect(page.locator('.sdv4-topnav button')).toHaveCount(3);
   await expect(page.locator('.sdv4-companion')).toBeVisible();
-  await expect(page.locator('.sdv4-growth-cards')).toContainText('Дроби');
-  await expect(page.locator('.sdv4-growth-cards')).toContainText('76%');
+  const fractionGrowth=page.locator('.sdv4-growth-cards article').filter({hasText:'Дроби'}).first();
+  await expect(fractionGrowth).toContainText('100%');
+  await expect(fractionGrowth).toContainText('2 ответов за 7 дней');
+  const fractionSkill=page.locator('.sdv4-skill-grid article').filter({hasText:'Дроби'}).first();
+  await expect(fractionSkill).toContainText('76%');
   await expect(page.locator('.sdv4-motivation')).toContainText('2 правильных подряд');
   await expect(page.locator('.sdv4-motivation')).toContainText('Лучший результат без ошибки');
   await expect(page.locator('.sdv4-route-track article')).toHaveCount(6);

@@ -50,14 +50,17 @@ function attemptAccuracy(attempts:LearnerState['attempts']){
   return Math.round(correct/attempts.length*100);
 }
 function buildGrowthRows(state:LearnerState):GrowthRow[]{
-  const now=Date.now();const recentCutoff=now-7*DAY;const previousCutoff=now-14*DAY;
+  const today=new Date();
+  const recentCutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-6).getTime();
+  const recentEnd=new Date(today.getFullYear(),today.getMonth(),today.getDate()+1).getTime();
+  const previousCutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-13).getTime();
   const rows=(Object.entries(state.skills) as [SkillId,LearnerState['skills'][SkillId]][]).map(([id,skill])=>{
     const relevant=state.attempts.filter(attempt=>attempt.skill===id);
-    const recent=relevant.filter(attempt=>new Date(attempt.createdAt).getTime()>=recentCutoff);
+    const recent=relevant.filter(attempt=>{const at=new Date(attempt.createdAt).getTime();return at>=recentCutoff&&at<recentEnd});
     const previous=relevant.filter(attempt=>{const at=new Date(attempt.createdAt).getTime();return at>=previousCutoff&&at<recentCutoff});
     const previousAccuracy=attemptAccuracy(previous);
-    const current=skill.attempts>0?skill.mastery:null;
     const recentAccuracy=attemptAccuracy(recent);
+    const current=recentAccuracy??(skill.attempts>0?skill.mastery:null);
     const delta=previousAccuracy!==null&&recentAccuracy!==null?recentAccuracy-previousAccuracy:null;
     return{id,label:skillLabels[id],current,previous:previousAccuracy,delta,recentAttempts:recent.length,totalAttempts:skill.attempts};
   });
