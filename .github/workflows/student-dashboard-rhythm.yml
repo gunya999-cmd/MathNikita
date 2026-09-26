@@ -1,0 +1,43 @@
+name: Student dashboard rhythm
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/StudentDashboardV4.tsx'
+      - 'src/studentDashboardRhythm.css'
+      - 'tests/adaptive-dashboard.spec.ts'
+      - '.github/workflows/student-dashboard-rhythm.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/StudentDashboardV4.tsx'
+      - 'src/studentDashboardRhythm.css'
+      - 'tests/adaptive-dashboard.spec.ts'
+      - '.github/workflows/student-dashboard-rhythm.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: student-dashboard-rhythm-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  weekly-rhythm:
+    name: Weekly rhythm telemetry
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install dependencies
+        run: npm install
+      - name: Install WebKit
+        run: npx playwright install --with-deps webkit
+      - name: Verify weekly rhythm telemetry
+        run: npx playwright test tests/adaptive-dashboard.spec.ts --grep "weekly rhythm shows real active minutes, study days and current streak" --workers=1
