@@ -50,10 +50,13 @@ function attemptAccuracy(attempts:LearnerState['attempts']){
   return Math.round(correct/attempts.length*100);
 }
 function buildGrowthRows(state:LearnerState):GrowthRow[]{
-  const now=Date.now();const recentCutoff=now-7*DAY;const previousCutoff=now-14*DAY;
+  const today=new Date();
+  const recentCutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-6).getTime();
+  const recentEnd=new Date(today.getFullYear(),today.getMonth(),today.getDate()+1).getTime();
+  const previousCutoff=new Date(today.getFullYear(),today.getMonth(),today.getDate()-13).getTime();
   const rows=(Object.entries(state.skills) as [SkillId,LearnerState['skills'][SkillId]][]).map(([id,skill])=>{
     const relevant=state.attempts.filter(attempt=>attempt.skill===id);
-    const recent=relevant.filter(attempt=>new Date(attempt.createdAt).getTime()>=recentCutoff);
+    const recent=relevant.filter(attempt=>{const at=new Date(attempt.createdAt).getTime();return at>=recentCutoff&&at<recentEnd});
     const previous=relevant.filter(attempt=>{const at=new Date(attempt.createdAt).getTime();return at>=previousCutoff&&at<recentCutoff});
     const previousAccuracy=attemptAccuracy(previous);
     const recentAccuracy=attemptAccuracy(recent);
@@ -221,7 +224,7 @@ export function StudentDashboardV4({snapshot,state,studentName='Ученик',st
           })}</div>
           <div className="sdv4-growth-summary">
             <span>Точность недели</span><b>{weekAccuracy===null?'—':`${weekAccuracy}%`}</b>
-            {accuracyDelta!==null&&<em className={accuracyDelta>0?'is-up':accuracyDelta<0?'is-down':''}>{accuracyDelta>0?'+':''}{accuracyDelta} п.п.</em>}
+            {accuracyDelta!==null&&<em className={accuracyDelta>0?'is-up':accuracyDelta<0?'is-down':''}>{accuracyDelta>0?'+':''}${accuracyDelta} п.п.</em>}
           </div>
         </section>
 
