@@ -1,5 +1,7 @@
 import { expect,test } from '@playwright/test';
 import { answersEquivalent } from '../src/answerEquivalence';
+import { extendedPracticeLesson15 } from '../src/data/extendedPracticeLesson15';
+import { isExtendedPracticeAnswerCorrect } from '../src/extendedPracticeEngine';
 
 test('numeric sequences ignore non-semantic separators but preserve values and order',()=>{
   const expected='3,6,9,12,15';
@@ -36,4 +38,19 @@ test('scalar measurements keep decimal meaning while tolerating harmless formatt
   expect(answersEquivalent('8.5 cv','8,5 см')).toBe(true);
   expect(answersEquivalent('85 см','8,5 см')).toBe(false);
   expect(answersEquivalent('5mm','5 мм')).toBe(true);
+});
+
+test('lesson 15 extended practice accepts flexible numeric separators',()=>{
+  const task=extendedPracticeLesson15.tasks.find(item=>item.id==='l15-extra-3');
+  if(!task)throw new Error('lesson 15 numeric practice task is missing');
+  expect(isExtendedPracticeAnswerCorrect(task,'140 / 125')).toBe(true);
+  expect(isExtendedPracticeAnswerCorrect(task,'125 140')).toBe(false);
+});
+
+test('lesson 15 extended practice accepts physical keyboard layout for point letters',()=>{
+  const task=extendedPracticeLesson15.tasks.find(item=>item.id==='l15-extra-5');
+  if(!task)throw new Error('lesson 15 letter practice task is missing');
+  expect(isExtendedPracticeAnswerCorrect(task,'C D B')).toBe(true);
+  expect(isExtendedPracticeAnswerCorrect(task,'с в и')).toBe(true);
+  expect(isExtendedPracticeAnswerCorrect(task,'C B D')).toBe(false);
 });
