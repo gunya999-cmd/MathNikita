@@ -1,0 +1,46 @@
+name: Apply solvability fixes
+
+on:
+  push:
+    branches: [qa/student-solvability-audit-1-175]
+    paths:
+      - '.github/workflows/apply-solvability-fixes.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: qa/student-solvability-audit-1-175
+      - name: Patch genuine solvability defects
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/AngleNotationPlayer.tsx')
+          text = path.read_text()
+          old = "{id:'l37-practice6',kind:'practice',eyebrow:'Практика · 6/10',title:'Когда одной буквы достаточно?',body:'Ищи неоднозначность.',activity:{id:'l37-p6',type:'choice',prompt:'На рисунке из точки Q выходят только два луча QA и QC. Можно ли этот единственный угол кратко назвать ∠Q?',options:['Да','Нет'],answer:'Да',hint:'Других углов с вершиной Q на таком рисунке нет.',explanation:'Если угол с вершиной Q единственный, краткая запись ∠Q однозначна.'}},"
+          new = "{id:'l37-practice6',kind:'practice',eyebrow:'Практика · 6/10',title:'Когда одной буквы достаточно?',body:'Из точки Q выходят только два луча QA и QC, поэтому с вершиной Q образован только один угол.',activity:{id:'l37-p6',type:'choice',prompt:'Можно ли этот единственный угол кратко назвать ∠Q?',options:['Да','Нет'],answer:'Да',hint:'Других углов с вершиной Q по условию нет.',explanation:'Если угол с вершиной Q единственный, краткая запись ∠Q однозначна.'}},"
+          if old not in text:
+              raise SystemExit('lesson 37 target not found')
+          path.write_text(text.replace(old,new,1))
+
+          path = Path('src/ProtractorPracticePlayer.tsx')
+          text = path.read_text()
+          old = "{id:'l40-practice8',kind:'practice',eyebrow:'Практика · 8/13',title:'Поймай невозможный ответ',body:'Форма — контроль результата.',activity:{id:'l40-p8',type:'choice',prompt:'На рисунке явно тупой угол. После измерения ученик записал 52°. Что вероятнее всего произошло?',options:['Он прочитал противоположную шкалу вместо 128°','Тупой угол действительно может быть 52°','Транспортир всегда занижает тупые углы','Нужно прибавить 90° к любому ответу'],answer:'Он прочитал противоположную шкалу вместо 128°',hint:'На одном штрихе часто стоят дополнительные до 180° числа.',explanation:'52° — острый угол, поэтому для показанного тупого угла разумнее проверить парное показание 128°.'}},"
+          new = "{id:'l40-practice8',kind:'practice',eyebrow:'Практика · 8/13',title:'Поймай невозможный ответ',body:'Форма — контроль результата.',diagram:'estimate',activity:{id:'l40-p8',type:'choice',prompt:'На рисунке явно тупой угол. После измерения ученик записал 52°. Что вероятнее всего произошло?',options:['Он прочитал противоположную шкалу вместо 128°','Тупой угол действительно может быть 52°','Транспортир всегда занижает тупые углы','Нужно прибавить 90° к любому ответу'],answer:'Он прочитал противоположную шкалу вместо 128°',hint:'На одном штрихе часто стоят дополнительные до 180° числа.',explanation:'52° — острый угол, поэтому для показанного тупого угла разумнее проверить парное показание 128°.'}},"
+          if old not in text:
+              raise SystemExit('lesson 40 target not found')
+          path.write_text(text.replace(old,new,1))
+      - name: Commit fixes
+        shell: bash
+        run: |
+          git config user.name 'gunya999-cmd'
+          git config user.email 'gunya999@gmail.com'
+          git add src/AngleNotationPlayer.tsx src/ProtractorPracticePlayer.tsx
+          git commit -m 'Fix lesson 37 and 40 student solvability defects'
+          git push origin HEAD:qa/student-solvability-audit-1-175
