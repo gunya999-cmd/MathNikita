@@ -233,7 +233,7 @@ export function StudentDashboardV4({snapshot,state,studentName='Ученик',st
           })}</div>
           <div className="sdv4-growth-summary">
             <span>Точность недели</span><b>{weekAccuracy===null?'—':`${weekAccuracy}%`}</b>
-            {accuracyDelta!==null&&<em className={accuracyDelta>0?'is-up':accuracyDelta<0?'is-down':''}>{accuracyDelta>0?'+':''}{accuracyDelta} п.п.</em>}
+            {accuracyDelta!==null&&<em className={accuracyDelta>0?'is-up':accuracyDelta<0?'is-down':''}>{accuracyDelta>0?'+':''}${accuracyDelta} п.п.</em>}
           </div>
         </section>
 
@@ -242,7 +242,7 @@ export function StudentDashboardV4({snapshot,state,studentName='Ученик',st
             <header><div><small>Последние 7 дней</small><h2>Ритм недели</h2></div><span>Реальная активность</span></header>
             <div className="sdv4-rhythm-stats">
               <article><small>Активно</small><b>{weeklyActiveMinutes} мин</b><span>за 7 дней</span></article>
-              <article><small>Дни занятий</small><b>{snapshot.studyDaysLast7} / 7</b><span>по 5+ минут</span></article>
+              <article><small>Дни занятий</small><b>{snapshot.studyDaysLast7} / 7</b><span>с учебной активностью</span></article>
               <article><small>Серия</small><b>{snapshot.streakDays} {pluralDays(snapshot.streakDays)}</b><span>{snapshot.streakDays>0?'подряд':'начни сегодня'}</span></article>
             </div>
           </div>
