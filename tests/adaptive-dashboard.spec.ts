@@ -114,6 +114,8 @@ test('weekly rhythm shows real active minutes, study days and current streak',as
   await expect(rhythm).toContainText('45 мин');
   await expect(rhythm).toContainText('3 / 7');
   await expect(rhythm).toContainText('2 дня');
+  await expect(rhythm).toContainText('с учебной активностью');
+  await expect(rhythm).not.toContainText('по 5+ минут');
   const chart=rhythm.getByLabel('Активные минуты по дням');
   await expect(chart.locator('article')).toHaveCount(7);
   await expect(chart.locator('article[aria-label$="15 мин"]')).toHaveCount(3);
