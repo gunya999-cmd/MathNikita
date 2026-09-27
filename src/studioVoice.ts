@@ -11,47 +11,50 @@ export const DEFAULT_VOICE_RATE=.94;
 
 const audioUrlCache=new Map<string,Promise<string>>();
 const readyAudioUrlCache=new Map<string,string>();
-const readyMentorAudioById=new Map<string,string>();
-const mentorAudioPromiseById=new Map<string,Promise<string>>();
-const dynamicPrefetchKeyById=new Map<string,string>();
 const RETRYABLE_STATUS=new Set([408,425,429,500,502,503,504]);
 type PrefetchItem={key:string;id:string;text:string};
+type AudioGroup='lesson'|'mentor';
 const prefetchQueue:PrefetchItem[]=[];
 const queuedPrefetchKeys=new Set<string>();
 const PREFETCH_QUEUE_LIMIT=24;
 const STUDIO_NETWORK_LIMIT=2;
 const studioSlotWaiters:Array<()=>void>=[];
-const activeStudioControllers=new Map<string,AbortController>();
+const activeStudioControllers=new Map<string,{controller:AbortController;id:string}>();
 let prefetchRunning=false;
 let activeStudioRequests=0;
-let mentorForegroundTickets=0;
 
 function abortError(){const error=new Error('Studio narration aborted');error.name='AbortError';return error}
-function clearMentorForegroundTicket(){mentorForegroundTickets=0}
 function narrationKeyPrefix(id:string){return`${STUDIO_VOICE_VERSION}:${id}:`}
 function summaryPracticePrefix(id:string){const match=id.match(/^lesson-(\d+)-stage-.*summary$/);return match?`${STUDIO_VOICE_VERSION}:lesson-${match[1]}-practice-`:''}
 function summaryPracticeIdPrefix(id:string){const match=id.match(/^lesson-(\d+)-stage-.*summary$/);return match?`lesson-${match[1]}-practice-`:''}
-function cancelStaleStudioGeneration(keepNarrationId=''){
+function audioGroupForId(id:string):AudioGroup{return id.startsWith('mentor-')?'mentor':'lesson'}
+function sourceGroup(source?:string):AudioGroup|undefined{return source==='mentor'||source==='practice-mentor'?'mentor':source==='narrator'||source==='practice-narrator'?'lesson':undefined}
+function cancelStaleStudioGeneration(keepNarrationId='',group?:AudioGroup){
   const keepPrefix=keepNarrationId?narrationKeyPrefix(keepNarrationId):'';
   const keepPracticePrefix=keepNarrationId?summaryPracticePrefix(keepNarrationId):'';
   const keepPracticeIdPrefix=keepNarrationId?summaryPracticeIdPrefix(keepNarrationId):'';
-  for(const[key,controller]of activeStudioControllers){if((keepPrefix&&key.startsWith(keepPrefix))||(keepPracticePrefix&&key.startsWith(keepPracticePrefix)))continue;controller.abort();audioUrlCache.delete(key);activeStudioControllers.delete(key)}
-  if(keepNarrationId){
-    for(let index=prefetchQueue.length-1;index>=0;index-=1){const item=prefetchQueue[index];if(item.id===keepNarrationId||(keepPracticeIdPrefix&&item.id.startsWith(keepPracticeIdPrefix)))continue;prefetchQueue.splice(index,1);queuedPrefetchKeys.delete(item.key)}
-  }else{prefetchQueue.length=0;queuedPrefetchKeys.clear()}
+  for(const[key,active]of activeStudioControllers){
+    if(group&&audioGroupForId(active.id)!==group)continue;
+    if((keepPrefix&&key.startsWith(keepPrefix))||(keepPracticePrefix&&key.startsWith(keepPracticePrefix)))continue;
+    active.controller.abort();audioUrlCache.delete(key);activeStudioControllers.delete(key);
+  }
+  for(let index=prefetchQueue.length-1;index>=0;index-=1){
+    const item=prefetchQueue[index];if(group&&audioGroupForId(item.id)!==group)continue;
+    if(item.id===keepNarrationId||(keepPracticeIdPrefix&&item.id.startsWith(keepPracticeIdPrefix)))continue;
+    prefetchQueue.splice(index,1);queuedPrefetchKeys.delete(item.key);
+  }
 }
 
 if(typeof window!=='undefined'){
   window.addEventListener('mathnikita-audio-request',event=>{
     const detail=(event as CustomEvent<{source?:string;narrationId?:string}>).detail;
-    const source=detail?.source;
-    const keepNarrationId=source==='narrator'||source==='practice-narrator'?detail?.narrationId??'':'';
-    cancelStaleStudioGeneration(keepNarrationId);
-    if(source!=='mentor'&&source!=='practice-mentor')return;
-    mentorForegroundTickets=1;
-    queueMicrotask(()=>{mentorForegroundTickets=0});
+    const group=sourceGroup(detail?.source);if(!group)return;
+    cancelStaleStudioGeneration(detail?.narrationId??'',group);
   });
-  window.addEventListener('mathnikita-stop-narration',()=>cancelStaleStudioGeneration());
+  window.addEventListener('mathnikita-stop-narration',event=>{
+    const source=(event as CustomEvent<{source?:string}>).detail?.source;
+    const group=sourceGroup(source);cancelStaleStudioGeneration('',group);
+  });
 }
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
@@ -65,12 +68,7 @@ export function loadVoiceSettings():StoredVoiceSettings{
 export function saveVoiceSettings(settings:StoredVoiceSettings){persistVoiceSettings(settings)}
 export function studioNarrationText(value:string){return prepareRussianSpeechText(value)}
 function normalizedCache(id:string,text:string){const prepared=studioNarrationText(text);return{prepared,key:`${STUDIO_VOICE_VERSION}:${id}:${prepared}`}}
-function mentorIdKey(id:string){return`${STUDIO_VOICE_VERSION}:${id}`}
-export function peekStudioAudioUrl(id:string,text:string){
-  const ready=id.startsWith('mentor-')?readyMentorAudioById.get(mentorIdKey(id))??readyAudioUrlCache.get(normalizedCache(id,text).key):readyAudioUrlCache.get(normalizedCache(id,text).key);
-  if(ready&&id.startsWith('mentor-')&&mentorForegroundTickets>0)clearMentorForegroundTicket();
-  return ready;
-}
+export function peekStudioAudioUrl(id:string,text:string){return readyAudioUrlCache.get(normalizedCache(id,text).key)}
 function isSpeculativeDynamicId(id:string){return id.startsWith('mentor-')}
 function isCurrentLessonNarrationId(id:string){return /^lesson-\d+-(?:stage|practice)-/.test(id)}
 
@@ -82,12 +80,18 @@ function drainPrefetchQueue(){
 export function prefetchStudioAudioUrl(id:string,text:string){
   if(!id||!text||isSpeculativeDynamicId(id))return;
   const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key)||queuedPrefetchKeys.has(key))return;
-  if(isCurrentLessonNarrationId(id)){
-    if(dynamicPrefetchKeyById.has(id))return;dynamicPrefetchKeyById.set(id,key);
-    void getStudioAudioUrl(id,text).catch(()=>{if(dynamicPrefetchKeyById.get(id)===key)dynamicPrefetchKeyById.delete(id)});return;
-  }
+  if(isCurrentLessonNarrationId(id)){void getStudioAudioUrl(id,text).catch(()=>undefined);return}
   if(prefetchQueue.length>=PREFETCH_QUEUE_LIMIT){const dropped=prefetchQueue.shift();if(dropped)queuedPrefetchKeys.delete(dropped.key)}
   queuedPrefetchKeys.add(key);prefetchQueue.push({key,id,text});drainPrefetchQueue();
+}
+
+// Mentor audio may only be warmed for text that is already visible to the learner.
+// Keeping this separate from generic prefetch prevents future hints/answers from
+// being generated speculatively by callers.
+export function prefetchVisibleMentorAudioUrl(id:string,text:string){
+  if(!id.startsWith('mentor-')||!text.trim())return;
+  const {key}=normalizedCache(id,text);if(readyAudioUrlCache.has(key)||audioUrlCache.has(key))return;
+  void getStudioAudioUrl(id,text,true).catch(()=>undefined);
 }
 
 function waitWithSignal(ms:number,signal:AbortSignal){
@@ -109,18 +113,13 @@ async function requestStudioAudio(id:string,prepared:string,signal:AbortSignal,a
 }
 
 export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOverride=false):Promise<string>{
-  const {prepared,key}=normalizedCache(id,text);const mentorKey=id.startsWith('mentor-')?mentorIdKey(id):'';
-  if(mentorKey){const mentorPromise=mentorAudioPromiseById.get(mentorKey);if(mentorPromise){if(mentorForegroundTickets>0)clearMentorForegroundTicket();return mentorPromise}}
-  const ready=(mentorKey?readyMentorAudioById.get(mentorKey):undefined)??readyAudioUrlCache.get(key);if(ready){if(mentorKey&&mentorForegroundTickets>0)clearMentorForegroundTicket();return ready}const cached=audioUrlCache.get(key);if(cached)return cached;
-  if(mentorKey){
-    const foreground=mentorForegroundOverride||mentorForegroundTickets>0;
-    if(foreground&&mentorForegroundTickets>0)clearMentorForegroundTicket();
-    if(!foreground)throw new Error('Background mentor warmup deferred');
-  }
-  const controller=new AbortController();activeStudioControllers.set(key,controller);
+  const {prepared,key}=normalizedCache(id,text);const isMentor=id.startsWith('mentor-');
+  const ready=readyAudioUrlCache.get(key);if(ready)return ready;const cached=audioUrlCache.get(key);if(cached)return cached;
+  if(isMentor&&!mentorForegroundOverride)throw new Error('Background mentor warmup deferred');
+  const controller=new AbortController();activeStudioControllers.set(key,{controller,id});
   const request=requestStudioAudio(id,prepared,controller.signal)
-    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);if(mentorKey)readyMentorAudioById.set(mentorKey,url);return url})
-    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);if(mentorKey){readyMentorAudioById.delete(mentorKey);mentorAudioPromiseById.delete(mentorKey)}throw error})
-    .finally(()=>{if(activeStudioControllers.get(key)===controller)activeStudioControllers.delete(key)});
-  audioUrlCache.set(key,request);if(mentorKey)mentorAudioPromiseById.set(mentorKey,request);return request;
+    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url})
+    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error})
+    .finally(()=>{if(activeStudioControllers.get(key)?.controller===controller)activeStudioControllers.delete(key)});
+  audioUrlCache.set(key,request);return request;
 }
