@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-68-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyEightStages:Stage[]=[
 {id:'l68-mission',kind:'story',eyebrow:'Урок 68 · § 19 · новое понятие',title:'Что делать, когда деление не заканчивается нацело?',body:'Начинаем § 19. Теперь деление должно описывать две величины: сколько полных групп получилось и сколько единиц осталось. Главная цель — понимать смысл неполного частного и остатка, а не просто запоминать запись.',note:'Технологическая карта урока 68: теория § 19; первичное закрепление № 521, 523, 525, 527; повторение № 545 (1, 2); домашний перенос № 522, 524, 526.',visual:'mission'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -89,7 +90,7 @@ export function PolygonConstructionPlayer(){
   useEffect(()=>{const handler=(event:Event)=>{const detail=(event as CustomEvent<StageJumpDetail>).detail;if(detail?.lessonNumber!==45||typeof detail.stageIndex!=='number')return;stopNarration();setStageIndex(Math.min(Math.max(Math.trunc(detail.stageIndex),0),lessonFortyFiveStages.length-1))};window.addEventListener('mathnikita-go-to-stage',handler);return()=>window.removeEventListener('mathnikita-go-to-stage',handler)},[]);
   const activity=stage.activity;const response=activity?responses[activity.id]??'':'';const isChecked=activity?Boolean(checked[activity.id]):false;const isCorrect=activity?Boolean(results[activity.id]):false;const builderPassed=Boolean(results['l45-builder']);
   function changeStage(next:number){stopNarration();setStageIndex(Math.min(Math.max(next,0),lessonFortyFiveStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
-  function checkAnswer(){if(!activity||!response.trim())return;const correct=normalize(response)===normalize(activity.answer);setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
+  function checkAnswer(){if(!activity||!response.trim())return;const correct=semanticAnswersEquivalent(String(response),String(activity.answer));setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
   function setResponse(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
   function setBuilderPassed(passed:boolean){setResults(previous=>previous['l45-builder']===passed?previous:{...previous,'l45-builder':passed})}
   const blockedByBuilder=Boolean(stage.builder)&&!builderPassed;

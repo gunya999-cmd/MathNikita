@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredElevenPractice,lessonOneHundredElevenResponseCount,type Lesson111Practice} from './data/lessonOneHundredElevenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-111-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l111-unit-fraction',eyebrow:'Урок 111 · § 30 · 3 из 4',title:'Единицы измерения превращаются в десятичные дроби',body:'Чтобы выразить меньшую единицу через большую, сначала вспомни, сколько меньших единиц содержится в одной большой. Сантиметр — одна сотая метра, дециметр — одна десятая метра, грамм — одна тысячная килограмма.',note:'Сначала установи знаменатель, потом записывай десятичную дробь.'},
 {id:'l111-centimeters',eyebrow:'Сантиметры и метры',title:'Сантиметры занимают сотые доли метра',body:'Сто сантиметров составляют один метр. Поэтому 18 сантиметров — это восемнадцать сотых метра, то есть 0,18 метра. Если сантиметров больше ста, появляется целая часть: 125 сантиметров — это 1,25 метра.',note:'Проверка: число сантиметров и сотые доли метра связаны напрямую.'},

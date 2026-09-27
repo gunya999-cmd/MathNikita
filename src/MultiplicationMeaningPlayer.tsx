@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -31,7 +32,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-54-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonFiftyFourStages:Stage[]=[
   {id:'l54-mission',kind:'story',eyebrow:'Урок 54 · § 16 · новая глава',title:'Короткая запись для одинаковых групп',body:'Сложение остаётся верным, но становится неудобным, когда одинаковое число надо повторить много раз. Умножение сжимает такую сумму в два множителя и сохраняет её смысл.',note:'Маршрут: равные слагаемые → язык произведения → 1 и 0 → прямоугольная таблица → ab=ba → задачи № 384 и 393.',visual:'groups'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -12,7 +13,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-81-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[³^]/g,'3').replace(/[²]/g,'2').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
 const numericValue=(value:string)=>{const compact=value.normalize('NFKC').trim().replace(/\s/g,'').replace(',','.');return/^[+-]?\d+(?:\.\d+)?$/.test(compact)?Number(compact):null};
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actualNumber=numericValue(value);const expectedNumber=numericValue(item);if(actualNumber!==null&&expectedNumber!==null)return actualNumber===expectedNumber;return normalize(value)===normalize(item)})};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actualNumber=numericValue(value);const expectedNumber=numericValue(item);if(actualNumber!==null&&expectedNumber!==null)return actualNumber===expectedNumber;return semanticAnswersEquivalent(String(value),String(item))})};
 
 export const lessonEightyOneStages:LessonEightyOneStage[]=[
 {id:'l81-mission',kind:'story',eyebrow:'Урок 81 · § 23 · объём фигуры',title:'Измеряем пространство кубиками',body:'Мы уже измеряли длину отрезком и площадь квадратом. Теперь появляется третья величина — объём. Его единицей служит куб, а измерение отвечает на вопрос: сколько таких единичных кубов помещается в фигуре.',note:'Технологическая карта урока 81: устно № 2, с. 156; теория § 23, с. 153–154; № 617, 618, 622; повторение № 643 (1, 2); домашнее — вопросы 1–4, № 623, 641.',visual:'mission'},

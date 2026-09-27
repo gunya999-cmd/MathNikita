@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-80-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonEightyStages:LessonEightyStage[]=[
 {id:'l80-mission',kind:'story',eyebrow:'Урок 80 · § 22 · пирамида',title:'От основания — к общей вершине',body:'Сегодня завершаем § 22. У пирамиды есть одно основание, а все боковые грани — треугольники, сходящиеся в общей вершине. Научимся читать это пространственное тело и его развёртку.',note:'Технологическая карта урока 80: устно № 5–6, с. 150; теория § 22, с. 148–149; № 604; повторение № 614; вопросы 14–18; домашнее № 605, 611, 615.',visual:'mission'},

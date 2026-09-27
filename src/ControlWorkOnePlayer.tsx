@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect,useMemo,useState } from 'react';
 import { loadLessonTiming } from './lessonTiming';
 import './lessonPlayer.css';
@@ -49,7 +50,7 @@ function normalizeSet(value:string){return value.toUpperCase().split(/[\s,;]+/).
 function correct(field:ControlField,response:string){
   if(field.type==='set')return normalizeSet(response)===normalizeSet(field.answer);
   const candidates=[field.answer,...(field.accepted??[])];
-  return candidates.some(answer=>normalize(response)===normalize(answer));
+  return candidates.some(answer=>semanticAnswersEquivalent(String(response),String(answer)));
 }
 function loadSaved():Saved{
   try{

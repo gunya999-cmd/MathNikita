@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredSixPractice,lessonOneHundredSixResponseCount,type Lesson106Practice} from './data/lessonOneHundredSixPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-106-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l106-map',eyebrow:'Урок 106 · § 29 · 5 из 5',title:'Собери весь параграф в одну карту',body:'Смешанные числа связывают деление с остатком, неправильные дроби, сложение, вычитание и сравнение. Перед решением сначала определи тип задачи и только потом выбирай алгоритм.',note:'Итоговая цель — не отдельный приём, а уверенный выбор правильного приёма.'},
 {id:'l106-convert',eyebrow:'Преобразования',title:'Два направления должны работать одинаково уверенно',body:'Неправильную дробь превращай в смешанное число делением с остатком. Смешанное число возвращай в неправильную дробь умножением целой части на знаменатель и прибавлением числителя.',note:'Обратное преобразование — быстрый способ проверить себя.'},

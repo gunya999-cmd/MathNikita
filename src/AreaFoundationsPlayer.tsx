@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-74-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventyFourStages:LessonSeventyFourStage[]=[
 {id:'l74-mission',kind:'story',eyebrow:'Урок 74 · § 21 · новый материал',title:'Площадь — это не периметр и не форма',body:'Сегодня вводим новую величину: площадь показывает, какую часть плоскости занимает фигура. Измерять её будем единичными квадратами, а затем получим формулы площади прямоугольника и квадрата.',note:'Технологическая карта урока 74: устно № 1, с. 141; теория § 21; первичное закрепление № 564, 565, 566, 567, 569, 571, 572; повторение № 595; домашний перенос § 21, вопросы 1–7, № 568, 570, 573, 596(1).',visual:'mission'},

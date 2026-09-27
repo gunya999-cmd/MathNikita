@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useMemo,useState} from 'react';
 import {skillLabels,taskBank} from './data/course';
 import {recordAttempt,saveLearnerState,type LearnerState} from './learningEngine';
@@ -26,7 +27,7 @@ export function ReviewTrainer({state,onStateChange,onExit}:Props){
   };
   const check=()=>{
     if(!task||!answer.trim()||feedback==='correct')return;
-    const correct=normalize(answer)===normalize(task.answer);
+    const correct=semanticAnswersEquivalent(String(answer),String(task.answer));
     const nextState=recordAttempt(state,task,{correct,firstTry:attempts===0,usedHint});
     saveLearnerState(nextState);
     onStateChange(nextState);

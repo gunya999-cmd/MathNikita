@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -8,7 +9,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-97-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
+const answerMatches=(value:string,answers:string[])=>answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 
 const conceptStages:Stage[]=[
   {id:'l97-rule-choice',eyebrow:'Урок 97 · § 26 · 2 из 3',title:'Сначала определи, что в дробях одинаково',body:'Перед вычислениями посмотри на структуру пары. Одинаковые знаменатели означают одинаковый размер долей, одинаковые числители — одинаковое количество долей. Это сразу подсказывает правило сравнения.',note:'Лучшее решение здесь часто занимает одну мысль, а не вычисление.'},

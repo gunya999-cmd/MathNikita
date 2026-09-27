@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect,useMemo,useState } from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -69,7 +70,7 @@ export function NaturalNumberEstimatePlayer(){
   const wasChecked=activity?Boolean(checked[activity.id]):false;
   function stopVoice(){window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));window.speechSynthesis?.cancel()}
   function choose(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
-  function checkAnswer(){if(!activity)return;const correct=normalize(currentResponse)===normalize(activity.answer);setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
+  function checkAnswer(){if(!activity)return;const correct=semanticAnswersEquivalent(String(currentResponse),String(activity.answer));setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
   function resetActivity(){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:''}));setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
   function move(delta:number){stopVoice();setStageIndex(index=>Math.min(Math.max(index+delta,0),lessonTwentyEightStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
   return <main className="lesson-player-page"><div className="lesson-workspace">

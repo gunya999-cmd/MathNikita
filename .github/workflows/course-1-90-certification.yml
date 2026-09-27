@@ -26,6 +26,13 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 24}
       - run: npm install
+      - name: Answer input semantic audit
+        run: >-
+          npx playwright test
+          tests/answer-equivalence.spec.ts
+          tests/coursewide-answer-input.spec.ts
+          tests/local-answer-validator-audit.spec.ts
+          --config=playwright.desktop.config.ts --workers=1
       - name: Pronunciation normalization contract
         run: npx playwright test tests/audio-content-pronunciation.spec.ts --config=playwright.desktop.config.ts --workers=1 --grep "pronunciation normalization"
       - name: Pronunciation stress dictionary contract

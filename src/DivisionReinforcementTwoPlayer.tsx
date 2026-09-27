@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-66-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtySixStages:Stage[]=[
 {id:'l66-mission',kind:'story',eyebrow:'Урок 66 · § 18 · закрепление',title:'Деление становится инструментом модели',body:'Сегодня мы не изучаем новое правило. Задача сильнее: быстро распознавать роль деления внутри вычисления, уравнения и текстовой задачи, объяснять каждый промежуточный результат и проверять ответ обратным действием.',note:'Технологическая карта урока 66: № 461 (3), 485, 493, 503, 505, 513, 515; повторение № 520.',visual:'mission'},

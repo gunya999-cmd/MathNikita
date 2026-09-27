@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredThreePractice,lessonOneHundredThreeResponseCount,type Lesson103Practice} from './data/lessonOneHundredThreePractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-103-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l103-split',eyebrow:'Урок 103 · § 29 · 2 из 5',title:'Считаем по частям',body:'При действиях со смешанными числами отдельно работаем с целыми и дробными частями. Знаменатель дробной части сохраняется.',note:'Это сводит вычисление к знакомым действиям.'},
 {id:'l103-add',eyebrow:'Сложение',title:'Сложи целые части и числители',body:'При одинаковых знаменателях сложи целые части и дробные части отдельно. Затем проверь дробную сумму.',note:'Если она правильная, ответ готов.'},

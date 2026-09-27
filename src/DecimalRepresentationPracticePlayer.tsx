@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTenPractice,lessonOneHundredTenResponseCount,type Lesson110Practice} from './data/lessonOneHundredTenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-110-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l110-scale',eyebrow:'Урок 110 · § 30 · 2 из 4',title:'Знаменатель задаёт длину дробной части',body:'Десять даёт один знак после запятой, сто — два, тысяча — три, десять тысяч — четыре, сто тысяч — пять. Сначала считай нули в знаменателе, потом размещай числитель.',note:'Этот приём защищает от большинства ошибок с нулями.'},
 {id:'l110-leading-zero',eyebrow:'Ведущие нули',title:'Числитель занимает последние позиции',body:'Если цифр числителя меньше, чем требуется позиций после запятой, свободные места слева заполняются нулями. Поэтому три тысячных — это 0,003, а тринадцать стотысячных — 0,00013.',note:'Нули здесь не декоративные: они показывают разряд.'},

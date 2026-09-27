@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect,useMemo,useState } from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -74,7 +75,7 @@ export function AdditionPropertiesPracticePlayer(){
   function choose(value:string){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:value}));setChecked(previous=>({...previous,[activity.id]:false}))}
   function addOrder(value:string){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:[...(previous[activity.id]??[]),value]}));setChecked(previous=>({...previous,[activity.id]:false}))}
   function removeOrder(index:number){if(!activity)return;setOrders(previous=>({...previous,[activity.id]:(previous[activity.id]??[]).filter((_,itemIndex)=>itemIndex!==index)}));setChecked(previous=>({...previous,[activity.id]:false}))}
-  function checkAnswer(){if(!activity)return;const correct=activity.type==='order'?sameOrder(currentOrder,activity.answer as string[]):normalize(currentResponse)===normalize(activity.answer as string);setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
+  function checkAnswer(){if(!activity)return;const correct=activity.type==='order'?sameOrder(currentOrder,activity.answer as string[]):semanticAnswersEquivalent(String(currentResponse),String(activity.answer as string));setChecked(previous=>({...previous,[activity.id]:true}));setResults(previous=>({...previous,[activity.id]:correct}))}
   function resetActivity(){if(!activity)return;setResponses(previous=>({...previous,[activity.id]:''}));setOrders(previous=>({...previous,[activity.id]:[]}));setChecked(previous=>({...previous,[activity.id]:false}));setResults(previous=>({...previous,[activity.id]:false}))}
   function move(delta:number){setStageIndex(index=>Math.min(Math.max(index+delta,0),lessonTwentyThreeStages.length-1));window.scrollTo({top:0,behavior:'smooth'})}
   return <main className="lesson-player-page"><div className="lesson-workspace">

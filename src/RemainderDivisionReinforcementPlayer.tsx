@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-69-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyNineStages:LessonSixtyNineStage[]=[
 {id:'l69-mission',kind:'story',eyebrow:'Урок 69 · § 19 · закрепление',title:'Остаток найден. А что он означает?',body:'Сегодня превращаем новое правило в рабочий навык. Нужно не только вычислить неполное частное и остаток, но и решить, как они отвечают на вопрос задачи, восстановить неизвестный компонент и доказать, что запись корректна.',note:'Технологическая карта урока 69: устно № 2–3, с. 132; закрепление № 528, 530, 533, 535, 541, 542; повторение № 546; домашний перенос № 529, 534, 536.',visual:'mission'},

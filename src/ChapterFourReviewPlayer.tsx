@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredSevenPractice,lessonOneHundredSevenResponseCount,type Lesson107Practice} from './data/lessonOneHundredSevenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-107-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l107-map',eyebrow:'Урок 107 · повторение главы 4',title:'Сначала восстанови карту всей главы',body:'В контрольной тема не будет подписана над каждым заданием. Поэтому главный навык повторения — по условию понять, нужен ли смысл дроби, задача на часть, сравнение, действие с дробями, деление или смешанные числа.',note:'Не начинай вычислять, пока не определил тип задачи.'},
 {id:'l107-part',eyebrow:'Параграф 25',title:'Дробь связывает часть и целое',body:'Знаменатель показывает, на сколько равных частей разделено целое, числитель — сколько таких частей взято. Для дроби от числа находи одну долю и нужное число долей; для восстановления целого двигайся в обратном направлении.',note:'После текстовой задачи проверяй, может ли полученная часть быть больше исходного целого.'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-91-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/ё/g,'е').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
+const answerMatches=(value:string,answers:string[])=>answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const fractionField=(id:string,label:string,numerator:number,denominator:number):Field=>({id,label,answers:[`${numerator}/${denominator}`,`${numerator} / ${denominator}`],placeholder:`${numerator}/${denominator}`});
 
 const practice:Practice[]=[

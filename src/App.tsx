@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect, useMemo, useState } from 'react';
 import { skillLabels, type CourseTask } from './data/course';
 import { totalLessons, yearPlan } from './data/yearPlan';
@@ -100,7 +101,7 @@ export function App() {
 
   function checkAnswer(value = answer) {
     if (!value.trim() || feedback === 'correct') return;
-    const correct = normalize(value) === normalize(task.answer);
+    const correct = semanticAnswersEquivalent(String(value),String(task.answer));
     const next = recordAttempt(state, task, { correct, firstTry: attemptsOnTask === 0, usedHint: showHint });
     persist(next, setState);
     setAnswer(value);

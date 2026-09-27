@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -9,7 +10,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-96-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const answerMatches=(value:string,answers:string[])=>answers.some(answer=>normalize(value)===normalize(answer));
+const answerMatches=(value:string,answers:string[])=>answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 
 const conceptStages:Stage[]=[
   {id:'l96-whole',eyebrow:'Урок 96 · § 26 · 1 из 3',title:'Единица — граница между двумя типами дробей',body:'Если целое разделено на одинаковые доли, знаменатель показывает, сколько долей образуют единицу. Поэтому сравнить числитель со знаменателем — значит сразу понять, набрали ли мы меньше одного целого, ровно одно целое или больше.',note:'Сначала сравни числитель и знаменатель — вычислять значение дроби не нужно.'},

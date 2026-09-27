@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import {loadLessonTiming} from './lessonTiming';
 import './lessonPlayer.css';
@@ -42,7 +43,7 @@ export const lessonNinetyStages:ControlWorkFiveStage[]=[
 
 function normalize(value:string){return value.trim().toLowerCase().replace(/\s+/g,'').replace(/[−–—]/g,'-').replace(/см(?:²|2|³|3)?|м(?:²|2)?/g,'')}
 function normalizeSet(value:string){return value.match(/\d+/g)?.map(Number).sort((a,b)=>a-b).join(',')??''}
-function correct(field:ControlField,response:string){if(field.mode==='number-set')return normalizeSet(response)===normalizeSet(field.answer);return[field.answer,...(field.accepted??[])].some(answer=>normalize(response)===normalize(answer))}
+function correct(field:ControlField,response:string){if(field.mode==='number-set')return normalizeSet(response)===normalizeSet(field.answer);return[field.answer,...(field.accepted??[])].some(answer=>semanticAnswersEquivalent(String(response),String(answer)))}
 function loadSaved():Saved{try{const raw=localStorage.getItem(KEY);if(!raw)return{version:1,stageIndex:0,responses:{},submitted:false};const parsed=JSON.parse(raw) as Saved;if(parsed?.version===1)return{version:1,stageIndex:Math.max(0,Math.min(parsed.stageIndex,lessonNinetyStages.length-1)),responses:parsed.responses??{},submitted:Boolean(parsed.submitted),completedAt:parsed.completedAt,submittedResponses:parsed.submittedResponses,correctionFieldIds:parsed.correctionFieldIds??[],correctionCompletedAt:parsed.correctionCompletedAt}}catch{}return{version:1,stageIndex:0,responses:{},submitted:false}}
 
 export function ControlWorkFivePlayer(){

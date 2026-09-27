@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentySixPractice,lessonOneHundredTwentySixResponseCount,type LessonOneHundredTwentySixField,type LessonOneHundredTwentySixTask} from './data/lessonOneHundredTwentySixPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-126-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const matchField=(value:string,field:LessonOneHundredTwentySixField)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:LessonOneHundredTwentySixField)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l126-idea',eyebrow:'Урок 126 · § 34 · 1 из 7',title:'Умножение десятичных дробей начинается как обычное умножение',body:'Временно не обращаем внимания на запятые и перемножаем цифры как натуральные числа. Затем возвращаем масштабы множителей.',note:'3,4 × 1,23: считаем 34 × 123 = 4182, затем отделяем три знака → 4,182.'},
 {id:'l126-digits',eyebrow:'Главное правило',title:'Количество десятичных знаков складывается',body:'В произведении справа отделяют столько цифр, сколько знаков после запятой было в обоих множителях вместе.',note:'У 2,4 один знак, у 3,6 один знак: в 8,64 должно быть два.'},

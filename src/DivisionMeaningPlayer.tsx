@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-61-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyOneStages:Stage[]=[
   {id:'l61-mission',kind:'story',eyebrow:'Урок 61 · § 18 · новая тема',title:'Деление отвечает на два разных вопроса',body:'Начинаем § 18. Одно и то же равенство может описывать распределение поровну или поиск количества одинаковых групп. В обоих случаях ответ доказывает умножение.',note:'Маршрут по учебнику Мерзляка: § 18, № 447–453 · смысл действия → обратность умножению → компоненты → особые случаи → точные вычисления.',visual:'mission'},

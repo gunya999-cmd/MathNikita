@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredNineteenPractice,lessonOneHundredNineteenResponseCount,type Lesson119Field,type Lesson119Practice} from './data/lessonOneHundredNineteenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-119-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.').replace(/[–—-]/g,'');
-const matchField=(value:string,field:Lesson119Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson119Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l119-place-value',eyebrow:'Урок 119 · § 33 · 1 из 6',title:'Складываем одинаковые разряды',body:'Десятичная запись устроена по разрядам. Единицы складываются с единицами, десятые с десятыми, сотые с сотыми. Поэтому сначала нужно совместить одинаковые разряды двух чисел.',note:'В сумме 6,9 и 3,45 число 6,9 удобно записать как 6,90.'},
 {id:'l119-equalize',eyebrow:'Подготовка записи',title:'Нули справа помогают выровнять дробную часть',body:'Нули, дописанные справа после последней значащей цифры дробной части, не меняют значение числа. Они только делают разрядную запись наглядной и уменьшают риск ошибки.',note:'4,8 и 4,80 — одно и то же число.'},

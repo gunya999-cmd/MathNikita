@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -32,7 +33,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-55-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonFiftyFiveStages:Stage[]=[
   {id:'l55-mission',kind:'story',eyebrow:'Урок 55 · § 16 · практика',title:'Произведение без лишних действий',body:'На прошлом уроке мы раскрыли смысл умножения. Теперь превратим свойства и разрядный состав числа в надёжные вычислительные инструменты: восстановим табличные факты, освоим круглые множители и проверим письменное умножение.',note:'Маршрут: соседний факт → ×10, ×100, ×1000 → нули в круглых множителях → прикидка → письменная запись → выражения № 385–392.',visual:'fact-grid'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -12,7 +13,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-83-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[³^]/g,'3').replace(/[²]/g,'2').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'').replace(/·/g,'');
 const numericValue=(value:string)=>{const compact=value.normalize('NFKC').trim().replace(/\s/g,'').replace(',','.');return/^[+-]?\d+(?:\.\d+)?$/.test(compact)?Number(compact):null};
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return normalize(value)===normalize(item)})};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>{const actual=numericValue(value);const expected=numericValue(item);if(actual!==null&&expected!==null)return actual===expected;return semanticAnswersEquivalent(String(value),String(item))})};
 
 export const lessonEightyThreeStages:LessonEightyThreeStage[]=[
 {id:'l83-mission',kind:'story',eyebrow:'Урок 83 · § 23 · закрепление',title:'Объём в обратных и прикладных задачах',body:'Формулы V=abc, V=a³ и V=Sh уже известны. Сегодня учимся распознавать, какое измерение спрятано, приводить единицы, работать с составным объёмом и переводить геометрический результат в производительность или массу.',note:'Технологическая карта урока 83: устно №4, с.156; №626, 630, 633, 634; повторение №644; домашнее — §23, №627, 631, 643(3,4).',visual:'mission'},

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredNinePractice,lessonOneHundredNineResponseCount,type Lesson109Practice} from './data/lessonOneHundredNinePractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-109-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l109-notation',eyebrow:'Урок 109 · § 30 · 1 из 4',title:'Обыкновенную дробь можно записать короче',body:'Если знаменатель равен десяти, ста, тысяче или следующей степени десяти, дробь удобно записывать десятичной. Такая запись сразу показывает целую часть и разряды дробной части.',note:'Например, семь десятых записываются как ноль целых семь десятых.'},
 {id:'l109-comma',eyebrow:'Десятичная запятая',title:'Запятая разделяет целую и дробную части',body:'Слева от запятой записывается целая часть числа. Справа идут цифры дробной части. Первая цифра отвечает за десятые, вторая за сотые, третья за тысячные.',note:'Положение цифры важно так же, как сама цифра.'},

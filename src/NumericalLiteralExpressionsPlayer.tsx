@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import { useEffect,useMemo,useState } from 'react';
 import { ExtendedPracticeLab } from './ExtendedPracticeLab';
 import './lessonPlayer.css';
@@ -66,7 +67,7 @@ export function NumericalLiteralExpressionsPlayer(){
   function stopVoice(){window.dispatchEvent(new CustomEvent('mathnikita-stop-narration'));if('speechSynthesis'in window)window.speechSynthesis.cancel()}
   function moveTo(nextIndex:number){stopVoice();setStageIndex(Math.max(0,Math.min(nextIndex,lessonThirtyStages.length-1)));window.scrollTo({top:0,behavior:'smooth'})}
   function setResponse(value:string){if(!activity)return;setResponses(current=>({...current,[activity.id]:value}));setChecked(current=>({...current,[activity.id]:false}));setResults(current=>({...current,[activity.id]:false}))}
-  function checkAnswer(){if(!activity||!response.trim())return;const correct=normalize(response)===normalize(activity.answer);setChecked(current=>({...current,[activity.id]:true}));setResults(current=>({...current,[activity.id]:correct}))}
+  function checkAnswer(){if(!activity||!response.trim())return;const correct=semanticAnswersEquivalent(String(response),String(activity.answer));setChecked(current=>({...current,[activity.id]:true}));setResults(current=>({...current,[activity.id]:correct}))}
   const canAdvance=!activity||isCorrect;
 
   return <main className="lesson-player">

@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-72-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSeventyTwoStages:LessonSeventyTwoStage[]=[
 {id:'l72-mission',kind:'story',eyebrow:'Урок 72 · § 20 · закрепление',title:'Степень должна стать рабочим инструментом',body:'На прошлом уроке появилась запись aⁿ. Теперь закрепляем вычисление степеней, подстановку значений букв, строгий порядок действий, перевод обычных чисел в степени заданного основания и перевод словесных формулировок в числовые выражения.',note:'Технологическая карта урока 72: устно № 3–5, с. 136; закрепление № 554, 556, 558; повторение № 560 (3–4), 562; домашний перенос § 20, № 555, 557, 559, доп. № 563.',visual:'mission'},

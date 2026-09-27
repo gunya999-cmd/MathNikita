@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredFourPractice,lessonOneHundredFourResponseCount,type Lesson104Practice} from './data/lessonOneHundredFourPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-104-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const match=(v:string,a:string[])=>a.some(x=>norm(v)===norm(x));
+const match=(v:string,a:string[])=>a.some(x=>semanticAnswersEquivalent(String(v),String(x)));
 const concepts:Stage[]=[
 {id:'l104-borrow',eyebrow:'Урок 104 · § 29 · 3 из 5',title:'Заём единицы должен стать автоматическим',body:'Если дробная часть уменьшаемого меньше дробной части вычитаемого, уменьши целую часть на один и прибавь к числителю полный знаменатель.',note:'Знаменатель при этом не меняется.'},
 {id:'l104-chain',eyebrow:'Сложное вычитание',title:'Сначала преобразуй, потом вычисляй',body:'Не пытайся вычитать меньший числитель из большего формально. Сначала перепиши уменьшаемое после займа и только затем работай с целой и дробной частями.',note:'Так запись остаётся прозрачной и легко проверяется.'},

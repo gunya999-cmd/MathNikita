@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredSeventeenPractice,lessonOneHundredSeventeenResponseCount,type Lesson117Field,type Lesson117Practice} from './data/lessonOneHundredSeventeenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-117-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const matchField=(value:string,field:Lesson117Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson117Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l117-units-decimals',eyebrow:'Урок 117 · § 32 · 2 из 3',title:'До единиц решает цифра десятых',body:'Когда десятичную дробь округляют до целого числа, сохраняют целую часть и смотрят на первую цифру после запятой. Если это 0–4, целая часть не меняется; если 5–9, она увеличивается на единицу.',note:'25,54 округляется до 26, а 8,47 — до 8.'},
 {id:'l117-thousandths',eyebrow:'Точная работа с дробной частью',title:'До тысячных сохраняем три цифры после запятой',body:'Чтобы округлить до тысячных, оставляют три цифры после запятой. Решение принимает четвёртая цифра. Если она 5–9, цифра тысячных увеличивается на один.',note:'8,55555 до тысячных даёт 8,556.'},

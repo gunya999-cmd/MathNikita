@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentyPractice,lessonOneHundredTwentyResponseCount,type Lesson120Field,type Lesson120Practice} from './data/lessonOneHundredTwentyPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-120-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.').replace(/[–—-]/g,'');
-const matchField=(value:string,field:Lesson120Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson120Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l120-place-value',eyebrow:'Урок 120 · § 33 · 2 из 6',title:'Вычитаем только одинаковые разряды',body:'Как и при сложении, единицы должны стоять под единицами, десятые под десятыми, сотые под сотыми. Ошибка в выравнивании разрядов меняет само значение вычисления.',note:'Главный ориентир записи — запятая под запятой.'},
 {id:'l120-equalize',eyebrow:'Подготовка записи',title:'Недостающие знаки после запятой дополняем нулями',body:'Нули справа в дробной части не меняют число. Поэтому 13,5 можно записать как 13,50, а 20 — как 20,00. Такая запись делает каждый разряд видимым.',note:'Перед вычитанием удобно сделать одинаковое количество знаков после запятой.'},

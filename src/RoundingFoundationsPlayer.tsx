@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredSixteenPractice,lessonOneHundredSixteenResponseCount,type Lesson116Field,type Lesson116Practice} from './data/lessonOneHundredSixteenPractice';
@@ -6,7 +7,7 @@ type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:
 type Jump={lessonNumber?:number;stageIndex?:number};
 const KEY='mathnikita-lesson-116-progress-v1';
 const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');
-const matchField=(value:string,field:Lesson116Field)=>field.answers.some(answer=>norm(value)===norm(answer));
+const matchField=(value:string,field:Lesson116Field)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l116-approximation',eyebrow:'Урок 116 · § 32 · 1 из 3',title:'Округление даёт близкое удобное число',body:'Точное значение иногда содержит больше цифр, чем нужно для задачи. Тогда число заменяют близким значением выбранной точности. Такая запись сообщает, что результат приближённый, а не точный.',note:'Сначала всегда назови разряд, до которого округляешь.'},
 {id:'l116-decimal-rule',eyebrow:'Правило для десятичных дробей',title:'Сохрани нужный разряд и посмотри на следующий',body:'При округлении десятичной дроби оставляют цифры до нужного разряда включительно. Следующая справа цифра решает, изменится ли последний сохраняемый разряд. Остальные цифры после него отбрасывают.',note:'Для округления до десятых решают сотые, для сотых — тысячные.'},

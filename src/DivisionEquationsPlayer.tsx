@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -11,7 +12,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-64-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/−/g,'-').replace(/[\s.,;:!?()[\]{}'"«»°]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonSixtyFourStages:Stage[]=[
 {id:'l64-mission',kind:'story',eyebrow:'Урок 64 · § 18 · уравнения',title:'Не угадываем действие — определяем роль неизвестного',body:'Сегодня уравнение решается не по внешнему виду, а по смыслу действия. Сначала определяем, чем является неизвестное: множителем, делимым или делителем. Затем применяем обратную связь и обязательно проверяем корень.',note:'Технологическая карта урока 64: решать уравнения, используя связи между компонентами действия деления.',visual:'mission'},

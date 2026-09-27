@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import {loadLessonTiming} from './lessonTiming';
 import './lessonPlayer.css';
@@ -10,7 +11,7 @@ const COMPLETION_KEY='mathnikita:lesson-complete:125';
 const fieldById=new Map(lessonOneHundredTwentyFiveFields.map(field=>[field.id,field]));
 function normalize(value:string){return value.trim().toLowerCase().replace(/\s+/g,'').replace(/[−–—]/g,'-').replace(/,/g,'.')}
 function validIntervalTriple(value:string){const raw=value.replace(/,/g,'.').match(/\d+(?:\.\d+)?/g)??[];if(raw.length!==3)return false;const numbers=raw.map(Number);return new Set(numbers.map(item=>item.toString())).size===3&&numbers.every(item=>item>5.74&&item<5.76)}
-function correct(field:ControlField125,response:string){if(field.mode==='decimal-between-three')return validIntervalTriple(response);return[field.answer,...(field.accepted??[])].some(answer=>normalize(response)===normalize(answer))}
+function correct(field:ControlField125,response:string){if(field.mode==='decimal-between-three')return validIntervalTriple(response);return[field.answer,...(field.accepted??[])].some(answer=>semanticAnswersEquivalent(String(response),String(answer)))}
 function loadSaved():Saved{try{const raw=localStorage.getItem(lessonOneHundredTwentyFiveProgressKey);if(!raw)return{version:1,stageIndex:0,responses:{},submitted:false};const parsed=JSON.parse(raw) as Saved;if(parsed?.version===1)return{version:1,stageIndex:Math.max(0,Math.min(parsed.stageIndex,lessonOneHundredTwentyFiveStages.length-1)),responses:parsed.responses??{},submitted:Boolean(parsed.submitted),completedAt:parsed.completedAt,submittedResponses:parsed.submittedResponses,correctionFieldIds:parsed.correctionFieldIds??[],correctionCompletedAt:parsed.correctionCompletedAt}}catch{}return{version:1,stageIndex:0,responses:{},submitted:false}}
 
 export function ControlWorkSevenPlayer(){

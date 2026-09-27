@@ -1,8 +1,9 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';import './theoryExperience.css';
 import {lessonOneHundredTwentySevenPractice,lessonOneHundredTwentySevenResponseCount,type LessonOneHundredTwentySevenField,type LessonOneHundredTwentySevenTask} from './data/lessonOneHundredTwentySevenPractice';
 type Stage={id:string;eyebrow:string;title:string;body:string;note?:string;practice?:LessonOneHundredTwentySevenTask;summary?:boolean};type Saved={version:1;stageIndex:number;responses:Record<string,string>;checked:Record<string,boolean>;attempts:Record<string,number>};type Jump={lessonNumber?:number;stageIndex?:number};
-const KEY='mathnikita-lesson-127-progress-v1';const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');const matchField=(value:string,field:LessonOneHundredTwentySevenField)=>field.answers.some(answer=>norm(value)===norm(answer));
+const KEY='mathnikita-lesson-127-progress-v1';const norm=(v:string)=>v.normalize('NFKC').trim().toLocaleLowerCase('ru-RU').replace(/\s+/g,'').replace(/,/g,'.');const matchField=(value:string,field:LessonOneHundredTwentySevenField)=>field.answers.some(answer=>semanticAnswersEquivalent(String(value),String(answer)));
 const concepts:Stage[]=[
 {id:'l127-recall',eyebrow:'Урок 127 · § 34 · 2 из 7',title:'Алгоритм должен стать автоматическим',body:'Умножь числа как натуральные, сложи количество десятичных знаков, поставь запятую и обязательно оцени разумность ответа.',note:'Четыре шага: цифры → знаки → запятая → прикидка.'},
 {id:'l127-natural',eyebrow:'Закрепление',title:'Десятичная дробь × натуральное число',body:'Натуральный множитель не добавляет десятичных знаков. В результате отделяем столько знаков, сколько было у десятичной дроби.',note:'2,35 × 6: 235 × 6 = 1410 → 14,10 = 14,1.'},

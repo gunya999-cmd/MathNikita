@@ -1,3 +1,4 @@
+import { answersEquivalent as semanticAnswersEquivalent } from './answerEquivalence';
 import {useEffect,useMemo,useState} from 'react';
 import './lessonPlayer.css';
 import './theoryExperience.css';
@@ -32,7 +33,7 @@ type StageJumpDetail={lessonNumber?:number;stageIndex?:number};
 
 const KEY='mathnikita-lesson-56-progress-v1';
 const normalize=(value:string)=>value.normalize('NFKC').trim().toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[×*]/g,'·').replace(/[\s.,;:!?()[\]{}'"«»]/g,'');
-const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>normalize(value)===normalize(item))};
+const answerMatches=(value:string,answer:string|string[])=>{const variants=Array.isArray(answer)?answer:[answer];return variants.some(item=>semanticAnswersEquivalent(String(value),String(item)))};
 
 export const lessonFiftySixStages:Stage[]=[
   {id:'l56-mission',kind:'story',eyebrow:'Урок 56 · § 16 · алгоритм',title:'Каждый перенос остаётся на своём разряде',body:'Мы уже умеем читать произведение и оценивать его масштаб. Теперь соберём письменное умножение на одну цифру в точный алгоритм: начнём с единиц, сохраним перенос, пройдём все разряды и проверим ответ прикидкой.',note:'Маршрут: разряды → 347·6 → переносы → нули внутри числа → многозначные числа → прикидка → задачи № 393–398.',visual:'mission'},
