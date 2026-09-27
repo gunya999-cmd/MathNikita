@@ -49,6 +49,24 @@ async function seedWeeklyGrowth(page:any){
   });
 }
 
+async function seedWeeklyRhythm(page:any){
+  await page.addInitScript(()=>{
+    const now=new Date();
+    const key=(daysAgo:number)=>{
+      const date=new Date(now.getFullYear(),now.getMonth(),now.getDate()-daysAgo);
+      const year=date.getFullYear();const month=String(date.getMonth()+1).padStart(2,'0');const day=String(date.getDate()).padStart(2,'0');
+      return`${year}-${month}-${day}`;
+    };
+    const studyDay={screenSeconds:1200,focusSeconds:900,activeSeconds:900,correct:4,wrong:1,completedLessons:0};
+    localStorage.setItem('mathnikita:student-analytics:v1',JSON.stringify({
+      version:1,
+      lessons:{},
+      daily:{[key(0)]:studyDay,[key(1)]:studyDay,[key(3)]:studyDay},
+      events:[]
+    }));
+  });
+}
+
 test('dashboard prioritizes an unresolved error and removes it after correction',async({page})=>{
   await seedActiveError(page);
   await page.goto('/',{waitUntil:'domcontentloaded'});
@@ -84,4 +102,21 @@ test('weekly growth compares weekly accuracy instead of lifetime mastery',async(
   await expect(card).toContainText('+25 п.п.');
   await expect(card).toContainText('4 ответов за 7 дней');
   await expect(card.locator('.sdv4-growth-value')).not.toContainText('55%');
+});
+
+test('weekly rhythm shows real active minutes, study days and current streak',async({page})=>{
+  await seedWeeklyRhythm(page);
+  await page.goto('/',{waitUntil:'domcontentloaded'});
+  await page.getByRole('button',{name:'Кабинет'}).click();
+
+  const rhythm=page.getByRole('region',{name:'Ритм недели'});
+  await expect(rhythm).toBeVisible();
+  await expect(rhythm).toContainText('45 мин');
+  await expect(rhythm).toContainText('3 / 7');
+  await expect(rhythm).toContainText('2 дня');
+  await expect(rhythm).toContainText('с учебной активностью');
+  await expect(rhythm).not.toContainText('по 5+ минут');
+  const chart=rhythm.getByLabel('Активные минуты по дням');
+  await expect(chart.locator('article')).toHaveCount(7);
+  await expect(chart.locator('article[aria-label$="15 мин"]')).toHaveCount(3);
 });
