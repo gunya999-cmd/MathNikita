@@ -3,8 +3,8 @@ import {expect,test,type Page} from '@playwright/test';
 type AuditEvent={kind:'request'|'foreground'|'play';id:string};
 type AuditState={events:AuditEvent[]};
 
-async function installNarrationAudit(page:Page){
-  await page.addInitScript(()=>{
+async function installNarrationAudit(page:Page,lessonEnabled=false){
+  await page.addInitScript(({lessonEnabled})=>{
     const audit:AuditState={events:[]};
     const blobIds=new WeakMap<Blob,string>();
     const nativeFetch=window.fetch.bind(window);
@@ -44,26 +44,55 @@ async function installNarrationAudit(page:Page){
     (window as unknown as {__narrationPrefetchAudit:AuditState}).__narrationPrefetchAudit=audit;
     localStorage.setItem('mathnikita-voice-settings-v4',JSON.stringify({engine:'studio',rate:.94}));
     localStorage.setItem('mathnikita-mentor-auto-guide','false');
-  });
+    if(lessonEnabled)localStorage.setItem('mathnikita-lesson-voice-enabled-v1','1');
+  },{lessonEnabled});
 }
 
 async function auditEvents(page:Page){return page.evaluate(()=>(window as unknown as {__narrationPrefetchAudit:AuditState}).__narrationPrefetchAudit.events)}
-
-test('slow stage narration is prefetched before foreground playback and reuses one request',async({page})=>{
-  test.setTimeout(90000);
-  await installNarrationAudit(page);
+async function mockStudio(page:Page,delay=0){
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'gemini',voice:'Sulafat'})}));
-  await page.route('**/api/narration',async route=>{await new Promise(resolve=>setTimeout(resolve,300));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-prefetch-sync'})});
+  await page.route('**/api/narration',async route=>{if(delay)await new Promise(resolve=>setTimeout(resolve,delay));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-prefetch-sync'})});
+}
+
+async function openLesson79(page:Page){
   await page.goto('/');
   const chapterThree=page.locator('.course-chapter-group').nth(2);if(!(await chapterThree.evaluate(element=>(element as HTMLDetailsElement).open)))await chapterThree.locator('summary').click();
   await page.getByRole('button',{name:/Открыть урок 79:/}).click();
+}
+
+test('lesson narration is off by default, prefetched silently, then starts from the warm cache',async({page})=>{
+  test.setTimeout(90000);
+  await installNarrationAudit(page);
+  await mockStudio(page,300);
+  await openLesson79(page);
   await page.locator('.lesson-opening-start').click();
   const stage=page.locator('.lesson-runtime:not([hidden]) .interactive-stage[data-stage-id]');
   await expect(stage).toHaveAttribute('data-stage-id','l79-mission');
   const stageId='lesson-79-stage-l79-mission';
-  await expect.poll(async()=>{const events=await auditEvents(page);return events.some(event=>event.kind==='play'&&event.id===stageId)},{timeout:12000}).toBeTruthy();
-  const events=await auditEvents(page);const relevant=events.filter(event=>event.id===stageId);
+  const toggle=page.getByRole('button',{name:'Включить озвучку урока'}).first();
+  await expect(toggle).toHaveAttribute('aria-pressed','false');
+  await expect.poll(async()=>{const events=await auditEvents(page);return events.some(event=>event.kind==='request'&&event.id===stageId)},{timeout:12000}).toBeTruthy();
+  await page.waitForTimeout(450);
+  let events=await auditEvents(page);
+  expect(events.some(event=>event.kind==='foreground'&&event.id===stageId)).toBeFalsy();
+  expect(events.some(event=>event.kind==='play'&&event.id===stageId)).toBeFalsy();
+  await toggle.click();
+  await expect.poll(async()=>{const current=await auditEvents(page);return current.some(event=>event.kind==='play'&&event.id===stageId)},{timeout:3000}).toBeTruthy();
+  events=await auditEvents(page);const relevant=events.filter(event=>event.id===stageId);
   expect(relevant.filter(event=>event.kind==='request')).toHaveLength(1);
   const requestIndex=relevant.findIndex(event=>event.kind==='request');const foregroundIndex=relevant.findIndex(event=>event.kind==='foreground');const playIndex=relevant.findIndex(event=>event.kind==='play');
   expect(requestIndex).toBeGreaterThanOrEqual(0);expect(foregroundIndex).toBeGreaterThan(requestIndex);expect(playIndex).toBeGreaterThan(foregroundIndex);
+});
+
+test('persisted lesson narration starts the next lesson opening automatically',async({page})=>{
+  test.setTimeout(90000);
+  await installNarrationAudit(page,true);
+  await mockStudio(page);
+  await openLesson79(page);
+  const openingId='lesson-79-opening';
+  await expect(page.getByRole('button',{name:'Озвучка урока включена'}).first()).toHaveAttribute('aria-pressed','true');
+  await expect.poll(async()=>{const events=await auditEvents(page);return events.some(event=>event.kind==='play'&&event.id===openingId)},{timeout:5000}).toBeTruthy();
+  const events=await auditEvents(page).then(items=>items.filter(event=>event.id===openingId));
+  expect(events.filter(event=>event.kind==='request')).toHaveLength(1);
+  expect(events.some(event=>event.kind==='foreground')).toBeTruthy();
 });
