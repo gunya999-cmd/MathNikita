@@ -80,7 +80,7 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
       const detail=(event as CustomEvent<AudioPreferenceDetail>).detail;if(detail?.kind!=='lesson')return;
       const enabled=Boolean(detail.enabled);setLessonVoiceEnabled(enabled);
       if(!enabled){stopPracticeVoice();return}
-      if(currentTask&&summaryStageActive()&&lastSpokenTaskRef.current!==currentTask.id)playTaskNarration(currentTask,completed);
+      if(currentTask&&summaryStageActive())playTaskNarration(currentTask,completed);
     };
     window.addEventListener(AUDIO_PREFERENCE_EVENT,preferenceHandler);return()=>window.removeEventListener(AUDIO_PREFERENCE_EVENT,preferenceHandler);
   },[lessonNumber,currentTask?.id,completed]);
