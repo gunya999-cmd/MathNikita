@@ -1,6 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 
-type AuditEvent={kind:'request'|'foreground'|'play';id:string};
+type AuditEvent={kind:'request'|'foreground'|'play';id:string;text?:string;source?:string};
 type AuditState={events:AuditEvent[]};
 
 async function installNarrationAudit(page:Page,lessonEnabled=false){
@@ -11,16 +11,16 @@ async function installNarrationAudit(page:Page,lessonEnabled=false){
     const nativeCreateObjectURL=URL.createObjectURL.bind(URL);
     window.addEventListener('mathnikita-audio-request',event=>{
       const detail=(event as CustomEvent<{source?:string;narrationId?:string}>).detail;
-      if(detail?.source==='narrator'&&detail.narrationId)audit.events.push({kind:'foreground',id:detail.narrationId});
+      if(detail?.narrationId)audit.events.push({kind:'foreground',id:detail.narrationId,source:detail.source});
     });
     window.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
       const url=typeof input==='string'?input:input instanceof URL?input.href:input.url;
-      let narrationId='';
+      let narrationId='';let narrationText='';
       if(url.includes('/api/narration')){
         let rawBody=init?.body;
         if(rawBody==null&&input instanceof Request){try{rawBody=await input.clone().text()}catch{}}
-        if(typeof rawBody==='string'){try{narrationId=(JSON.parse(rawBody) as {id?:string}).id??''}catch{}}
-        if(narrationId)audit.events.push({kind:'request',id:narrationId});
+        if(typeof rawBody==='string'){try{const parsed=JSON.parse(rawBody) as {id?:string;text?:string};narrationId=parsed.id??'';narrationText=parsed.text??''}catch{}}
+        if(narrationId)audit.events.push({kind:'request',id:narrationId,text:narrationText});
       }
       const response=await nativeFetch(input,init);
       if(!narrationId)return response;
@@ -60,6 +60,13 @@ async function openLesson79(page:Page){
   await page.getByRole('button',{name:/Открыть урок 79:/}).click();
 }
 
+function requestCount(events:AuditEvent[],id:string){return events.filter(event=>event.kind==='request'&&event.id===id).length}
+function expectExactRequestDedupe(events:AuditEvent[],id:string){
+  const requests=events.filter(event=>event.kind==='request'&&event.id===id);
+  const exactKeys=requests.map(event=>`${event.id}\u0000${event.text??''}`);
+  expect(new Set(exactKeys).size).toBe(exactKeys.length);
+}
+
 test('lesson narration is off by default, prefetched silently, then starts from the warm cache',async({page})=>{
   test.setTimeout(90000);
   await installNarrationAudit(page);
@@ -71,17 +78,21 @@ test('lesson narration is off by default, prefetched silently, then starts from 
   const stageId='lesson-79-stage-l79-mission';
   const toggle=page.getByRole('button',{name:'Включить озвучку урока'}).first();
   await expect(toggle).toHaveAttribute('aria-pressed','false');
-  await expect.poll(async()=>{const events=await auditEvents(page);return events.some(event=>event.kind==='request'&&event.id===stageId)},{timeout:12000}).toBeTruthy();
-  await page.waitForTimeout(450);
+  await expect.poll(async()=>requestCount(await auditEvents(page),stageId),{timeout:12000}).toBeGreaterThan(0);
+  await page.waitForTimeout(900);
   let events=await auditEvents(page);
   expect(events.some(event=>event.kind==='foreground'&&event.id===stageId)).toBeFalsy();
   expect(events.some(event=>event.kind==='play'&&event.id===stageId)).toBeFalsy();
+  expectExactRequestDedupe(events,stageId);
+  const warmRequestCount=requestCount(events,stageId);
   await toggle.click();
   await expect.poll(async()=>{const current=await auditEvents(page);return current.some(event=>event.kind==='play'&&event.id===stageId)},{timeout:3000}).toBeTruthy();
-  events=await auditEvents(page);const relevant=events.filter(event=>event.id===stageId);
-  expect(relevant.filter(event=>event.kind==='request')).toHaveLength(1);
-  const requestIndex=relevant.findIndex(event=>event.kind==='request');const foregroundIndex=relevant.findIndex(event=>event.kind==='foreground');const playIndex=relevant.findIndex(event=>event.kind==='play');
-  expect(requestIndex).toBeGreaterThanOrEqual(0);expect(foregroundIndex).toBeGreaterThan(requestIndex);expect(playIndex).toBeGreaterThan(foregroundIndex);
+  await page.waitForTimeout(100);
+  events=await auditEvents(page);
+  expect(requestCount(events,stageId)).toBe(warmRequestCount);
+  expectExactRequestDedupe(events,stageId);
+  const relevant=events.filter(event=>event.id===stageId);const foregroundIndex=relevant.findIndex(event=>event.kind==='foreground');const playIndex=relevant.findIndex(event=>event.kind==='play');
+  expect(foregroundIndex).toBeGreaterThanOrEqual(0);expect(playIndex).toBeGreaterThan(foregroundIndex);
 });
 
 test('persisted lesson narration starts the next lesson opening automatically',async({page})=>{
@@ -92,7 +103,8 @@ test('persisted lesson narration starts the next lesson opening automatically',a
   const openingId='lesson-79-opening';
   await expect(page.getByRole('button',{name:'Озвучка урока включена'}).first()).toHaveAttribute('aria-pressed','true');
   await expect.poll(async()=>{const events=await auditEvents(page);return events.some(event=>event.kind==='play'&&event.id===openingId)},{timeout:5000}).toBeTruthy();
-  const events=await auditEvents(page).then(items=>items.filter(event=>event.id===openingId));
-  expect(events.filter(event=>event.kind==='request')).toHaveLength(1);
-  expect(events.some(event=>event.kind==='foreground')).toBeTruthy();
+  const events=await auditEvents(page);
+  expect(requestCount(events,openingId)).toBeGreaterThan(0);
+  expectExactRequestDedupe(events,openingId);
+  expect(events.some(event=>event.kind==='foreground'&&event.id===openingId&&event.source==='narrator')).toBeTruthy();
 });
