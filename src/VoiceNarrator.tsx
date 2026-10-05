@@ -1,4 +1,5 @@
 import { useEffect,useMemo,useRef,useState,type RefObject } from 'react';
+import { AUDIO_PREFERENCE_EVENT,loadAudioEnabled,saveAudioEnabled } from './audioPreferences';
 import { extendedPracticeByLesson } from './data/extendedPracticeData';
 import { practiceNarrationId,practiceNarrationText } from './practiceNarration';
 import { setStageNarrationActive } from './stageNarrationSequence';
@@ -7,7 +8,9 @@ import { DEFAULT_VOICE_RATE,getStudioAudioUrl,loadVoiceSettings,peekStudioAudioU
 import './voiceNarrator.css';
 
 type VoiceNarratorProps={rootRef:RefObject<HTMLElement|null>;mode:'opening'|'lesson';lessonNumber:number;openingText:string};
-type AudioRequestDetail={source?:'narrator'|'mentor'|string;narrationId?:string};
+type AudioRequestDetail={source?:'narrator'|'mentor'|'practice-narrator'|'practice-mentor'|string;narrationId?:string};
+type AudioPreferenceDetail={kind?:string;enabled?:boolean};
+type StopNarrationDetail={source?:string};
 type StudioStatus='checking'|'ready'|'unavailable';
 type Narration={id:string;text:string};
 
@@ -77,9 +80,9 @@ function splitForSpeech(text:string){const sentences=text.match(/[^.!?…]+[.!?�
 
 export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarratorProps){
   const systemSupported=typeof window!=='undefined'&&'speechSynthesis'in window;const audioSupported=canCreateAudioElement();
-  const[voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);const[speaking,setSpeaking]=useState(false);const[settingsOpen,setSettingsOpen]=useState(false);const[studioIssue,setStudioIssue]=useState('');const initialSettings=useMemo(loadVoiceSettings,[]);
+  const[voices,setVoices]=useState<SpeechSynthesisVoice[]>([]);const[speaking,setSpeaking]=useState(false);const[lessonVoiceEnabled,setLessonVoiceEnabled]=useState(()=>loadAudioEnabled('lesson'));const[settingsOpen,setSettingsOpen]=useState(false);const[studioIssue,setStudioIssue]=useState('');const initialSettings=useMemo(loadVoiceSettings,[]);
   const[engine,setEngine]=useState<VoiceEngine>(initialSettings.engine);const[voiceURI,setVoiceURI]=useState(initialSettings.voiceURI??'');const[rate,setRate]=useState(initialSettings.rate??DEFAULT_VOICE_RATE);const[studioStatus,setStudioStatus]=useState<StudioStatus>('checking');
-  const sessionRef=useRef(0);const audioRef=useRef<HTMLAudioElement|null>(null);const narratorRef=useRef<HTMLDivElement|null>(null);const lastAutoStageRef=useRef('');const autoStageSessionRef=useRef<number|null>(null);const autoStageIdRef=useRef('');
+  const sessionRef=useRef(0);const audioRef=useRef<HTMLAudioElement|null>(null);const narratorRef=useRef<HTMLDivElement|null>(null);const lastAutoOpeningRef=useRef('');const lastAutoStageRef=useRef('');const autoStageSessionRef=useRef<number|null>(null);const autoStageIdRef=useRef('');
 
   function releaseAutoStage(session:number,narrationId:string,ended=false){
     if(autoStageSessionRef.current!==session)return;
@@ -97,13 +100,35 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
   useEffect(()=>{let active=true;fetch('/api/narration-status',{cache:'no-store'}).then(async response=>response.ok?response.json():Promise.reject()).then((data:{studioConfigured?:boolean})=>{if(active)setStudioStatus(data.studioConfigured?'ready':'unavailable')}).catch(()=>{if(active)setStudioStatus('unavailable')});return()=>{active=false}},[]);
   useEffect(()=>{saveVoiceSettings({engine,voiceURI,rate});if(engine==='system')setStudioIssue('')},[engine,voiceURI,rate]);
   useEffect(()=>{if(!settingsOpen)return;const closeOnOutside=(event:PointerEvent)=>{const target=event.target;if(target instanceof Node&&!narratorRef.current?.contains(target))setSettingsOpen(false)};const closeOnEscape=(event:KeyboardEvent)=>{if(event.key==='Escape')setSettingsOpen(false)};document.addEventListener('pointerdown',closeOnOutside);window.addEventListener('keydown',closeOnEscape);return()=>{document.removeEventListener('pointerdown',closeOnOutside);window.removeEventListener('keydown',closeOnEscape)}},[settingsOpen]);
-  useEffect(()=>{const stopHandler=()=>stop();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
+  useEffect(()=>{const stopHandler=(event:Event)=>{const source=(event as CustomEvent<StopNarrationDetail>).detail?.source;if(!source||source==='narrator'||source==='practice-narrator')stop()};const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='narrator')stop()};window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)}},[]);
+  useEffect(()=>{
+    const preferenceHandler=(event:Event)=>{
+      const detail=(event as CustomEvent<AudioPreferenceDetail>).detail;if(detail?.kind!=='lesson')return;
+      const enabled=Boolean(detail.enabled);setLessonVoiceEnabled(enabled);
+      if(!enabled){stop();return}
+      const root=rootRef.current;
+      if(mode==='lesson'&&root&&resolvePracticeNarration(root,lessonNumber))return;
+      const text=getNarrationText(root,mode,openingText,lessonNumber);const narrationId=getNarrationId(root,mode,lessonNumber);if(!text||!narrationId)return;
+      if(mode==='opening')lastAutoOpeningRef.current=narrationId;
+      if(mode==='lesson'){const stage=root?resolveStageNarration(root,lessonNumber):null;if(stage)lastAutoStageRef.current=stage.id}
+      playNarration(text,narrationId,mode==='lesson');
+    };
+    window.addEventListener(AUDIO_PREFERENCE_EVENT,preferenceHandler);return()=>window.removeEventListener(AUDIO_PREFERENCE_EVENT,preferenceHandler);
+  },[mode,lessonNumber,openingText,rootRef,engine,rate,voiceURI]);
   useEffect(()=>{stop();return()=>stop()},[mode,rootRef,lessonNumber]);
+  useEffect(()=>{
+    if(mode!=='opening'||lessonNumber<1){lastAutoOpeningRef.current='';return}
+    const root=rootRef.current;const text=getNarrationText(root,mode,openingText,lessonNumber);const narrationId=getNarrationId(root,mode,lessonNumber);
+    if(!lessonVoiceEnabled||!text||!narrationId||lastAutoOpeningRef.current===narrationId)return;
+    lastAutoOpeningRef.current=narrationId;
+    if(engine==='studio')prefetchStudioAudioUrl(narrationId,text);
+    queueMicrotask(()=>{if(lastAutoOpeningRef.current!==narrationId||!loadAudioEnabled('lesson'))return;playNarration(text,narrationId,false)});
+  },[mode,lessonNumber,openingText,rootRef,engine,rate,voiceURI,lessonVoiceEnabled]);
   useEffect(()=>{
     if(engine!=='studio')return;
     if(mode==='opening'){const id=getNarrationId(null,mode,lessonNumber);const text=getNarrationText(null,mode,openingText,lessonNumber);if(id&&text)prefetchStudioAudioUrl(id,text);return}
     let retryTimer:number|null=null;let retries=0;
-    const warm=()=>{const root=rootRef.current;const stage=root?resolveStageNarration(root,lessonNumber):null;if(stage&&!isSummaryStage(stage)){retries=0;return}const id=getNarrationId(root,mode,lessonNumber);const text=getNarrationText(root,mode,openingText,lessonNumber);if(id&&text){prefetchStudioAudioUrl(id,text);retries=0;return}if(retries<6){retries+=1;retryTimer=window.setTimeout(warm,60*retries)}};
+    const warm=()=>{const root=rootRef.current;const stage=root?resolveStageNarration(root,lessonNumber):null;if(stage&&!isSummaryStage(stage)){prefetchStudioAudioUrl(stage.id,stage.text);retries=0;return}const id=getNarrationId(root,mode,lessonNumber);const text=getNarrationText(root,mode,openingText,lessonNumber);if(id&&text){prefetchStudioAudioUrl(id,text);retries=0;return}if(retries<6){retries+=1;retryTimer=window.setTimeout(warm,60*retries)}};
     const scheduleWarm=()=>{if(retryTimer!==null)window.clearTimeout(retryTimer);retryTimer=window.setTimeout(warm,0)};warm();const root=rootRef.current;
     if(!root){retryTimer=window.setTimeout(warm,80);return()=>{if(retryTimer!==null)window.clearTimeout(retryTimer)}}
     const observer=new MutationObserver(scheduleWarm);observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-practice-task','data-stage-id','hidden']});return()=>{observer.disconnect();if(retryTimer!==null)window.clearTimeout(retryTimer)};
@@ -114,14 +139,16 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     const root=rootRef.current;if(!root)return;
     let timer:number|null=null;
     const schedule=()=>{
-      const stage=resolveStageNarration(root,lessonNumber);if(!stage||stage.id===lastAutoStageRef.current)return;
+      const stage=resolveStageNarration(root,lessonNumber);if(!stage)return;
+      if(engine==='studio')prefetchStudioAudioUrl(stage.id,stage.text);
+      if(!lessonVoiceEnabled||stage.id===lastAutoStageRef.current)return;
       if(timer!==null)window.clearTimeout(timer);
       timer=window.setTimeout(()=>{
-        const latest=resolveStageNarration(root,lessonNumber);if(!latest||latest.id===lastAutoStageRef.current)return;
+        const latest=resolveStageNarration(root,lessonNumber);if(!latest||!lessonVoiceEnabled||latest.id===lastAutoStageRef.current)return;
         lastAutoStageRef.current=latest.id;
         if(engine==='studio'){
           prefetchStudioAudioUrl(latest.id,latest.text);
-          queueMicrotask(()=>{const current=resolveStageNarration(root,lessonNumber);if(!current||current.id!==latest.id||lastAutoStageRef.current!==latest.id)return;playNarration(latest.text,latest.id,true)});
+          queueMicrotask(()=>{const current=resolveStageNarration(root,lessonNumber);if(!current||current.id!==latest.id||lastAutoStageRef.current!==latest.id||!loadAudioEnabled('lesson'))return;playNarration(latest.text,latest.id,true)});
           return;
         }
         playNarration(latest.text,latest.id,true);
@@ -130,7 +157,7 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     schedule();
     const observer=new MutationObserver(schedule);observer.observe(root,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['data-stage-id','hidden']});
     return()=>{observer.disconnect();if(timer!==null)window.clearTimeout(timer)};
-  },[mode,lessonNumber,rootRef,engine,rate,voiceURI]);
+  },[mode,lessonNumber,rootRef,engine,rate,voiceURI,lessonVoiceEnabled]);
 
   function startSystemSpeech(text:string,narrationId:string,session:number,autoStage:boolean){
     if(!systemSupported||!text){setSpeaking(false);if(autoStage)releaseAutoStage(session,narrationId,false);return}
@@ -159,10 +186,7 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
     startSystemSpeech(text,narrationId,session,autoStage);
   }
 
-  function speak(){
-    if(speaking){stop();return}
-    const text=getNarrationText(rootRef.current,mode,openingText,lessonNumber);const narrationId=getNarrationId(rootRef.current,mode,lessonNumber);playNarration(text,narrationId,false);
-  }
+  function toggleLessonVoice(){saveAudioEnabled('lesson',!lessonVoiceEnabled)}
 
   const voiceOptions=rankRussianVoices(voices);const selectedVoice=selectBestRussianVoice(voiceOptions,voiceURI);
   const systemVoiceMessage=!selectedVoice?'На устройстве не найден русский голос.':isNaturalRussianVoice(selectedVoice)?`Системный голос: ${selectedVoice.name}.`:`Базовый системный голос: ${selectedVoice.name}.`;
@@ -170,7 +194,7 @@ export function VoiceNarrator({rootRef,mode,lessonNumber,openingText}:VoiceNarra
   const playbackUnavailable=engine==='studio'?!audioSupported:!systemSupported;
 
   return <div className="voice-narrator" ref={narratorRef}>
-    <button type="button" className={`${speaking?'is-speaking ':''}${studioIssue&&engine==='studio'?'has-error':''}`.trim()} onClick={speak} aria-pressed={speaking} disabled={playbackUnavailable}><span aria-hidden="true">{speaking?'■':'▶'}</span>{speaking?'Остановить':engine==='studio'?(studioIssue?'Повторить · AI':'Слушать · AI'):'Слушать'}</button>
+    <button type="button" className={`${lessonVoiceEnabled?'is-enabled ':''}${speaking?'is-speaking ':''}${studioIssue&&engine==='studio'?'has-error':''}`.trim()} onClick={toggleLessonVoice} aria-pressed={lessonVoiceEnabled} disabled={playbackUnavailable}><span aria-hidden="true">{lessonVoiceEnabled?'🔊':'🔇'}</span>{lessonVoiceEnabled?'Озвучка урока включена':'Включить озвучку урока'}</button>
     <span className="voice-ai-disclosure" title="Озвучка создаётся искусственным интеллектом">AI-голос</span>
     <button type="button" className="voice-settings-button" onClick={()=>setSettingsOpen(open=>!open)} aria-expanded={settingsOpen} aria-label={settingsOpen?'Закрыть настройки голоса':'Настройки голоса'}>⚙</button>
     {settingsOpen?<div className="voice-settings-panel" role="dialog" aria-label="Настройки голоса">

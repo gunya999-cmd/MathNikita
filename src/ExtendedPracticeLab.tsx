@@ -1,4 +1,5 @@
 import { useEffect,useMemo,useRef,useState } from 'react';
+import { AUDIO_PREFERENCE_EVENT,loadAudioEnabled,saveAudioEnabled } from './audioPreferences';
 import { extendedPracticeByLesson } from './data/extendedPracticeData';
 import { extendedPracticeSetResponseCount,type ExtendedPracticeTask } from './data/extendedPracticeTypes';
 import { extendedPracticeStorageKey,isExtendedPracticeAnswerCorrect,loadExtendedPracticeProgress,saveExtendedPracticeProgress } from './extendedPracticeEngine';
@@ -13,6 +14,8 @@ type Props={lessonNumber:number;onComplete?:()=>void;onRestart?:()=>void};
 type CheckState='idle'|'correct'|'wrong';
 type PracticeDraft={taskId:string;response:string;multiResponse:Record<string,string>};
 type AudioRequestDetail={source?:string;narrationId?:string};
+type AudioPreferenceDetail={kind?:string;enabled?:boolean};
+type StopNarrationDetail={source?:string};
 
 function draftStorageKey(lessonNumber:number){return `${extendedPracticeStorageKey(lessonNumber)}:draft`}
 function loadDraft(lessonNumber:number,taskId:string):PracticeDraft|null{
@@ -31,6 +34,7 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
   const[attempts,setAttempts]=useState(0);
   const[practiceSpeaking,setPracticeSpeaking]=useState(false);
   const[practiceVoiceIssue,setPracticeVoiceIssue]=useState(false);
+  const[lessonVoiceEnabled,setLessonVoiceEnabled]=useState(()=>loadAudioEnabled('lesson'));
   const responseCount=useMemo(()=>practice?extendedPracticeSetResponseCount(practice):0,[practice]);
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const speechTokenRef=useRef(0);
@@ -53,6 +57,9 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     const ready=peekStudioAudioUrl(id,text);setPracticeSpeaking(true);if(ready){playAudioSource(ready,token);return}
     void getStudioAudioUrl(id,text).then(source=>{if(token===speechTokenRef.current)playAudioSource(source,token)}).catch(()=>{if(token===speechTokenRef.current){setPracticeSpeaking(false);setPracticeVoiceIssue(true)}});
   }
+  function toggleLessonVoice(){
+    const next=!lessonVoiceEnabled;saveAudioEnabled('lesson',next);setLessonVoiceEnabled(next);if(!next)stopPracticeVoice();
+  }
 
   useEffect(()=>{
     const nextCompleted=loadExtendedPracticeProgress(lessonNumber,practice?.tasks.length??0);setCompleted(nextCompleted);
@@ -65,15 +72,25 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     window.addEventListener('mathnikita-lesson-reset',reset);return()=>window.removeEventListener('mathnikita-lesson-reset',reset);
   },[lessonNumber,onRestart]);
   useEffect(()=>{
-    const stopHandler=()=>stopPracticeVoice();const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='practice-narrator')stopPracticeVoice()};
+    const stopHandler=(event:Event)=>{const source=(event as CustomEvent<StopNarrationDetail>).detail?.source;if(!source||source==='practice-narrator'||source==='narrator')stopPracticeVoice()};const requestHandler=(event:Event)=>{const source=(event as CustomEvent<AudioRequestDetail>).detail?.source;if(source!=='practice-narrator')stopPracticeVoice()};
     window.addEventListener('mathnikita-stop-narration',stopHandler);window.addEventListener('mathnikita-audio-request',requestHandler);return()=>{window.removeEventListener('mathnikita-stop-narration',stopHandler);window.removeEventListener('mathnikita-audio-request',requestHandler)};
   },[]);
+  useEffect(()=>{
+    const preferenceHandler=(event:Event)=>{
+      const detail=(event as CustomEvent<AudioPreferenceDetail>).detail;if(detail?.kind!=='lesson')return;
+      const enabled=Boolean(detail.enabled);setLessonVoiceEnabled(enabled);
+      if(!enabled){stopPracticeVoice();return}
+      if(currentTask&&summaryStageActive())playTaskNarration(currentTask,completed);
+    };
+    window.addEventListener(AUDIO_PREFERENCE_EVENT,preferenceHandler);return()=>window.removeEventListener(AUDIO_PREFERENCE_EVENT,preferenceHandler);
+  },[lessonNumber,currentTask?.id,completed]);
 
   useEffect(()=>{if(finished)onComplete?.()},[finished,onComplete]);
   useEffect(()=>{
     if(!practice||!currentTask)return;
     const currentText=practiceNarrationText(currentTask,completed,practice.tasks.length);prefetchStudioAudioUrl(practiceNarrationId(lessonNumber,currentTask),currentText);
     const nextTask=practice.tasks[completed+1];if(nextTask)prefetchStudioAudioUrl(practiceNarrationId(lessonNumber,nextTask),practiceNarrationText(nextTask,completed+1,practice.tasks.length));
+    if(!lessonVoiceEnabled)return;
     let timer:number|null=null;let cancelWait=()=>{};
     const scheduleAuto=()=>{
       if(lastSpokenTaskRef.current===currentTask.id||!summaryStageActive())return;
@@ -83,7 +100,7 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     scheduleAuto();
     const observer=new MutationObserver(scheduleAuto);observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['data-stage-id','hidden']});
     return()=>{observer.disconnect();if(timer!==null)window.clearTimeout(timer);cancelWait()};
-  },[lessonNumber,currentTask?.id]);
+  },[lessonNumber,currentTask?.id,lessonVoiceEnabled]);
   useEffect(()=>()=>stopPracticeVoice(),[]);
 
   if(!practice)return null;
@@ -98,7 +115,7 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
   }
   function continuePractice(){
     if(checkState!=='correct')return;const next=completed+1;clearDraft(lessonNumber);saveExtendedPracticeProgress(lessonNumber,next);
-    const nextTask=practice.tasks[next];if(nextTask)playTaskNarration(nextTask,next);else stopPracticeVoice();setCompleted(next);resetCurrentResponse();
+    const nextTask=practice.tasks[next];if(nextTask&&lessonVoiceEnabled)playTaskNarration(nextTask,next);else stopPracticeVoice();setCompleted(next);resetCurrentResponse();
   }
   function restartPractice(){clearDraft(lessonNumber);saveExtendedPracticeProgress(lessonNumber,0);setCompleted(0);lastSpokenTaskRef.current='';resetCurrentResponse();stopPracticeVoice();onRestart?.()}
 
@@ -109,7 +126,7 @@ export function ExtendedPracticeLab({lessonNumber,onComplete,onRestart}:Props){
     <header className="extended-practice-header"><div><span>Обязательная практика · {practice.tasks.length} заданий · {responseCount} проверяемых ответов</span><h2 id={`extended-practice-title-${lessonNumber}`}>{practice.title}</h2><p>{practice.subtitle}</p></div><strong>{completed+1} / {practice.tasks.length}</strong></header>
     <div className="extended-practice-progress" aria-label={`Выполнено ${completed} из ${practice.tasks.length}`}><i style={{width:`${percent}%`}}/></div>
     <article className="extended-practice-card"><div className="extended-practice-task-number">Задание {completed+1}</div><h3>{task.prompt}</h3><p className="extended-practice-instruction">{task.instruction}</p>
-      <div className="extended-practice-voice"><button type="button" className={practiceSpeaking?'is-speaking':''} onClick={()=>practiceSpeaking?stopPracticeVoice():playTaskNarration(task,completed)}>{practiceSpeaking?'■ Остановить':'▶ Озвучить задание'}</button><small>{practiceVoiceIssue?`AI-голос ${STUDIO_VOICE_LABEL} временно недоступен — можно читать задание на экране.`:`Автоозвучка практики · ${STUDIO_VOICE_LABEL}`}</small></div>
+      <div className="extended-practice-voice"><button type="button" className={`${lessonVoiceEnabled?'is-enabled ':''}${practiceSpeaking?'is-speaking':''}`.trim()} onClick={toggleLessonVoice} aria-pressed={lessonVoiceEnabled}>{lessonVoiceEnabled?'🔊 Озвучка урока включена':'🔇 Включить озвучку урока'}</button><small>{practiceVoiceIssue?`AI-голос ${STUDIO_VOICE_LABEL} временно недоступен — можно читать задание на экране.`:`Озвучка урока ${lessonVoiceEnabled?'включена':'выключена'} · ${STUDIO_VOICE_LABEL}`}</small></div>
       {task.type==='choice'?<div className="extended-practice-options">{task.options.map(option=><button key={option} type="button" className={response===option?'is-selected':''} aria-pressed={response===option} onClick={()=>{setResponse(option);setCheckState('idle');saveDraft(lessonNumber,{taskId:task.id,response:option,multiResponse:{}})}} disabled={checkState==='correct'}>{option}</button>)}</div>:task.type==='multi-input'?<div className="extended-practice-multi">{task.fields.map(field=><label className="extended-practice-input" key={field.id}><span>{field.label}</span><input value={multiResponse[field.id]??''} onChange={event=>{const value=event.target.value;setMultiResponse(current=>{const next={...current,[field.id]:value};saveDraft(lessonNumber,{taskId:task.id,response:'',multiResponse:next});return next});setCheckState('idle')}} onKeyDown={event=>{if(event.key==='Enter'&&canCheck)checkAnswer()}} placeholder={field.placeholder??'Введи ответ'} disabled={checkState==='correct'}/></label>)}</div>:<label className="extended-practice-input"><span>Ответ</span><input value={response} onChange={event=>{const next=event.target.value;setResponse(next);setCheckState('idle');saveDraft(lessonNumber,{taskId:task.id,response:next,multiResponse:{}})}} onKeyDown={event=>{if(event.key==='Enter')checkAnswer()}} placeholder="Введи ответ" disabled={checkState==='correct'}/></label>}
       {checkState==='wrong'?<div className="extended-practice-feedback is-wrong" role="alert"><b>Пока неверно.</b><span>{attempts>=1?task.hint:'Проверь решение целиком и попробуй ещё раз.'}</span></div>:null}
       {checkState==='correct'?<div className="extended-practice-feedback is-correct" role="status"><b>Верно!</b><span>{task.explanation}</span></div>:null}
