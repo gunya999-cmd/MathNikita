@@ -51,10 +51,9 @@ if(typeof window!=='undefined'){
     const group=sourceGroup(detail?.source);if(!group)return;
     cancelStaleStudioGeneration(detail?.narrationId??'',group);
   });
-  window.addEventListener('mathnikita-stop-narration',event=>{
-    const source=(event as CustomEvent<{source?:string}>).detail?.source;
-    const group=sourceGroup(source);cancelStaleStudioGeneration('',group);
-  });
+  // Playback stops also run after child effects have warmed the current text.
+  // They must not cancel shared generation: the next foreground request joins
+  // that exact id + prepared-text Promise. A new audio request prunes stale work.
 }
 
 function clampRate(value:number){return Math.min(Math.max(value,.88),1.04)}
@@ -118,8 +117,8 @@ export async function getStudioAudioUrl(id:string,text:string,mentorForegroundOv
   if(isMentor&&!mentorForegroundOverride)throw new Error('Background mentor warmup deferred');
   const controller=new AbortController();activeStudioControllers.set(key,{controller,id});
   const request=requestStudioAudio(id,prepared,controller.signal)
-    .then(blob=>{const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url})
-    .catch(error=>{audioUrlCache.delete(key);readyAudioUrlCache.delete(key);throw error})
+    .then(blob=>{if(controller.signal.aborted)throw abortError();const url=URL.createObjectURL(blob);readyAudioUrlCache.set(key,url);return url})
+    .catch(error=>{if(audioUrlCache.get(key)===request){audioUrlCache.delete(key);readyAudioUrlCache.delete(key)}throw error})
     .finally(()=>{if(activeStudioControllers.get(key)?.controller===controller)activeStudioControllers.delete(key)});
   audioUrlCache.set(key,request);return request;
 }

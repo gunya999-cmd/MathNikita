@@ -170,7 +170,8 @@ test('Audio Hard-Test 1-90: every audited lesson can play Sulafat opening and st
     const narrationId = `lesson-${String(lessonNumber).padStart(2, '0')}-opening`;
     const voiceButton = page.locator('.voice-narrator > button').first();
     await expect(voiceButton).toBeEnabled();
-    await voiceButton.click();
+    // The preference persists between lessons; later openings already play.
+    if (await voiceButton.getAttribute('aria-pressed') !== 'true') await voiceButton.click();
     await expectPlayed(page, narrationId);
 
     const duringPlayback = await auditState(page);

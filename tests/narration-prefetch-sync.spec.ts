@@ -1,6 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 
-type AuditEvent={kind:'request'|'foreground'|'play';id:string;text?:string;source?:string};
+type AuditEvent={kind:'request'|'ready'|'foreground'|'play';id:string;text?:string;source?:string};
 type AuditState={events:AuditEvent[]};
 
 async function installNarrationAudit(page:Page,lessonEnabled=false){
@@ -30,7 +30,7 @@ async function installNarrationAudit(page:Page,lessonEnabled=false){
       }});
     };
     URL.createObjectURL=(blob:Blob|MediaSource)=>{
-      if(blob instanceof Blob){const id=blobIds.get(blob);if(id)return'blob:narration-prefetch/'+encodeURIComponent(id)}
+      if(blob instanceof Blob){const id=blobIds.get(blob);if(id){audit.events.push({kind:'ready',id});return'blob:narration-prefetch/'+encodeURIComponent(id)}}
       return nativeCreateObjectURL(blob);
     };
     class MockAudio{
@@ -49,9 +49,11 @@ async function installNarrationAudit(page:Page,lessonEnabled=false){
 }
 
 async function auditEvents(page:Page){return page.evaluate(()=>(window as unknown as {__narrationPrefetchAudit:AuditState}).__narrationPrefetchAudit.events)}
-async function mockStudio(page:Page,delay=0){
+async function mockStudio(page:Page,delay=0,heldId=''){
+  let release=()=>{};const gate=new Promise<void>(resolve=>{release=resolve});
   await page.route('**/api/narration-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,studioConfigured:true,provider:'gemini',voice:'Sulafat'})}));
-  await page.route('**/api/narration',async route=>{if(delay)await new Promise(resolve=>setTimeout(resolve,delay));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-prefetch-sync'})});
+  await page.route('**/api/narration',async route=>{if(heldId&&(route.request().postDataJSON() as {id?:string}).id===heldId)await gate;if(delay)await new Promise(resolve=>setTimeout(resolve,delay));await route.fulfill({status:200,contentType:'audio/wav',body:'RIFF-prefetch-sync'})});
+  return release;
 }
 
 async function openLesson79(page:Page){
@@ -79,7 +81,7 @@ test('lesson narration is off by default, prefetched silently, then starts from 
   const toggle=page.getByRole('button',{name:'Включить озвучку урока'}).first();
   await expect(toggle).toHaveAttribute('aria-pressed','false');
   await expect.poll(async()=>requestCount(await auditEvents(page),stageId),{timeout:12000}).toBeGreaterThan(0);
-  await page.waitForTimeout(900);
+  await expect.poll(async()=>(await auditEvents(page)).some(event=>event.kind==='ready'&&event.id===stageId)).toBeTruthy();
   let events=await auditEvents(page);
   expect(events.some(event=>event.kind==='foreground'&&event.id===stageId)).toBeFalsy();
   expect(events.some(event=>event.kind==='play'&&event.id===stageId)).toBeFalsy();
@@ -93,6 +95,47 @@ test('lesson narration is off by default, prefetched silently, then starts from 
   expectExactRequestDedupe(events,stageId);
   const relevant=events.filter(event=>event.id===stageId);const foregroundIndex=relevant.findIndex(event=>event.kind==='foreground');const playIndex=relevant.findIndex(event=>event.kind==='play');
   expect(foregroundIndex).toBeGreaterThanOrEqual(0);expect(playIndex).toBeGreaterThan(foregroundIndex);
+});
+
+test('foreground joins in-flight warm audio across playback stops and rapid toggles',async({page})=>{
+  const stageId='lesson-79-stage-l79-mission';
+  await installNarrationAudit(page);
+  const release=await mockStudio(page,0,stageId);
+  try{
+    await openLesson79(page);
+    await page.locator('.lesson-opening-start').click();
+    await expect.poll(async()=>requestCount(await auditEvents(page),stageId)).toBe(1);
+    await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mathnikita-stop-narration')));
+    await page.getByRole('button',{name:'Включить озвучку урока'}).first().click();
+    await page.getByRole('button',{name:'Озвучка урока включена'}).first().click();
+    await page.getByRole('button',{name:'Включить озвучку урока'}).first().click();
+    const pending=await auditEvents(page);
+    expect(pending.filter(event=>event.kind==='foreground'&&event.id===stageId)).toHaveLength(2);
+    expect(pending.some(event=>event.kind==='play'&&event.id===stageId)).toBeFalsy();
+    expect(requestCount(pending,stageId)).toBe(1);
+    release();
+    await expect.poll(async()=>(await auditEvents(page)).filter(event=>event.kind==='play'&&event.id===stageId).length).toBe(1);
+    expect(requestCount(await auditEvents(page),stageId)).toBe(1);
+  }finally{release()}
+});
+
+test('a stopped foreground cannot play when its warm request finishes',async({page})=>{
+  const stageId='lesson-79-stage-l79-mission';
+  await installNarrationAudit(page);
+  const release=await mockStudio(page,0,stageId);
+  try{
+    await openLesson79(page);
+    await page.locator('.lesson-opening-start').click();
+    await expect.poll(async()=>requestCount(await auditEvents(page),stageId)).toBe(1);
+    await page.getByRole('button',{name:'Включить озвучку урока'}).first().click();
+    await page.getByRole('button',{name:'Озвучка урока включена'}).first().click();
+    release();
+    await expect.poll(async()=>(await auditEvents(page)).some(event=>event.kind==='ready'&&event.id===stageId)).toBeTruthy();
+    expect((await auditEvents(page)).some(event=>event.kind==='play'&&event.id===stageId)).toBeFalsy();
+    await page.getByRole('button',{name:'Включить озвучку урока'}).first().click();
+    await expect.poll(async()=>(await auditEvents(page)).filter(event=>event.kind==='play'&&event.id===stageId).length).toBe(1);
+    expect(requestCount(await auditEvents(page),stageId)).toBe(1);
+  }finally{release()}
 });
 
 test('persisted lesson narration starts the next lesson opening automatically',async({page})=>{
